@@ -81,14 +81,16 @@ Si no se han decidido los equipos, se reparten cartas boca arriba de una en una;
 - Gana la baza el **triunfo más alto**. Si nadie ha echado triunfo, gana la carta más alta del palo con el que se salió.
 - Quien gana la baza sale en la siguiente.
 
-**Obligación de asistir:**
+**Qué carta se puede echar:**
 
-- Si se sale de un palo que no es triunfo, hay que echar **de ese palo o un triunfo** (a elección). Solo si no se tiene ninguno de los dos se puede echar cualquier carta.
-- Si se sale de triunfo (*avarear* o *arrastrar*), hay que echar triunfo.
-- El **Pablo no está obligado a asistir**: si el único triunfo que tienes es el Pablo, puedes guardarlo. El Tuerto sí está obligado.
-- No es obligatorio montar (echar una carta más alta).
+- **Se puede echar cualquier carta**, en cualquier momento. No es obligatorio asistir al palo ni montar (echar una carta más alta).
+- Excepción, el **arrastre**: si el primero de la baza sale con un **triunfo** (cualquier carta del orden de triunfos, incluidos el Pablo y el 11 de oros), todos los demás tienen que echar **triunfo**, sea mayor o menor.
+  - El **Pablo** es el único triunfo que **se puede guardar**: si es el único que tienes, puedes echar cualquier otra carta.
+  - El **11 de oros (Tuerto)** sí está obligado.
+  - Si no tienes ningún triunfo, echas cualquier carta.
+- **Renuncio:** si en un arrastre tienes triunfo y no lo echas, **tu equipo pierde la mano** (el rival se lleva lo que vale la mano en ese momento).
 
-> 📌 **Decisión (online):** el juego no deja echar una carta que incumpla la obligación de asistir, así que no existen las reclamaciones por *renuncio*. En la mesa real, si el rival lo reclama, el equipo infractor pierde la mano como si se hubiera ido.
+> 📌 **En el juego online:** cuando te toca, se avisa con ✓ de qué cartas tuyas ganarían la baza, y si hay arrastre se avisa en el texto de la mesa. Con las **Ayudas** activadas, además, las cartas que serían renuncio salen apagadas y piden confirmación; sin ayudas, se aplica el renuncio directamente. Los bots nunca hacen renuncio.
 
 *Avarear de grande* es salir con un triunfo alto (Pablo o Tuerto) para obligar a los demás a soltar triunfos; *avarear de chica*, salir con uno bajo.
 
@@ -123,6 +125,12 @@ Los compañeros pueden comunicarse con señas (sin hablar) sobre los triunfos qu
 | No llevar triunfo | Dejar las cartas sobre la mesa |
 
 Online, el botón **🤫 Señas** las envía **solo a tu equipo**. Se pueden desactivar al crear la sala. Lo habitual es hacer las señas al postre, que suele dirigir el juego.
+
+### Chat de la mesa
+
+Para decidir en equipo si se acepta una apuesta (o para charlar), hay un **💬 Chat** que leen **todos los jugadores**. Para que no se pueda «cantar» lo que se lleva, el servidor **tacha las palabras que nombran cartas**: números, figuras, palos y nombres como Pablo, Tuerto, Andorra, Malilla, triunfo o vira.
+
+> Ejemplo: «tengo el 3 de basto» se ve como «tengo el **** de *****».
 
 ## 8. Situaciones especiales
 
@@ -165,8 +173,9 @@ Una forma excepcional de jugar una mano por parejas de jugadores sueltos:
 ## 10. Glosario
 
 - **Andorra:** el tres del triunfo.
-- **Asistir:** echar carta del palo con el que se salió (o triunfo).
-- **Avarear / arrastrar / triunfar:** salir con un triunfo.
+- **Arrastre:** salir con un triunfo; obliga a los demás a echar triunfo (menos el Pablo).
+- **Renuncio:** no echar triunfo en un arrastre teniéndolo; el equipo pierde la mano.
+- **Avarear / triunfar:** salir con un triunfo (es decir, hacer arrastre).
 - **Carteta:** mano especial jugada por parejas de jugadores sueltos.
 - **Cuerno (o partida):** se gana al llegar a 8 puntos.
 - **Dormido:** triunfo que se queda en el mazo y no juega.

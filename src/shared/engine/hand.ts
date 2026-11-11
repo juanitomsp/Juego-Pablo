@@ -10,6 +10,7 @@ import {
   buildDeck,
   isTrump,
   legalCards,
+  renuncioCards,
   sameCard,
   shuffle,
   trickWinnerIndex,
@@ -18,7 +19,7 @@ import { GameConfig, RuleError, Team, otherTeam, teamOf } from './types';
 
 export type HandKind = 'normal' | 'carteta';
 export type HandPhase = 'quiero' | 'playing' | 'bet' | 'done';
-export type HandEndReason = 'bazas' | 'irse' | 'rechazo' | 'quiero';
+export type HandEndReason = 'bazas' | 'irse' | 'rechazo' | 'quiero' | 'renuncio';
 
 export interface CompletedTrick {
   index: number;
@@ -201,9 +202,10 @@ export function playCard(h: HandState, seat: number, card: Card): void {
   if (h.phase !== 'playing') throw new RuleError('Ahora no se puede echar carta.');
   if (h.turn !== seat) throw new RuleError('No es tu turno.');
   const legal = legalFor(h, seat);
-  if (!legal.some((c) => sameCard(c, card))) throw new RuleError('Esa carta no se puede jugar (hay que asistir).');
+  if (!legal.some((c) => sameCard(c, card))) throw new RuleError('Esa carta no está en tu mano.');
 
   const hand = h.hands[seat];
+  const renuncio = renuncioCards(hand, h.trick, h.trump).some((c) => sameCard(c, card));
   hand.splice(
     hand.findIndex((c) => sameCard(c, card)),
     1,
@@ -215,6 +217,12 @@ export function playCard(h: HandState, seat: number, card: Card): void {
     const pos = h.seats.indexOf(seat);
     if (pos === 0) [2, 3].forEach((i) => (h.received[h.seats[i]] = true));
     if (pos === 2) [4, 5].forEach((i) => (h.received[h.seats[i]] = true));
+  }
+
+  // Renuncio: no echar triunfo en un arrastre teniéndolo. El equipo pierde la mano.
+  if (renuncio) {
+    finish(h, { winner: otherTeam(teamOf(seat)), points: h.stake, reason: 'renuncio', bySeat: seat });
+    return;
   }
 
   if (h.trick.length < h.seats.length) {

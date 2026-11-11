@@ -5,6 +5,7 @@
 import { DEFAULT_CONFIG, GameConfig, QUICK_MESSAGES, RuleError, SenaId, drawTeamsByKings, getView, teamOf } from '../shared/engine';
 import type { RoomState, SeatInfo } from '../shared/protocol';
 import { GameTable } from '../shared/table';
+import { censorChat } from '../shared/chat';
 import { randomInt, webcrypto } from 'node:crypto';
 
 /** Azar criptográfico para barajar: el reparto no se puede predecir a partir de partidas anteriores. */
@@ -254,6 +255,20 @@ export class Room {
   private relaySena(from: number, sena: SenaId) {
     const to = this.seats.flatMap((s, i) => (i !== from && teamOf(i) === teamOf(from) && s.playerId ? [s.playerId] : []));
     this.hooks.sendSena(this, to, from, sena);
+  }
+
+  private lastChat = new Map<string, number>();
+
+  /** Chat libre de la mesa (solo jugadores sentados), con las cartas tachadas y máximo un mensaje por segundo. */
+  chat(playerId: string, raw: unknown) {
+    const seat = this.seatOf(playerId);
+    if (seat === null || typeof raw !== 'string') return;
+    const now = Date.now();
+    if (now - (this.lastChat.get(playerId) ?? 0) < 1000) return;
+    const text = censorChat(raw);
+    if (!text) return;
+    this.lastChat.set(playerId, now);
+    this.hooks.sendQuick(this, seat, text);
   }
 
   quick(playerId: string, index: number) {

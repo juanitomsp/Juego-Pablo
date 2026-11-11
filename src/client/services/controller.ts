@@ -14,6 +14,7 @@ import {
 } from '../../shared/engine';
 import type { ClientToServer, QuickMessage, RoomState, SenaMessage, ServerToClient } from '../../shared/protocol';
 import { GameTable } from '../../shared/table';
+import { censorChat } from '../../shared/chat';
 import { getName, getPlayerId } from './identity';
 
 export interface ControllerSnapshot {
@@ -30,6 +31,7 @@ export interface Controller {
   act(a: Action): Promise<string | null>;
   sena(s: SenaId): void;
   quick(i: number): void;
+  chat(text: string): void;
   rematch(): Promise<string | null>;
   dispose(): void;
 }
@@ -129,6 +131,9 @@ export class OnlineController extends Base implements Controller {
   }
   quick(i: number) {
     this.socket.emit('game:quick', { index: i });
+  }
+  chat(text: string) {
+    this.socket.emit('game:chat', { text });
   }
   rematch() {
     return this.emitAck('game:rematch');
@@ -249,6 +254,10 @@ export class LocalController extends Base implements Controller {
   quick(i: number) {
     const text = QUICK_MESSAGES[i];
     if (text) this.pushQuick({ from: 0, text, at: Date.now() });
+  }
+  chat(text: string) {
+    const clean = censorChat(text);
+    if (clean) this.pushQuick({ from: 0, text: clean, at: Date.now() });
   }
   async rematch() {
     this.newTable((this.table.match.dealer + 1) % this.config.players);

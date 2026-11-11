@@ -108,21 +108,29 @@ export function trickWinnerIndex(plays: PlayedCard[], trump: Suit): number {
 }
 
 /**
- * Cartas que se pueden jugar (obligación de asistir):
- * - Si se sale de un palo que no es triunfo: hay que echar de ese palo o triunfo (a elección).
- *   Si no se tiene ninguno, cualquier carta.
- * - Si se sale de triunfo: hay que echar triunfo. El Pablo no está obligado a asistir:
- *   si el único triunfo que se tiene es el Pablo, se puede echar cualquier carta.
+ * Cartas que se pueden jugar: en el Pablo se puede echar **cualquier carta** en cualquier momento
+ * (no hay obligación de asistir). Ver docs/REGLAS.md §5.3.
  */
-export function legalCards(hand: Card[], trickSoFar: PlayedCard[], trump: Suit): Card[] {
-  if (trickSoFar.length === 0) return hand.slice();
-  const lead = effectiveSuit(trickSoFar[0].card, trump);
-  if (lead === trump) {
-    const obliged = hand.filter((c) => isTrump(c, trump) && !isPablo(c));
-    return obliged.length > 0 ? hand.filter((c) => isTrump(c, trump)) : hand.slice();
-  }
-  const follow = hand.filter((c) => c.suit === lead && !isTrump(c, trump)).concat(hand.filter((c) => isTrump(c, trump)));
-  return follow.length > 0 ? follow : hand.slice();
+export function legalCards(hand: Card[], _trickSoFar: PlayedCard[], _trump: Suit): Card[] {
+  return hand.slice();
+}
+
+/**
+ * Arrastre: si el primero de la baza sale con un triunfo (incluidos el Pablo y el Tuerto), los demás
+ * tienen que echar triunfo si lo tienen. El Pablo es el único que se puede guardar.
+ * Devuelve las cartas que serían renuncio si se echan ahora (vacío si no hay arrastre o no tienes triunfo).
+ */
+export function renuncioCards(hand: Card[], trickSoFar: PlayedCard[], trump: Suit): Card[] {
+  if (trickSoFar.length === 0 || !isTrump(trickSoFar[0].card, trump)) return [];
+  const obliged = hand.filter((c) => isTrump(c, trump) && !isPablo(c));
+  if (obliged.length === 0) return [];
+  return hand.filter((c) => !isTrump(c, trump));
+}
+
+/** Cartas de la mano que, echadas ahora, ganarían la baza tal como está (para avisar al jugador). */
+export function winningCards(hand: Card[], trickSoFar: PlayedCard[], trump: Suit): Card[] {
+  if (trickSoFar.length === 0) return [];
+  return hand.filter((c) => trickWinnerIndex([...trickSoFar, { seat: -1, card: c }], trump) === trickSoFar.length);
 }
 
 const RANK_NAMES: Record<number, string> = {

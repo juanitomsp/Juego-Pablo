@@ -16,6 +16,7 @@ import {
 import type { RoomInfo } from '../../shared/protocol';
 import { Controller } from '../services/controller';
 import { recordMatch, summarize } from '../services/stats';
+import { CHAT_MAX_LENGTH } from '../../shared/chat';
 import { CardView, SuitIcon } from './CardView';
 
 export function useSnapshot(c: Controller) {
@@ -48,6 +49,7 @@ const REASON: Record<string, string> = {
   irse: 'porque el rival se fue',
   rechazo: 'porque el rival no quiso la apuesta',
   quiero: 'porque el equipo al quiero se fue',
+  renuncio: 'por renuncio (no echó triunfo en un arrastre)',
 };
 
 const senaLabel = (id: string) => SENAS.find((s) => s.id === id)?.label ?? id;
@@ -239,7 +241,11 @@ function TableInner(p: InnerProps) {
         : `${name(h.pendingBet.seat)} apuesta ${h.pendingBet.value}. Esperando respuesta del rival…`;
     } else if (you !== null && h.seats.includes(you) && !h.received[you]) {
       status = 'El mano aún no te ha dado las cartas (se reparten conforme juegan los rivales).';
-    } else if (h.turn === you) status = 'Te toca. Elige carta.';
+    } else if (h.turn === you) {
+      status = 'Te toca. Elige carta.';
+      if (h.renuncio.length > 0) status = '¡Arrastre! Tienes que echar triunfo (el Pablo te lo puedes guardar).';
+      else if (hints && h.winning.length > 0) status = 'Te toca. Tienes cartas que ganan esta baza (marcadas con ✓).';
+    }
     else status = `Turno de ${name(h.turn)}.`;
     if (you !== null && h.kind === 'carteta' && !h.seats.includes(you)) status = `Carteta entre ${name(h.seats[0])} y ${name(h.seats[1])}. Mira la partida.`;
   }
@@ -259,9 +265,11 @@ function TableInner(p: InnerProps) {
     const id = cardId(c);
     if (isTouch && selected !== id) return setSelected(id);
     setSelected(null);
+    if (hints && h?.renuncio.includes(id) && !confirm('Hay arrastre y tienes triunfo. Si echas esta carta es renuncio y tu equipo pierde la mano. ¿Echarla igualmente?')) return;
     act({ type: 'play', card: c });
   };
   if (isTouch && h && h.turn === you && selected && status.startsWith('Te toca')) status = 'Toca otra vez la carta para jugarla.';
+  if (trickDone && trickWinner !== null && view.phase === 'hand' && h?.trick.length === 0) status = `Baza para ${name(trickWinner)}. ${status}`;
 
   return (
     <div className="game">
@@ -283,9 +291,8 @@ function TableInner(p: InnerProps) {
         {h && (
           <div className="hand-info">
             <div className="muestra">
-              <CardView card={h.muestra} small trump={h.trump} />
               <div>
-                <div className="lbl">Muestra</div>
+                <div className="lbl">Triunfo</div>
                 <div className="trump-name">
                   <SuitIcon suit={h.trump} size={16} /> {h.trump}
                 </div>
@@ -356,20 +363,24 @@ function TableInner(p: InnerProps) {
           );
         })}
 
+        {h && (
+          <div className="center-muestra" title={`Muestra: manda ${h.trump}`}>
+            <CardView card={h.muestra} small trump={h.trump} />
+            <span className="lbl">Muestra</span>
+          </div>
+        )}
         <div className="trick">
           {showTrick.map((pl) => {
             const [x, y] = pos(pl.seat);
             const tx = 50 + (x - 50) * 0.36;
-            const ty = 50 + (y - 50) * 0.42;
+            // Separadas del centro para no tapar la muestra.
+            const ty = 50 + (y - 50) * 0.62;
             return (
               <div key={cardId(pl.card)} className="trick-card" style={{ left: `${tx}%`, top: `${ty}%` }}>
                 <CardView card={pl.card} small trump={h!.trump} hints={hints} highlight={trickDone && pl.seat === trickWinner} />
               </div>
             );
           })}
-          {trickDone && trickWinner !== null && view.phase === 'hand' && (
-            <div className="trick-caption">Baza para {name(trickWinner)}</div>
-          )}
         </div>
 
         {lastResult && (
@@ -466,7 +477,8 @@ function TableInner(p: InnerProps) {
               trump={h!.trump}
               hints={hints}
               playable={playable}
-              dimmed={isMyTurn && !playable}
+              dimmed={isMyTurn && (!playable || (hints && h!.renuncio.includes(cardId(c))))}
+              wins={hints && isMyTurn && h!.winning.includes(cardId(c))}
               selected={selected === cardId(c)}
               highlight={!!h?.muestraInHand && h.dealer === you && c.suit === h.muestra.suit && c.rank === h.muestra.rank}
               onClick={playable ? () => onCard(c) : undefined}
@@ -482,7 +494,7 @@ function TableInner(p: InnerProps) {
           </button>
         )}
         <button className={p.panel === 'chat' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'chat' ? 'none' : 'chat')}>
-          💬<span className="tb-label"> Frases</span>
+          💬<span className="tb-label"> Chat</span>
         </button>
         <button className={p.panel === 'log' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'log' ? 'none' : 'log')}>
           📜<span className="tb-label"> Historial</span>
@@ -528,13 +540,7 @@ function TableInner(p: InnerProps) {
             </>
           )}
           {p.panel === 'chat' && (
-            <div className="grid-buttons">
-              {QUICK_MESSAGES.map((q, i) => (
-                <button key={q} onClick={() => p.controller.quick(i)}>
-                  {q}
-                </button>
-              ))}
-            </div>
+            <ChatPanel messages={p.snapQuicks} name={name} onSend={(t) => p.controller.chat(t)} onQuick={(i) => p.controller.quick(i)} />
           )}
           {p.panel === 'log' && (
             <ul className="log">
@@ -560,5 +566,61 @@ function TableInner(p: InnerProps) {
         </aside>
       )}
     </div>
+  );
+}
+
+/** Chat de la mesa: lo leen todos; las palabras que nombran cartas salen tachadas (lo hace el servidor). */
+function ChatPanel({
+  messages,
+  name,
+  onSend,
+  onQuick,
+}: {
+  messages: { from: number; text: string; at: number }[];
+  name: (s: number) => string;
+  onSend: (t: string) => void;
+  onQuick: (i: number) => void;
+}) {
+  const [text, setText] = useState('');
+  const send = () => {
+    if (!text.trim()) return;
+    onSend(text);
+    setText('');
+  };
+  return (
+    <>
+      <h4>Chat de la mesa</h4>
+      <p className="muted small">Lo leen todos. Las palabras que nombran cartas salen tachadas (****).</p>
+      <ul className="log chat-log">
+        {messages.length === 0 && <li className="muted">Aún no hay mensajes.</li>}
+        {messages
+          .slice(-30)
+          .reverse()
+          .map((m) => (
+            <li key={m.at + '-' + m.from}>
+              <strong>{name(m.from)}:</strong> {m.text}
+            </li>
+          ))}
+      </ul>
+      <div className="row tight chat-input">
+        <input
+          value={text}
+          maxLength={CHAT_MAX_LENGTH}
+          placeholder="Escribe a la mesa…"
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && send()}
+        />
+        <button className="primary" onClick={send}>
+          Enviar
+        </button>
+      </div>
+      <div className="grid-buttons quick-row">
+        {QUICK_MESSAGES.map((q, i) => (
+          <button key={q} onClick={() => onQuick(i)}>
+            {q}
+          </button>
+        ))}
+      </div>
+    </>
   );
 }

@@ -2,7 +2,7 @@
  * Vista de la partida para un jugador concreto: oculta las cartas de los demás.
  * Es lo único que el servidor envía a cada cliente (y lo que usan los bots, para no hacer trampas).
  */
-import { Card, PlayedCard, Suit, cardId, sameCard } from './cards';
+import { Card, PlayedCard, Suit, cardId, isTrump as isTrumpCard, renuncioCards, sameCard, winningCards } from './cards';
 import * as H from './hand';
 import { HandRecord, MatchEvent, MatchPhase, MatchState, SeatStats, cartetaAllowed, quieroThreshold } from './match';
 import { GameConfig, Team, teamOf } from './types';
@@ -37,6 +37,12 @@ export interface HandView {
   result: H.HandResult | null;
   /** Cartas jugables (ids) para ti ahora mismo. */
   legal: string[];
+  /** Tus cartas (ids) que ganarían la baza si las echas ahora (aviso). */
+  winning: string[];
+  /** Hay arrastre: el primero salió con triunfo. */
+  arrastre: boolean;
+  /** Tus cartas (ids) que serían renuncio si las echas ahora (arrastre y tienes triunfo). */
+  renuncio: string[];
   canBet: boolean;
   canFold: boolean;
   canRespond: boolean;
@@ -111,6 +117,9 @@ function handView(m: MatchState, h: H.HandState, you: number | null): HandView {
     phase: h.phase,
     result: h.result,
     legal,
+    arrastre: h.trick.length > 0 && isTrumpCard(h.trick[0].card, h.trump),
+    renuncio: you !== null && h.phase === 'playing' && h.turn === you ? renuncioCards(myCards, h.trick, h.trump).map(cardId) : [],
+    winning: you !== null && h.phase === 'playing' && h.turn === you ? winningCards(myCards, h.trick, h.trump).map(cardId) : [],
     canBet: you !== null && H.canBet(h, you, cfg),
     canFold: you !== null && H.canFold(h, you),
     canRespond: you !== null && H.canRespond(h, you),

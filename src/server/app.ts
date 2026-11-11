@@ -211,6 +211,10 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
       const sena = (p as { sena?: unknown } | null)?.sena;
       if (room && data.playerId && isSena(sena)) room.sena(data.playerId, sena);
     });
+    on('game:chat', (p) => {
+      const room = currentRoom();
+      if (room && data.playerId) room.chat(data.playerId, (p as { text?: unknown } | null)?.text);
+    });
     on('game:quick', (p) => {
       const room = currentRoom();
       const index = (p as { index?: unknown } | null)?.index;

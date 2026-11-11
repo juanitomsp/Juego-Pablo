@@ -201,6 +201,8 @@ interface CardProps {
   small?: boolean;
   highlight?: boolean;
   selected?: boolean;
+  /** Marca de aviso: esta carta ganaría la baza. */
+  wins?: boolean;
   onClick?: () => void;
 }
 
@@ -219,7 +221,7 @@ function FrameLine({ y, pintas, col }: { y: number; pintas: number; col: string 
   );
 }
 
-export function CardView({ card, faceDown, trump, hints, playable, dimmed, small, highlight, selected, onClick }: CardProps) {
+export function CardView({ card, faceDown, trump, hints, playable, dimmed, small, highlight, selected, wins, onClick }: CardProps) {
   const deck = useDeckStyle();
   const cls = ['card', `deck-${deck}`, small && 'small', faceDown && 'back', playable && 'playable', dimmed && 'dimmed', highlight && 'highlight', selected && 'selected']
     .filter(Boolean)
@@ -260,6 +262,7 @@ export function CardView({ card, faceDown, trump, hints, playable, dimmed, small
           {card.rank >= 10 ? <Figure card={card} /> : <Pips card={card} />}
         </svg>
       )}
+      {wins && <span className="wins-mark" aria-label="Gana la baza">✓</span>}
       {hints && role && role !== 'Vira' && <span className="role">{role}</span>}
       {hints && role === 'Vira' && <span className="role vira">triunfo</span>}
     </Tag>

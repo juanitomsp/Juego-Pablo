@@ -58,6 +58,8 @@ export interface ClientToServer {
   'game:action': (a: Action, ack: Ack) => void;
   'game:sena': (p: { sena: SenaId }) => void;
   'game:quick': (p: { index: number }) => void;
+  /** Mensaje libre para toda la mesa; el servidor tacha las referencias a cartas. */
+  'game:chat': (p: { text: string }) => void;
   'game:rematch': (ack: Ack) => void;
 }
 

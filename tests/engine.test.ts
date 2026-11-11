@@ -15,11 +15,14 @@ import {
   drawTeamsByKings,
   getView,
   legalCards,
+  renuncioCards,
+  winningCards,
   seededRng,
   teamOf,
   trickWinnerIndex,
   trumpPower,
 } from '../src/shared/engine';
+import { censorChat } from '../src/shared/chat';
 
 const c = (rank: number, suit: Card['suit']): Card => ({ rank, suit });
 const cfg4: GameConfig = { ...DEFAULT_CONFIG, players: 4 };
@@ -56,22 +59,63 @@ describe('valores', () => {
   });
 });
 
-describe('asistir', () => {
-  it('si se sale de un palo hay que echar de ese palo o triunfo', () => {
+describe('echar cartas y arrastre', () => {
+  it('fuera del arrastre se puede echar cualquier carta', () => {
     const hand = [c(1, 'oros'), c(2, 'copas'), c(12, 'espadas')];
-    expect(legalCards(hand, [{ seat: 0, card: c(3, 'oros') }], 'copas')).toHaveLength(2);
+    expect(legalCards(hand, [{ seat: 0, card: c(3, 'oros') }], 'copas')).toHaveLength(3);
+    expect(renuncioCards(hand, [{ seat: 0, card: c(3, 'oros') }], 'copas')).toEqual([]);
   });
-  it('si no se tiene ni palo ni triunfo, cualquier carta', () => {
-    const hand = [c(1, 'espadas'), c(12, 'espadas')];
-    expect(legalCards(hand, [{ seat: 0, card: c(3, 'oros') }], 'copas')).toHaveLength(2);
+  it('arrastre: si sale triunfo y tienes triunfo, lo demás es renuncio', () => {
+    const hand = [c(2, 'copas'), c(12, 'espadas'), c(1, 'oros')];
+    expect(renuncioCards(hand, [{ seat: 0, card: c(3, 'copas') }], 'copas')).toEqual([c(12, 'espadas'), c(1, 'oros')]);
   });
-  it('el Pablo no está obligado a asistir al triunfo', () => {
+  it('el Pablo se puede guardar en el arrastre', () => {
     const hand = [c(4, 'bastos'), c(12, 'espadas')];
-    expect(legalCards(hand, [{ seat: 0, card: c(3, 'copas') }], 'copas')).toHaveLength(2);
+    expect(renuncioCards(hand, [{ seat: 0, card: c(3, 'copas') }], 'copas')).toEqual([]);
   });
-  it('el Tuerto sí está obligado a asistir al triunfo', () => {
+  it('el Tuerto sí está obligado en el arrastre', () => {
     const hand = [c(11, 'oros'), c(12, 'espadas')];
-    expect(legalCards(hand, [{ seat: 0, card: c(3, 'copas') }], 'copas')).toEqual([c(11, 'oros')]);
+    expect(renuncioCards(hand, [{ seat: 0, card: c(3, 'copas') }], 'copas')).toEqual([c(12, 'espadas')]);
+  });
+  it('salir con el Pablo o el Tuerto también es arrastre', () => {
+    const hand = [c(2, 'copas'), c(12, 'espadas')];
+    expect(renuncioCards(hand, [{ seat: 0, card: c(4, 'bastos') }], 'copas')).toEqual([c(12, 'espadas')]);
+    expect(renuncioCards(hand, [{ seat: 0, card: c(11, 'oros') }], 'copas')).toEqual([c(12, 'espadas')]);
+  });
+  it('sin triunfos se puede echar cualquier carta en el arrastre', () => {
+    expect(renuncioCards([c(12, 'espadas'), c(1, 'oros')], [{ seat: 0, card: c(3, 'copas') }], 'copas')).toEqual([]);
+  });
+  it('avisa de las cartas que ganan la baza', () => {
+    const hand = [c(12, 'oros'), c(2, 'oros'), c(4, 'copas')];
+    expect(winningCards(hand, [{ seat: 0, card: c(10, 'oros') }], 'copas')).toEqual([c(12, 'oros'), c(4, 'copas')]);
+    expect(winningCards(hand, [], 'copas')).toEqual([]);
+  });
+  it('hacer renuncio hace perder la mano al equipo', () => {
+    let m = applyAction(createMatch(cfg4, 0), 0, { type: 'deal' }, seededRng(11));
+    const h = m.hand!;
+    // Preparamos una situación de arrastre: el asiento 1 sale con triunfo y el 2 tiene triunfo y otra carta.
+    const trump = h.trump;
+    const other = (['oros', 'copas', 'espadas', 'bastos'] as const).find((x) => x !== trump && x !== 'oros' && x !== 'bastos')!;
+    h.hands[1] = [c(trump === 'bastos' ? 12 : 1, trump)];
+    h.hands[2] = [c(trump === 'oros' ? 12 : 2, trump), c(5, other)];
+    m = applyAction(m, 1, { type: 'play', card: h.hands[1][0] }, seededRng(1));
+    m = applyAction(m, 2, { type: 'play', card: c(5, other) }, seededRng(1));
+    expect(m.history[m.history.length - 1].result.reason).toBe('renuncio');
+    expect(m.score).toEqual([0, 1]);
+  });
+});
+
+describe('chat', () => {
+  it('tacha las palabras que nombran cartas', () => {
+    expect(censorChat('tengo el 3 de basto')).toBe('tengo el **** de *****');
+    expect(censorChat('Llevo el PABLO y la Malilla')).toBe('Llevo el ***** y la *******');
+    expect(censorChat('¿Vamos? Yo voy bien')).toBe('¿Vamos? Yo voy bien');
+    expect(censorChat('tengo bastooo y 2 reyes')).toBe('tengo ******* y **** *****');
+    expect(censorChat('tengo el tres de óros')).toBe('tengo el **** de ****');
+  });
+  it('limpia caracteres peligrosos y limita la longitud', () => {
+    expect(censorChat('<script>hola</script>')).toBe('scripthola/script');
+    expect(censorChat('a'.repeat(500)).length).toBe(140);
   });
 });
 

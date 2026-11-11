@@ -86,7 +86,8 @@ export function chooseBotAction(v: PlayerView, rng: Rng = Math.random): Action |
     if ((s > 0.6 && h.stake < 4) || (rivalAlQuiero && s > 0.3) || rng() < 0.04) return { type: 'bet' };
   }
 
-  const legal = mine.filter((c) => h.legal.includes(cardId(c)));
+  // El bot nunca hace renuncio: en un arrastre echa triunfo si lo tiene.
+  const legal = mine.filter((c) => h.legal.includes(cardId(c)) && !h.renuncio.includes(cardId(c)));
   if (legal.length === 0) return null;
 
   // Salir.
