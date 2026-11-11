@@ -7,6 +7,7 @@
  * Minimización de datos: en Firestore solo se guarda el resumen numérico de cada partida bajo
  * users/{uid}/matches. No se guardan email, foto ni nombres de otros jugadores.
  */
+import { Capacitor } from '@capacitor/core';
 import type { MatchSummary } from './stats';
 
 const env = import.meta.env;
@@ -37,7 +38,11 @@ function load(): Promise<Libs> {
   libs ??= (async () => {
     const [{ initializeApp }, a, f] = await Promise.all([import('firebase/app'), import('firebase/auth'), import('firebase/firestore')]);
     const app = initializeApp(config);
-    const auth = a.getAuth(app);
+    // En las apps nativas, getAuth() intenta cargar un iframe que el WebView de iPhone bloquea:
+    // se inicializa solo con almacenamiento local (el inicio de sesión lo hace el plugin nativo).
+    const auth = Capacitor.isNativePlatform()
+      ? a.initializeAuth(app, { persistence: a.indexedDBLocalPersistence })
+      : a.getAuth(app);
     auth.languageCode = 'es';
     return { auth, db: f.getFirestore(app), a, f };
   })();
@@ -61,14 +66,51 @@ export function onUserChanged(cb: (u: AccountUser | null) => void): () => void {
   };
 }
 
-export async function signInWithGoogle(): Promise<void> {
-  const { auth, a } = await load();
-  await a.signInWithPopup(auth, new a.GoogleAuthProvider());
+export type AuthProviderId = 'google' | 'apple';
+
+/** Proveedores disponibles: Google siempre; Apple en iPhone (Apple lo exige si se ofrece Google). */
+export function availableProviders(): AuthProviderId[] {
+  return Capacitor.getPlatform() === 'ios' ? ['apple', 'google'] : ['google'];
 }
+
+/** Obtiene una credencial de Firebase: en el móvil con la ventana nativa; en la web, con una ventana emergente. */
+async function credentialFor(provider: AuthProviderId, { a }: Libs) {
+  if (Capacitor.isNativePlatform()) {
+    const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+    if (provider === 'apple') {
+      const r = await FirebaseAuthentication.signInWithApple({ skipNativeAuth: true });
+      if (!r.credential?.idToken) throw new Error('No se pudo iniciar sesión con Apple.');
+      return new a.OAuthProvider('apple.com').credential({ idToken: r.credential.idToken, rawNonce: r.credential.nonce });
+    }
+    const r = await FirebaseAuthentication.signInWithGoogle({ skipNativeAuth: true });
+    if (!r.credential?.idToken) throw new Error('No se pudo iniciar sesión con Google.');
+    return a.GoogleAuthProvider.credential(r.credential.idToken);
+  }
+  return null;
+}
+
+export async function signIn(provider: AuthProviderId): Promise<void> {
+  const libs = await load();
+  const { auth, a } = libs;
+  const credential = await credentialFor(provider, libs);
+  if (credential) {
+    await a.signInWithCredential(auth, credential);
+    return;
+  }
+  const webProvider = provider === 'apple' ? new a.OAuthProvider('apple.com') : new a.GoogleAuthProvider();
+  await a.signInWithPopup(auth, webProvider);
+}
+
+/** Compatibilidad con el código anterior. */
+export const signInWithGoogle = () => signIn('google');
 
 export async function signOutUser(): Promise<void> {
   const { auth, a } = await load();
   await a.signOut(auth);
+  if (Capacitor.isNativePlatform()) {
+    const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+    await FirebaseAuthentication.signOut().catch(() => {});
+  }
 }
 
 export async function saveRemoteMatch(uid: string, m: MatchSummary): Promise<void> {
@@ -95,12 +137,16 @@ export async function deleteAccountAndData(uid: string): Promise<void> {
     await batch.commit();
   }
   if (auth.currentUser) {
+    const user = auth.currentUser;
     try {
-      await a.deleteUser(auth.currentUser);
+      await a.deleteUser(user);
     } catch {
-      // Firebase exige un inicio de sesión reciente para borrar la cuenta.
-      await a.reauthenticateWithPopup(auth.currentUser, new a.GoogleAuthProvider());
-      await a.deleteUser(auth.currentUser);
+      // Firebase exige un inicio de sesión reciente para borrar la cuenta: se vuelve a pedir.
+      const provider: AuthProviderId = user.providerData.some((p) => p.providerId === 'apple.com') ? 'apple' : 'google';
+      const credential = await credentialFor(provider, await load());
+      if (credential) await a.reauthenticateWithCredential(user, credential);
+      else await a.reauthenticateWithPopup(user, provider === 'apple' ? new a.OAuthProvider('apple.com') : new a.GoogleAuthProvider());
+      await a.deleteUser(user);
     }
   }
 }

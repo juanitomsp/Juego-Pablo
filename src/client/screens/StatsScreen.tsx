@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { go } from '../App';
 import { useAccount } from '../account';
-import { deleteAccountAndData, signInWithGoogle, signOutUser } from '../services/firebase';
+import { availableProviders, deleteAccountAndData, signIn, signOutUser } from '../services/firebase';
+import { adsPrivacyOptionsRequired, isNativeApp, showAdsPrivacyOptions } from '../native/ads';
 import { clearLocalData } from '../services/identity';
 import { MatchSummary, aggregate, loadLocalMatches, loadMatches, uploadLocalMatches } from '../services/stats';
 
@@ -67,9 +68,11 @@ export function StatsScreen() {
               <a href="#/privacidad">política de privacidad</a>
             </label>
             <div className="row">
-              <button className="primary" disabled={!accepted} onClick={() => safe(signInWithGoogle)}>
-                Entrar con Google
-              </button>
+              {availableProviders().map((p) => (
+                <button key={p} className="primary" disabled={!accepted} onClick={() => safe(() => signIn(p))}>
+                  {p === 'apple' ? ' Iniciar sesión con Apple' : 'Entrar con Google'}
+                </button>
+              ))}
             </div>
           </>
         )}
@@ -167,6 +170,9 @@ export function StatsScreen() {
           >
             Borrar datos de este navegador
           </button>
+          {isNativeApp() && adsPrivacyOptionsRequired() && (
+            <button onClick={() => safe(showAdsPrivacyOptions)}>Privacidad de los anuncios</button>
+          )}
         </div>
       </section>
     </main>

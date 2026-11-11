@@ -19,3 +19,7 @@ coverage/
 *.log
 .DS_Store
 Thumbs.db
+
+# Configuración de Firebase de cada app (se añade a mano o desde los secretos de GitHub)
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist

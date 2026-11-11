@@ -155,6 +155,26 @@ describe('servidor', () => {
     expect(wStates.every((s) => !s.view?.hand || s.view.hand.myCards.length === 0)).toBe(true);
   });
 
+  it('panel de control: desactivado sin contraseña, protegido y con datos útiles', async () => {
+    let url = await start();
+    expect((await fetch(`${url}/api/admin/metrics`)).status).toBe(404);
+    await server!.close();
+    url = await start({ adminToken: 'secreto-de-prueba-123' });
+    expect((await fetch(`${url}/api/admin/metrics`)).status).toBe(401);
+    expect((await fetch(`${url}/api/admin/metrics`, { headers: { Authorization: 'Bearer otro' } })).status).toBe(401);
+    const ok = await fetch(`${url}/api/admin/metrics`, { headers: { Authorization: 'Bearer secreto-de-prueba-123' } });
+    expect(ok.status).toBe(200);
+    const r = await ok.json();
+    expect(r.now.memPct).toBeGreaterThan(0);
+    expect(['good', 'warning', 'critical']).toContain(r.advice.level);
+    expect(r.capacity.estimatedMaxPlayers).toBeGreaterThanOrEqual(0);
+    // Las apps pueden consultarlo (CORS solo para orígenes permitidos).
+    const app = await fetch(`${url}/api/admin/metrics`, { method: 'OPTIONS', headers: { Origin: 'capacitor://localhost' } });
+    const evil = await fetch(`${url}/api/admin/metrics`, { method: 'OPTIONS', headers: { Origin: 'https://malo.com' } });
+    expect(evil.headers.get('access-control-allow-origin')).toBeNull();
+    expect(app.status).toBe(204);
+  });
+
   it('no deja entrar a más de MAX_MEMBERS personas en una sala', async () => {
     const url = await start();
     const s = await client(url);

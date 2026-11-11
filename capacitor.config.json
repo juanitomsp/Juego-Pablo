@@ -1,0 +1,12 @@
+{
+  "appId": "es.elpablo.juego",
+  "appName": "El Pablo",
+  "webDir": "dist/client",
+  "backgroundColor": "#0f3d2e",
+  "android": { "allowMixedContent": false },
+  "ios": { "contentInset": "never" },
+  "plugins": {
+    "SplashScreen": { "launchAutoHide": false, "backgroundColor": "#0f3d2e", "showSpinner": false },
+    "FirebaseAuthentication": { "skipNativeAuth": true, "providers": ["google.com", "apple.com"] }
+  }
+}

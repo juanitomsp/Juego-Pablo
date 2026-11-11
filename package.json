@@ -16,11 +16,22 @@
     "start": "node dist/server/index.js",
     "jugar": "npm run build && npm start",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:app": "vite build --mode app && npx cap sync && python scripts/native/configurar-nativo.py",
+    "app:android": "npm run build:app && npx cap open android",
+    "app:ios": "npm run build:app && npx cap open ios"
   },
   "dependencies": {
+    "@capacitor-community/admob": "^7.2.0",
+    "@capacitor-firebase/authentication": "^7.5.0",
+    "@capacitor/android": "^7.6.10",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/core": "^7.6.10",
+    "@capacitor/ios": "^7.6.10",
+    "@capacitor/splash-screen": "^7.0.5",
+    "@capacitor/status-bar": "^7.0.6",
     "express": "^5.3.0",
-    "firebase": "^13.2.0",
+    "firebase": "^11.10.0",
     "marked": "^18.2.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -28,6 +39,8 @@
     "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^7.6.10",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",

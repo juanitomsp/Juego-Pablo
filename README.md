@@ -29,6 +29,7 @@ Abre <http://localhost:5173>. Arranca a la vez el servidor de juego (puerto 3001
 | `npm run typecheck` | Comprobación de tipos |
 | `npm run build` | Compila cliente (`dist/client`) y servidor (`dist/server`) |
 | `npm run jugar` | Compila y arranca; muestra la dirección para entrar desde los móviles de la misma WiFi |
+| `npm run build:app` | Prepara las apps de iPhone y Android (`ios/`, `android/`) |
 | `npm start` | Producción: un único proceso Node sirve el juego en `PORT` (3001) |
 | `npx tsx scripts/bot-client.ts CODIGO` | Mete un «jugador» automático en una sala online, para probar |
 
@@ -37,6 +38,9 @@ Abre <http://localhost:5173>. Arranca a la vez el servidor de juego (puerto 3001
 | Documento | Contenido |
 |---|---|
 | [docs/JUGAR_CON_AMIGOS.md](docs/JUGAR_CON_AMIGOS.md) | **Cómo jugar con amigos desde el móvil** (misma WiFi o por internet) |
+| [docs/APPS_MOVILES.md](docs/APPS_MOVILES.md) | **Apps de iPhone y Android**: anuncios, cuentas, compilación y lo que hay que hacer para publicar |
+| [docs/TIENDAS.md](docs/TIENDAS.md) | Textos y cuestionarios de privacidad para Google Play y App Store |
+| [docs/PANEL_SERVIDOR.md](docs/PANEL_SERVIDOR.md) | Panel para vigilar la carga del servidor y saber cuándo ampliarlo |
 | [docs/REGLAS.md](docs/REGLAS.md) | Reglas tal como las aplica el juego y decisiones de interpretación (también se ve dentro del juego) |
 | [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Estructura del código, motor de reglas, servidor, cliente, bots |
 | [docs/PROTOCOLO.md](docs/PROTOCOLO.md) | Mensajes entre cliente y servidor (Socket.IO) |

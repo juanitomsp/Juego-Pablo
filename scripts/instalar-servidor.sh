@@ -114,6 +114,16 @@ cd "$DIR"
 sudo -u "$USUARIO" npm ci --no-audit --no-fund
 sudo -u "$USUARIO" npm run build
 
+# ----------------------------------------------------------------- Contraseña del panel de control
+# Se genera una vez y se guarda solo para root. El panel está en https://TU-DIRECCIÓN/#/admin
+install -d -m 700 /etc/pablo
+if [ ! -s /etc/pablo/admin-token ]; then
+  head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n' > /etc/pablo/admin-token
+  chmod 600 /etc/pablo/admin-token
+fi
+printf 'ADMIN_TOKEN=%s\n' "$(cat /etc/pablo/admin-token)" > /etc/pablo/pablo.env
+chmod 600 /etc/pablo/pablo.env
+
 # ----------------------------------------------------------------- Servicio
 verde "Configurando el servicio para que arranque solo"
 cat > /etc/systemd/system/pablo.service <<EOF
@@ -127,6 +137,8 @@ WorkingDirectory=$DIR
 Environment=NODE_ENV=production
 Environment=PORT=$PUERTO
 Environment=TRUST_PROXY=1
+# Contraseña del panel de control (ADMIN_TOKEN)
+EnvironmentFile=/etc/pablo/pablo.env
 # Solo accesible a través del proxy (Caddy o Tailscale), nunca directamente desde fuera.
 Environment=HOST=127.0.0.1
 $( [ -n "$CORS_ORIGIN" ] && echo "Environment=CORS_ORIGIN=$CORS_ORIGIN" || true )
@@ -213,6 +225,7 @@ echo "  Abre:        $URL"
 echo "  Estado:      sudo systemctl status pablo"
 echo "  Registro:    sudo journalctl -u pablo -f"
 echo "  Actualizar:  sudo bash $DIR/scripts/actualizar-servidor.sh"
+echo "  Panel:       $URL/#/admin   (contraseña: sudo cat /etc/pablo/admin-token)"
 if [ "$MODO" = caddy ]; then
   echo
   echo "  Si tu proveedor (Hetzner, OVH, AWS, Oracle...) tiene un firewall en su panel web,"

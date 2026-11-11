@@ -1,0 +1,126 @@
+# Compila las apps de Android e iPhone en GitHub (no hace falta Android Studio ni un Mac).
+# - Android: genera un APK instalable (y un AAB firmado para Google Play si están los secretos de la clave).
+# - iPhone: comprueba que compila. Para publicar en el App Store hace falta firmar (ver docs/APPS_MOVILES.md).
+# Los ficheros resultantes se descargan en GitHub → Actions → la ejecución → «Artifacts».
+name: Apps móviles
+
+on:
+  push:
+    branches: [main, juego-pablo]
+  workflow_dispatch:
+
+concurrency:
+  group: apps-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # IDs de la app en AdMob para los proyectos nativos (vacíos = IDs de prueba de Google).
+  ADMOB_APP_ID_ANDROID: ${{ vars.ADMOB_APP_ID_ANDROID }}
+  ADMOB_APP_ID_IOS: ${{ vars.ADMOB_APP_ID_IOS }}
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Variables de la app desde GitHub (las que no estén se toman de .env.app)
+        env:
+          # GitHub → Settings → Secrets and variables → Actions → Variables (no son secretos: acaban en la app).
+          VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
+          VITE_ADMOB_APP_OPEN_ANDROID: ${{ vars.VITE_ADMOB_APP_OPEN_ANDROID }}
+          VITE_ADMOB_APP_OPEN_IOS: ${{ vars.VITE_ADMOB_APP_OPEN_IOS }}
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+        run: |
+          : > .env.app.local
+          for v in VITE_SERVER_URL VITE_ADMOB_APP_OPEN_ANDROID VITE_ADMOB_APP_OPEN_IOS VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID; do
+            val="${!v}"
+            if [ -n "$val" ]; then echo "$v=$val" >> .env.app.local; echo "$v definida en GitHub"; fi
+          done
+      - run: npm ci
+      - name: Fichero de Firebase para Android (opcional)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        if: env.GOOGLE_SERVICES_JSON != ''
+        run: echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+      - name: Compilar la web de la app y sincronizar
+        run: npm run build:app
+      - name: APK de prueba (instalable)
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: el-pablo-android-prueba
+          path: android/app/build/outputs/apk/debug/*.apk
+      - name: AAB firmado para Google Play (solo si están los secretos de la clave)
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        working-directory: android
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/upload.jks"
+          ./gradlew bundleRelease --no-daemon -PversionCode=${{ github.run_number }}
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('android/app/build/outputs/bundle/release/*.aab') != ''
+        with:
+          name: el-pablo-android-google-play
+          path: android/app/build/outputs/bundle/release/*.aab
+
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Variables de la app desde GitHub (las que no estén se toman de .env.app)
+        env:
+          # GitHub → Settings → Secrets and variables → Actions → Variables (no son secretos: acaban en la app).
+          VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
+          VITE_ADMOB_APP_OPEN_ANDROID: ${{ vars.VITE_ADMOB_APP_OPEN_ANDROID }}
+          VITE_ADMOB_APP_OPEN_IOS: ${{ vars.VITE_ADMOB_APP_OPEN_IOS }}
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+        run: |
+          : > .env.app.local
+          for v in VITE_SERVER_URL VITE_ADMOB_APP_OPEN_ANDROID VITE_ADMOB_APP_OPEN_IOS VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID; do
+            val="${!v}"
+            if [ -n "$val" ]; then echo "$v=$val" >> .env.app.local; echo "$v definida en GitHub"; fi
+          done
+      - run: npm ci
+      - name: Fichero de Firebase para iPhone (opcional)
+        env:
+          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+        if: env.GOOGLE_SERVICE_INFO_PLIST != ''
+        run: echo "$GOOGLE_SERVICE_INFO_PLIST" > ios/App/App/GoogleService-Info.plist
+      - name: Compilar la web de la app y sincronizar
+        run: npm run build:app
+      - name: Dependencias de iPhone (CocoaPods)
+        working-directory: ios/App
+        run: pod install --repo-update
+      - name: Comprobar que la app de iPhone compila (simulador, sin firmar)
+        working-directory: ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -n 40
+          test ${PIPESTATUS[0]} -eq 0
