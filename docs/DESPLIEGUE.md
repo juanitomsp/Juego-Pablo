@@ -47,6 +47,26 @@ En el plan gratuito, el servicio se duerme tras 15 minutos sin visitas: el prime
 
 ## B. Todo en tu servidor (VPS con Linux)
 
+### Instalación automática (recomendada)
+
+El script `scripts/instalar-servidor.sh` hace todos los pasos de abajo de una vez: Node, el juego, el servicio, https con Caddy y el firewall. Se puede volver a ejecutar sin problema.
+
+1. Crea un registro **A** en tu dominio apuntando a la IP del servidor.
+2. 💻 Entra en el servidor:
+   ```bash
+   ssh tu_usuario@IP_DEL_SERVIDOR
+   ```
+3. 🖥️ Pega esto, cambiando solo el dominio:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/juanitomsp/Juego-Pablo/juego-pablo/scripts/instalar-servidor.sh -o instalar.sh && sudo DOMINIO=pablo.tudominio.es bash instalar.sh
+   ```
+
+Para actualizar después: `sudo bash /home/pablo/app/scripts/actualizar-servidor.sh`.
+
+Si ya tienes **nginx o apache** usando los puertos 80/443, el script se detiene sin tocar nada. En ese caso, configura en ellos un proxy hacia `127.0.0.1:3001` (con soporte de WebSocket) y sigue los pasos manuales sin Caddy.
+
+### Instalación manual, paso a paso
+
 Se usan **dos terminales distintas**:
 
 - 💻 **Tu ordenador** (PowerShell, o la terminal de VS Code, en la carpeta del proyecto): solo para subir el código a GitHub.

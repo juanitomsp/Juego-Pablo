@@ -1,0 +1,2 @@
+# Los scripts de shell siempre con saltos de línea de Linux (si no, fallan en el servidor).
+*.sh text eol=lf
