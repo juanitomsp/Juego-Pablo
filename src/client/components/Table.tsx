@@ -160,6 +160,9 @@ interface InnerProps {
   onReplaceWithBot?: (seat: number) => void;
 }
 
+/** Tiempo que se ve la baza ya cerrada antes de limpiar la mesa. */
+const LAST_TRICK_MS = 1600;
+
 /** En pantallas táctiles, la primera pulsación selecciona la carta y la segunda la juega (evita toques accidentales). */
 const isTouch = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
@@ -209,8 +212,17 @@ function TableInner(p: InnerProps) {
       })
     : [];
 
-  const showTrick = h ? (h.trick.length > 0 ? h.trick : h.lastTrick?.plays ?? []) : [];
-  const trickDone = !!h && h.trick.length === 0 && !!h.lastTrick;
+  // Al cerrarse una baza se ve un momento quién se la lleva y después la mesa queda limpia,
+  // sin esperar a que se eche la primera carta de la siguiente.
+  const trickKey = `${view.handNumber}-${h?.tricks.length ?? 0}`;
+  const [clearedKey, setClearedKey] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setClearedKey(trickKey), LAST_TRICK_MS);
+    return () => clearTimeout(t);
+  }, [trickKey]);
+  const lastTrickVisible = !!h && h.trick.length === 0 && !!h.lastTrick && clearedKey !== trickKey;
+  const showTrick = h ? (h.trick.length > 0 ? h.trick : lastTrickVisible ? h.lastTrick!.plays : []) : [];
+  const trickDone = lastTrickVisible;
   const trickWinner = showTrick.length && h ? showTrick[trickWinnerIndex(showTrick, h.trump)].seat : null;
 
   const recentQuick = (s: number) => p.snapQuicks.filter((m) => m.from === s && now - m.at < 5000).slice(-1)[0];
