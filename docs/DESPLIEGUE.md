@@ -47,18 +47,65 @@ En el plan gratuito, el servicio se duerme tras 15 minutos sin visitas: el prime
 
 ## B. Todo en tu servidor (VPS con Linux)
 
-Necesitas un dominio (o subdominio) apuntando a la IP del servidor, por ejemplo `pablo.tudominio.es`.
+Se usan **dos terminales distintas**:
+
+- 💻 **Tu ordenador** (PowerShell, o la terminal de VS Code, en la carpeta del proyecto): solo para subir el código a GitHub.
+- 🖥️ **El servidor**: entras desde tu ordenador con `ssh` y, a partir de ahí, todo lo que escribes se ejecuta **en el servidor**.
+
+### Paso 0 · Antes de empezar
+
+- **Dominio:** en el panel de tu dominio, crea un registro **A** con el subdominio (p. ej. `pablo`) apuntando a la IP del servidor. Puede tardar unos minutos en funcionar.
+- 💻 **Sube el código a GitHub.** El juego está en la rama `juego-pablo`: o la fusionas con `main` o la clonas indicando `-b juego-pablo`.
+  ```bash
+  git push -u origin juego-pablo
+  ```
+  Si el repositorio es **privado**, el servidor necesitará permiso para descargarlo (una *deploy key* de GitHub o un token). Con uno público no hace falta.
+
+### Paso 1 · Entrar en el servidor
+
+💻 En tu ordenador:
 
 ```bash
-# 1. Node 22 y el código
+ssh tu_usuario@IP_DEL_SERVIDOR
+```
+
+El prompt cambiará a algo como `tu_usuario@servidor:~$`. Desde aquí, **todo es en el servidor** 🖥️.
+
+### Paso 2 · Instalar Node 22 y el juego
+
+🖥️ Servidor (un comando cada vez):
+
+```bash
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
+```
+
+```bash
+sudo apt-get install -y nodejs git
+```
+
+```bash
 sudo useradd --system --create-home pablo
-sudo -u pablo git clone https://github.com/TU_USUARIO/TU_REPO.git /home/pablo/app
+```
+
+```bash
+sudo -u pablo git clone -b juego-pablo https://github.com/TU_USUARIO/TU_REPO.git /home/pablo/app
+```
+
+```bash
 cd /home/pablo/app && sudo -u pablo npm ci && sudo -u pablo npm run build
 ```
 
-**2. Servicio que arranca solo** (`/etc/systemd/system/pablo.service`):
+El usuario `pablo` es un usuario sin privilegios, solo para ejecutar el juego: si alguien encontrara un fallo, no tendría acceso al resto del servidor.
+
+### Paso 3 · Que el juego arranque solo
+
+🖥️ Servidor. Crea el fichero del servicio con el editor `nano`:
+
+```bash
+sudo nano /etc/systemd/system/pablo.service
+```
+
+Pega esto dentro (clic derecho o `Ctrl+Shift+V` en la mayoría de terminales):
 
 ```ini
 [Unit]
@@ -78,11 +125,41 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
+Guarda con `Ctrl+O`, `Enter`, y sal con `Ctrl+X`. Luego:
+
+```bash
+sudo systemctl daemon-reload
+```
+
 ```bash
 sudo systemctl enable --now pablo
 ```
 
-**3. HTTPS con Caddy** (consigue y renueva el certificado solo). Fichero `/etc/caddy/Caddyfile`:
+Comprueba que está en marcha (sal con `q`):
+
+```bash
+sudo systemctl status pablo
+```
+
+Debe poner `active (running)`.
+
+### Paso 4 · HTTPS con Caddy
+
+🖥️ Servidor. Primero instala Caddy:
+
+```bash
+sudo apt-get install -y caddy
+```
+
+> En Ubuntu 24.04 y Debian 12 viene en los repositorios. En versiones anteriores, sigue las instrucciones de <https://caddyserver.com/docs/install#debian-ubuntu-raspbian>.
+
+Después, sustituye su configuración:
+
+```bash
+sudo nano /etc/caddy/Caddyfile
+```
+
+Borra lo que haya y deja solo esto, con **tu** dominio:
 
 ```
 pablo.tudominio.es {
@@ -90,17 +167,55 @@ pablo.tudominio.es {
 }
 ```
 
-```bash
-sudo apt install -y caddy && sudo systemctl reload caddy
-```
-
-**4. Firewall:** abre solo SSH, 80 y 443:
+Guarda (`Ctrl+O`, `Enter`, `Ctrl+X`) y recarga:
 
 ```bash
-sudo ufw allow OpenSSH && sudo ufw allow 80 && sudo ufw allow 443 && sudo ufw enable
+sudo systemctl reload caddy
 ```
 
-Para actualizar: `git pull && npm ci && npm run build && sudo systemctl restart pablo`.
+Caddy pide el certificado https automáticamente la primera vez que alguien entra.
+
+### Paso 5 · Firewall
+
+🖥️ Servidor. **Primero** se permite SSH, para no quedarte fuera:
+
+```bash
+sudo ufw allow OpenSSH
+```
+
+```bash
+sudo ufw allow 80
+```
+
+```bash
+sudo ufw allow 443
+```
+
+```bash
+sudo ufw enable
+```
+
+Si tu proveedor (Hetzner, OVH, AWS…) tiene además un firewall en su panel web, abre ahí también los puertos 80 y 443.
+
+### Paso 6 · Probar
+
+En el navegador del móvil o del ordenador: `https://pablo.tudominio.es`.
+
+Si no carga, mira el registro del juego en el servidor (sal con `Ctrl+C`):
+
+```bash
+sudo journalctl -u pablo -f
+```
+
+### Actualizar a una versión nueva
+
+1. 💻 En tu ordenador, sube los cambios: `git push`.
+2. 🖥️ En el servidor (tras entrar con `ssh`):
+   ```bash
+   cd /home/pablo/app && sudo -u pablo git pull && sudo -u pablo npm ci && sudo -u pablo npm run build && sudo systemctl restart pablo
+   ```
+
+Al reiniciar se cierran las salas abiertas: hazlo cuando nadie esté jugando.
 
 ## C. Vercel (cliente) + tu servidor (juego)
 
