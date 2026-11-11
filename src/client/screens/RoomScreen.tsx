@@ -175,9 +175,6 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
             <NumberField label="Puntos por cuerno" value={cfg.pointsPerCuerno} onChange={(v) => run(ctrl.setConfig({ pointsPerCuerno: v }))} />
             <NumberField label="Cuernos por Pablo" value={cfg.cuernosPerPablo} onChange={(v) => run(ctrl.setConfig({ cuernosPerPablo: v }))} />
             <NumberField label="Pablos para ganar" value={cfg.pablosToWin} onChange={(v) => run(ctrl.setConfig({ pablosToWin: v }))} />
-            <label className="toggle">
-              <input type="checkbox" checked={cfg.senas} onChange={(e) => run(ctrl.setConfig({ senas: e.target.checked }))} /> Señas entre compañeros
-            </label>
             <TeamNames names={cfg.teamNames} onChange={(n) => run(ctrl.setConfig({ teamNames: n }))} />
           </div>
           <div className="row">
@@ -194,7 +191,7 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
         <section className="panel">
           <p className="muted">
             Esperando a que el anfitrión empiece. Partida a {cfg.pointsPerCuerno} puntos por cuerno, {cfg.cuernosPerPablo} cuernos por Pablo,{' '}
-            {cfg.pablosToWin} Pablo(s) para ganar. Señas: {cfg.senas ? 'sí' : 'no'}.
+            {cfg.pablosToWin} Pablo(s) para ganar.
           </p>
         </section>
       )}

@@ -18,7 +18,7 @@ import {
 import { GameConfig, RuleError, Team, otherTeam, teamOf } from './types';
 
 export type HandPhase = 'quiero' | 'playing' | 'bet' | 'done';
-export type HandEndReason = 'bazas' | 'irse' | 'rechazo' | 'quiero' | 'renuncio';
+export type HandEndReason = 'bazas' | 'rechazo' | 'quiero' | 'renuncio';
 
 export interface CompletedTrick {
   index: number;
@@ -180,7 +180,6 @@ export function canBet(h: HandState, seat: number, cfg: GameConfig): boolean {
   return true;
 }
 
-export const canFold = (h: HandState, seat: number) => h.phase === 'playing' && h.turn === seat && !h.forced;
 
 export const canRespond = (h: HandState, seat: number) =>
   h.phase === 'bet' && !!h.pendingBet && h.seats.includes(seat) && teamOf(seat) !== h.pendingBet.team;
@@ -256,11 +255,6 @@ export function respond(h: HandState, seat: number, accept: boolean): void {
     // Al no aceptar, el que apostó se lleva el valor que tenía la mano antes de la apuesta.
     finish(h, { winner: h.pendingBet.team, points: h.stake, reason: 'rechazo', bySeat: seat });
   }
-}
-
-export function fold(h: HandState, seat: number): void {
-  if (!canFold(h, seat)) throw new RuleError('Ahora no puedes irte.');
-  finish(h, { winner: otherTeam(teamOf(seat)), points: h.stake, reason: 'irse', bySeat: seat });
 }
 
 export function decideQuiero(h: HandState, seat: number, play: boolean, cfg: GameConfig): void {

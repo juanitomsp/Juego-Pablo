@@ -7,14 +7,12 @@ import {
   Rng,
   Suit,
   cardId,
-  isPablo,
   isTrump,
-  isTuerto,
   sortValue,
   trickWinnerIndex,
   trumpPower,
 } from './cards';
-import { Action, SenaId, teamOf } from './types';
+import { Action, teamOf } from './types';
 import { PlayerView } from './view';
 
 /** Fuerza aproximada de una mano (0 = nada, ~1 = muy fuerte). */
@@ -31,15 +29,6 @@ export function handStrength(cards: Card[], trump: Suit): number {
 
 const lowest = (cards: Card[], trump: Suit) => cards.slice().sort((a, b) => sortValue(a, trump) - sortValue(b, trump))[0];
 const highest = (cards: Card[], trump: Suit) => cards.slice().sort((a, b) => sortValue(b, trump) - sortValue(a, trump))[0];
-
-/** Seña que haría el bot: Pablo, Tuerto, «no llevo vira», o ninguna si solo lleva otros triunfos. */
-export function botSena(cards: Card[], trump: Suit): SenaId | null {
-  const trumps = cards.filter((c) => isTrump(c, trump));
-  if (trumps.length === 0) return 'nada';
-  if (trumps.some(isPablo)) return 'pablo';
-  if (trumps.some(isTuerto)) return 'tuerto';
-  return null;
-}
 
 export function chooseBotAction(v: PlayerView, rng: Rng = Math.random): Action | null {
   const me = v.you;

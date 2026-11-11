@@ -106,25 +106,13 @@ Si no se han decidido los equipos, se reparten cartas boca arriba de una en una;
   - **No quiero:** la mano termina y el equipo que apostó se lleva **lo que valía hasta ese momento** (sin la subida que no se ha aceptado).
 
 > Ejemplo: la mano vale 1. Apuesto: si el rival acepta, vale 2; si no quiere, gano 1. Si aceptó y vuelvo a subir: si acepta, vale 3; si no quiere, gano 2.
-- Un equipo puede **irse** (abandonar) en su turno: el rival gana lo que vale la mano en ese momento.
+- **No se puede abandonar la mano:** se juega siempre hasta el final. Lo único que termina una mano antes de tiempo es no querer una apuesta (o el renuncio).
 
-> 📌 **Decisión:** cualquier jugador puede apostar o subir en su turno (no es obligatorio alternar equipos). Responde cualquier jugador del equipo rival; vale la primera respuesta. Aceptar una apuesta no impide irse después, pero entonces el rival cobra el valor ya aceptado.
+> 📌 **Decisión:** cualquier jugador puede apostar o subir en su turno (no es obligatorio alternar equipos). Responde cualquier jugador del equipo rival; vale la primera respuesta.
 
-## 7. Señas
+## 7. Hablar en la mesa
 
-Los compañeros pueden comunicarse con señas (sin hablar) sobre los triunfos que llevan:
-
-| Seña | Gesto tradicional |
-|---|---|
-| Pablo | Pasar la mano por la mesa, «como limpiándola» (o decir «paso») |
-| Tuerto | Guiñar un ojo o llevarse la mano al pecho |
-| No llevar triunfo | Dejar las cartas sobre la mesa |
-
-Online, el botón **🤫 Señas** las envía **solo a tu equipo**. Se pueden desactivar al crear la sala. Lo habitual es hacer las señas al postre, que suele dirigir el juego.
-
-### Chat de la mesa
-
-Para decidir en equipo si se acepta una apuesta (o para charlar), hay un **💬 Chat** que leen **todos los jugadores**. Para que no se pueda «cantar» lo que se lleva, el servidor **tacha las palabras que nombran cartas**: números, figuras, palos y nombres como Pablo, Tuerto, Andorra, Malilla, triunfo o vira.
+No se usan señas. Para decidir en equipo si se acepta una apuesta (o para charlar), hay un **💬 Chat** que leen **todos los jugadores**. Para que no se pueda «cantar» lo que se lleva, el servidor **tacha las palabras que nombran cartas**: números, figuras, palos y nombres como Pablo, Tuerto, Andorra, Malilla, triunfo o vira.
 
 > Ejemplo: «tengo el 3 de basto» se ve como «tengo el **** de *****».
 
@@ -138,7 +126,7 @@ Un equipo está **al quiero** cuando le basta ganar una mano para ganar el cuern
 - Si se van, el rival gana **1 punto**.
 - Si juegan, se puede apostar desde el primer momento.
 - A 6 jugadores, cuando hay un equipo al quiero se reparten todas las cartas de golpe (sin retención).
-- **Quiero forzoso:** si los dos equipos están al quiero, se juega la mano sin opción a irse ni a apostar; quien la gane se lleva el cuerno.
+- **Quiero forzoso:** si los dos equipos están al quiero, se juega la mano sin opción a apostar; quien la gane se lleva el cuerno.
 
 > 📌 **Decisión (online):** todos los jugadores del equipo al quiero ven los triunfos de sus compañeros durante esa mano, y decide el primero que pulse «Jugamos» o «Nos vamos».
 
@@ -164,7 +152,6 @@ También se usa la expresión **estar al canuto** cuando a un equipo le faltan d
 - **Cuerno (o partida):** se gana al llegar a 8 puntos.
 - **Dormido:** triunfo que se queda en el mazo y no juega.
 - **Ir ciego:** no llevar triunfos. **Ir cerrado:** llevar muchos.
-- **Irse:** abandonar la mano.
 - **Malilla:** el dos del triunfo.
 - **Mano:** el jugador que reparte; también, cada reparto completo de la partida.
 - **Muestra:** carta que marca el palo del triunfo.

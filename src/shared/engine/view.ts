@@ -43,7 +43,6 @@ export interface HandView {
   /** Tus cartas (ids) que serían renuncio si las echas ahora (arrastre y tienes triunfo). */
   renuncio: string[];
   canBet: boolean;
-  canFold: boolean;
   canRespond: boolean;
   canDecideQuiero: boolean;
   dormantCount: number;
@@ -115,7 +114,6 @@ function handView(m: MatchState, h: H.HandState, you: number | null): HandView {
     renuncio: you !== null && h.phase === 'playing' && h.turn === you ? renuncioCards(myCards, h.trick, h.trump).map(cardId) : [],
     winning: you !== null && h.phase === 'playing' && h.turn === you ? winningCards(myCards, h.trick, h.trump).map(cardId) : [],
     canBet: you !== null && H.canBet(h, you, cfg),
-    canFold: you !== null && H.canFold(h, you),
     canRespond: you !== null && H.canRespond(h, you),
     canDecideQuiero: you !== null && H.canDecideQuiero(h, you),
     dormantCount: h.dormant.length,

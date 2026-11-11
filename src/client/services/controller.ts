@@ -9,17 +9,15 @@ import {
   GameConfig,
   QUICK_MESSAGES,
   RuleError,
-  SenaId,
   getView,
 } from '../../shared/engine';
-import type { ClientToServer, QuickMessage, RoomState, SenaMessage, ServerToClient } from '../../shared/protocol';
+import type { ClientToServer, QuickMessage, RoomState, ServerToClient } from '../../shared/protocol';
 import { GameTable } from '../../shared/table';
 import { censorChat } from '../../shared/chat';
 import { getName, getPlayerId } from './identity';
 
 export interface ControllerSnapshot {
   state: RoomState | null;
-  senas: SenaMessage[];
   quicks: QuickMessage[];
   connected: boolean;
 }
@@ -29,7 +27,6 @@ export interface Controller {
   snapshot(): ControllerSnapshot;
   subscribe(cb: () => void): () => void;
   act(a: Action): Promise<string | null>;
-  sena(s: SenaId): void;
   quick(i: number): void;
   chat(text: string): void;
   rematch(): Promise<string | null>;
@@ -37,7 +34,7 @@ export interface Controller {
 }
 
 abstract class Base {
-  protected snap: ControllerSnapshot = { state: null, senas: [], quicks: [], connected: true };
+  protected snap: ControllerSnapshot = { state: null, quicks: [], connected: true };
   private subs = new Set<() => void>();
   snapshot() {
     return this.snap;
@@ -51,9 +48,6 @@ abstract class Base {
   protected update(patch: Partial<ControllerSnapshot>) {
     this.snap = { ...this.snap, ...patch };
     this.subs.forEach((s) => s());
-  }
-  protected pushSena(m: SenaMessage) {
-    this.update({ senas: [...this.snap.senas.slice(-19), m] });
   }
   protected pushQuick(m: QuickMessage) {
     this.update({ quicks: [...this.snap.quicks.slice(-19), m] });
@@ -91,7 +85,6 @@ export class OnlineController extends Base implements Controller {
     on('state', (s) => {
       if (s.room.code === this.code) this.update({ state: s });
     });
-    on('sena', (m) => this.pushSena(m));
     on('quick', (m) => this.pushQuick(m));
     const onConnect = () => {
       this.update({ connected: true });
@@ -125,9 +118,6 @@ export class OnlineController extends Base implements Controller {
 
   act(a: Action) {
     return this.emitAck('game:action', a);
-  }
-  sena(s: SenaId) {
-    this.socket.emit('game:sena', { sena: s });
   }
   quick(i: number) {
     this.socket.emit('game:quick', { index: i });
@@ -206,10 +196,6 @@ export class LocalController extends Base implements Controller {
     const bots = Array.from({ length: n - 1 }, (_, i) => i + 1);
     this.table = new GameTable(this.config, dealer, bots, {
       onChange: () => this.emitState(),
-      onSena: (from, sena) => {
-        // Solo te llegan las señas de tus compañeros (asientos pares).
-        if (from % 2 === 0) this.pushSena({ from, sena, at: Date.now() });
-      },
     });
     this.emitState();
   }
@@ -247,9 +233,6 @@ export class LocalController extends Base implements Controller {
     } catch (e) {
       return e instanceof RuleError ? e.message : 'Error inesperado.';
     }
-  }
-  sena() {
-    // Los bots no leen señas.
   }
   quick(i: number) {
     const text = QUICK_MESSAGES[i];

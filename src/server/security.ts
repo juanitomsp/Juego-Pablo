@@ -3,7 +3,7 @@
  * y comprobación de origen. Ver docs/SEGURIDAD.md.
  */
 import type { IncomingMessage } from 'node:http';
-import { Action, GameConfig, SENAS, SUITS, SenaId } from '../shared/engine';
+import { Action, GameConfig, SUITS } from '../shared/engine';
 
 // ---------------------------------------------------------------- Validación
 
@@ -18,7 +18,6 @@ export function parseAction(a: unknown): Action | null {
     case 'bet':
     case 'accept':
     case 'reject':
-    case 'fold':
       return { type: a.type };
     case 'quiero':
       return typeof a.play === 'boolean' ? { type: 'quiero', play: a.play } : null;
@@ -33,8 +32,6 @@ export function parseAction(a: unknown): Action | null {
   }
 }
 
-export const isSena = (s: unknown): s is SenaId => SENAS.some((x) => x.id === s);
-
 /** Asiento: entero pequeño o -1 (que las salas rechazan). */
 export const toSeat = (v: unknown): number => (Number.isInteger(v) && (v as number) >= 0 && (v as number) < 16 ? (v as number) : -1);
 
@@ -46,7 +43,6 @@ export function parseConfigPatch(p: unknown): Partial<GameConfig> {
   for (const k of ['pointsPerCuerno', 'cuernosPerPablo', 'pablosToWin'] as const) {
     if (typeof p[k] === 'number' && Number.isFinite(p[k])) out[k] = p[k] as number;
   }
-  if (typeof p.senas === 'boolean') out.senas = p.senas;
   if (Array.isArray(p.teamNames) && p.teamNames.length === 2 && p.teamNames.every((n) => typeof n === 'string')) {
     out.teamNames = [p.teamNames[0] as string, p.teamNames[1] as string];
   }

@@ -2,7 +2,7 @@
  * Salas de juego en memoria. Cada sala tiene asientos (humanos o bots) y, al empezar, una GameTable.
  * No se guarda ningún dato personal: solo el apodo que elige el jugador mientras dure la sala.
  */
-import { DEFAULT_CONFIG, GameConfig, QUICK_MESSAGES, RuleError, SenaId, drawTeamsByKings, getView, teamOf } from '../shared/engine';
+import { DEFAULT_CONFIG, GameConfig, QUICK_MESSAGES, RuleError, drawTeamsByKings, getView } from '../shared/engine';
 import type { RoomState, SeatInfo } from '../shared/protocol';
 import { GameTable } from '../shared/table';
 import { censorChat } from '../shared/chat';
@@ -26,7 +26,6 @@ export interface Member {
 export interface RoomHooks {
   /** Envía el estado a todos los miembros conectados. */
   broadcast: (room: Room) => void;
-  sendSena: (room: Room, toPlayerIds: string[], from: number, sena: SenaId) => void;
   sendQuick: (room: Room, from: number, text: string) => void;
 }
 
@@ -55,7 +54,6 @@ export function sanitizeConfig(base: GameConfig, patch: Partial<GameConfig>): Ga
   if (patch.pointsPerCuerno !== undefined) c.pointsPerCuerno = int(patch.pointsPerCuerno, 3, 60, 8);
   if (patch.cuernosPerPablo !== undefined) c.cuernosPerPablo = int(patch.cuernosPerPablo, 1, 5, 2);
   if (patch.pablosToWin !== undefined) c.pablosToWin = int(patch.pablosToWin, 1, 5, 1);
-  if (patch.senas !== undefined) c.senas = !!patch.senas;
   if (patch.teamNames) c.teamNames = [sanitizeName(patch.teamNames[0]), sanitizeName(patch.teamNames[1])];
   c.maxStake = c.pointsPerCuerno;
   return c;
@@ -216,7 +214,6 @@ export class Room {
         this.touch();
         this.hooks.broadcast(this);
       },
-      onSena: (from, sena) => this.relaySena(from, sena),
     }, secureRng);
   }
 
@@ -243,17 +240,6 @@ export class Room {
     const seat = this.seatOf(playerId);
     if (seat === null) throw new RuleError('Estás mirando la partida, no jugando.');
     this.table.act(seat, action);
-  }
-
-  sena(playerId: string, sena: SenaId) {
-    const seat = this.seatOf(playerId);
-    if (seat === null || !this.table || !this.config.senas) return;
-    this.relaySena(seat, sena);
-  }
-
-  private relaySena(from: number, sena: SenaId) {
-    const to = this.seats.flatMap((s, i) => (i !== from && teamOf(i) === teamOf(from) && s.playerId ? [s.playerId] : []));
-    this.hooks.sendSena(this, to, from, sena);
   }
 
   private lastChat = new Map<string, number>();

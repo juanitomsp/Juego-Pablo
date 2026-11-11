@@ -1,7 +1,7 @@
 /**
  * Contrato entre cliente y servidor (Socket.IO). Documentado en docs/PROTOCOLO.md.
  */
-import type { Action, GameConfig, SenaId } from './engine/types';
+import type { Action, GameConfig } from './engine/types';
 import type { PlayerView } from './engine/view';
 
 export interface SeatInfo {
@@ -30,12 +30,6 @@ export interface RoomState {
   view: PlayerView | null;
 }
 
-export interface SenaMessage {
-  from: number;
-  sena: SenaId;
-  at: number;
-}
-
 export interface QuickMessage {
   from: number;
   text: string;
@@ -56,7 +50,6 @@ export interface ClientToServer {
   'room:start': (ack: Ack) => void;
   'room:replaceWithBot': (p: { seat: number }, ack: Ack) => void;
   'game:action': (a: Action, ack: Ack) => void;
-  'game:sena': (p: { sena: SenaId }) => void;
   'game:quick': (p: { index: number }) => void;
   /** Mensaje libre para toda la mesa; el servidor tacha las referencias a cartas. */
   'game:chat': (p: { text: string }) => void;
@@ -65,7 +58,6 @@ export interface ClientToServer {
 
 export interface ServerToClient {
   state: (s: RoomState) => void;
-  sena: (m: SenaMessage) => void;
   quick: (m: QuickMessage) => void;
   kicked: (reason: string) => void;
 }

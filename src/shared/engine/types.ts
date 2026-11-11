@@ -22,8 +22,6 @@ export interface GameConfig {
   raiseStep: number;
   /** Tope de valor de una mano. */
   maxStake: number;
-  /** Permitir señas entre compañeros. */
-  senas: boolean;
   teamNames: [string, string];
 }
 
@@ -36,7 +34,6 @@ export const DEFAULT_CONFIG: GameConfig = {
   firstBetValue: 2,
   raiseStep: 1,
   maxStake: 8,
-  senas: true,
   teamNames: ['Nosotros', 'Ellos'],
 };
 
@@ -46,18 +43,9 @@ export type Action =
   | { type: 'bet' }
   | { type: 'accept' }
   | { type: 'reject' }
-  | { type: 'fold' }
   | { type: 'quiero'; play: boolean };
 
 export class RuleError extends Error {}
-
-/** Señas permitidas entre compañeros (docs/REGLAS.md §7). */
-export const SENAS = [
-  { id: 'pablo', label: 'Pablo', gesture: 'Limpia la mesa con la mano' },
-  { id: 'tuerto', label: 'Tuerto', gesture: 'Guiña un ojo' },
-  { id: 'nada', label: 'No llevo vira', gesture: 'Deja las cartas sobre la mesa' },
-] as const;
-export type SenaId = (typeof SENAS)[number]['id'];
 
 /** Mensajes rápidos predefinidos (sin chat libre: no hay contenido de usuarios que moderar). */
 export const QUICK_MESSAGES = [

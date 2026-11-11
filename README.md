@@ -2,7 +2,7 @@
 
 Versión digital del **Pablo (Paulo)**, juego de naipes tradicional de Andalucía oriental (Níjar, Mairena del Alcor).
 
-- **Online con amigos:** salas con código o enlace, 4 o 6 jugadores, huecos rellenables con bots, sorteo de equipos por reyes, señas privadas al compañero, reconexión.
+- **Online con amigos:** salas con código o enlace, 4 o 6 jugadores, huecos rellenables con bots, sorteo de equipos por reyes, chat de mesa con las cartas tachadas, reconexión.
 - **Práctica contra bots:** funciona en el navegador, sin servidor.
 - **Marcador en vivo:** para jugar con baraja física y llevar en el móvil puntos, cuernos, Pablos, valor de la mano y quién es mano.
 - **Reglas y orden de triunfos** dentro del juego.

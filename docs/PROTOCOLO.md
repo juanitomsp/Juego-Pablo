@@ -18,8 +18,7 @@ Todos los mensajes del cliente que esperan respuesta usan *ack*: `{ ok: true, ..
 | `room:drawTeams` | — | anfitrión | Sorteo de equipos por reyes |
 | `room:start` | — | anfitrión | Empieza la partida (todos los asientos ocupados) |
 | `room:replaceWithBot` | `{ seat }` | anfitrión | Sustituye a un jugador desconectado por un bot |
-| `game:action` | `Action` | jugador | `deal`, `play {card}`, `bet`, `accept`, `reject`, `fold`, `quiero {play}` |
-| `game:sena` | `{ sena }` | jugador | Seña a los compañeros |
+| `game:action` | `Action` | jugador | `deal`, `play {card}`, `bet`, `accept`, `reject`, `quiero {play}` |
 | `game:quick` | `{ index }` | jugador | Frase rápida predefinida |
 | `game:chat` | `{ text }` | jugador | Mensaje libre para toda la mesa (máx. 140 caracteres, 1 por segundo). El servidor tacha las palabras que nombran cartas (`src/shared/chat.ts`) y lo reenvía como `quick` |
 | `game:rematch` | — | jugador | Nueva partida con la misma mesa al terminar |
@@ -29,7 +28,6 @@ Todos los mensajes del cliente que esperan respuesta usan *ack*: `{ ok: true, ..
 | Evento | Datos | Cuándo |
 |---|---|---|
 | `state` | `{ room: RoomInfo, view: PlayerView \| null }` | Tras cualquier cambio. Cada jugador recibe **su** vista |
-| `sena` | `{ from, sena, at }` | Solo a los compañeros del que hace la seña |
 | `quick` | `{ from, text, at }` | A toda la sala (frases rápidas y chat ya censurado) |
 
 ## Seguridad

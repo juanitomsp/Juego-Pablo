@@ -57,6 +57,19 @@ export function DeckScreen() {
             ))}
         </section>
       ))}
+      {style === 'tradicional' && (
+        <p className="site-footer">
+          Ilustraciones: «Baraja española completa» (Naipes Libres), de Basquetteur en{' '}
+          <a href="https://commons.wikimedia.org/wiki/File:Baraja_espa%C3%B1ola_completa.png" target="_blank" rel="noreferrer">
+            Wikimedia Commons
+          </a>
+          , con licencia{' '}
+          <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.es" target="_blank" rel="noreferrer">
+            CC BY-SA 3.0
+          </a>
+          . Recortadas en cartas sueltas para el juego.
+        </p>
+      )}
     </main>
   );
 }

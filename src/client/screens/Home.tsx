@@ -98,7 +98,7 @@ export function Home() {
         </button>
         <button className="menu-tile" onClick={() => go('/reglas')}>
           <strong>📖 Reglas</strong>
-          <span>Cómo se juega, valores y señas.</span>
+          <span>Cómo se juega y valor de las cartas.</span>
         </button>
         <button className="menu-tile" onClick={() => go('/estadisticas')}>
           <strong>📊 Estadísticas</strong>
@@ -107,7 +107,11 @@ export function Home() {
       </section>
 
       <footer className="site-footer">
-        <a href="#/privacidad">Privacidad</a> · <a href="#/reglas">Reglas</a> · <a href="#/baraja">Ver la baraja</a> · Reglas basadas en el artículo «Paulo (juego de naipes)» de Wikipedia (CC BY-SA 4.0)
+        <a href="#/privacidad">Privacidad</a> · <a href="#/reglas">Reglas</a> · <a href="#/baraja">Ver la baraja</a> · Reglas basadas en el artículo «Paulo (juego de naipes)» de Wikipedia (CC BY-SA 4.0) · Cartas «Naipes Libres» de Basquetteur, Wikimedia Commons (
+        <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.es" target="_blank" rel="noreferrer">
+          CC BY-SA 3.0
+        </a>
+        )
       </footer>
     </main>
   );

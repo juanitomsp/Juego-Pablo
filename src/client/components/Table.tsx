@@ -4,7 +4,6 @@ import {
   MatchEvent,
   PlayerView,
   QUICK_MESSAGES,
-  SENAS,
   Team,
   cardId,
   cardName,
@@ -46,13 +45,11 @@ const sideClass = (x: number) => (x < 20 ? 'side-left' : x > 80 ? 'side-right' :
 
 const REASON: Record<string, string> = {
   bazas: 'por bazas',
-  irse: 'porque el rival se fue',
   rechazo: 'porque el rival no quiso la apuesta',
   quiero: 'porque el equipo al quiero se fue',
   renuncio: 'por renuncio (no echó triunfo en un arrastre)',
 };
 
-const senaLabel = (id: string) => SENAS.find((s) => s.id === id)?.label ?? id;
 
 export function describeEvent(e: MatchEvent, name: (s: number) => string, team: (t: Team) => string): string {
   switch (e.kind) {
@@ -66,8 +63,6 @@ export function describeEvent(e: MatchEvent, name: (s: number) => string, team: 
       return `${name(e.seat)} acepta. La mano vale ${e.value}.`;
     case 'reject':
       return `${name(e.seat)} no quiere.`;
-    case 'fold':
-      return `${name(e.seat)} se va.`;
     case 'quiero':
       return `${name(e.seat)} decide ${e.play ? 'jugar' : 'irse'} (al quiero).`;
     case 'handEnd':
@@ -93,7 +88,7 @@ export function Table({ controller, onLeave, onReplaceWithBot }: TableProps) {
   const view = snap.state?.view;
   const [error, setError] = useState<string | null>(null);
   const [hints, setHints] = useState(() => localStorage.getItem('pablo.hints') !== '0');
-  const [panel, setPanel] = useState<'none' | 'senas' | 'chat' | 'log' | 'orden'>('none');
+  const [panel, setPanel] = useState<'none' | 'chat' | 'log' | 'orden'>('none');
   const [now, setNow] = useState(Date.now());
   const recorded = useRef(false);
 
@@ -132,7 +127,6 @@ export function Table({ controller, onLeave, onReplaceWithBot }: TableProps) {
     <TableInner
       room={room}
       view={view}
-      snapSenas={snap.senas}
       snapQuicks={snap.quicks}
       connected={snap.connected}
       now={now}
@@ -152,13 +146,12 @@ export function Table({ controller, onLeave, onReplaceWithBot }: TableProps) {
 interface InnerProps {
   room: RoomInfo;
   view: PlayerView;
-  snapSenas: { from: number; sena: string; at: number }[];
   snapQuicks: { from: number; text: string; at: number }[];
   connected: boolean;
   now: number;
   hints: boolean;
   setHints: (b: boolean) => void;
-  panel: 'none' | 'senas' | 'chat' | 'log' | 'orden';
+  panel: 'none' | 'chat' | 'log' | 'orden';
   setPanel: (p: InnerProps['panel']) => void;
   error: string | null;
   act: (a: Parameters<Controller['act']>[0]) => void;
@@ -220,7 +213,6 @@ function TableInner(p: InnerProps) {
   const trickDone = !!h && h.trick.length === 0 && !!h.lastTrick;
   const trickWinner = showTrick.length && h ? showTrick[trickWinnerIndex(showTrick, h.trump)].seat : null;
 
-  const recentSena = (s: number) => p.snapSenas.filter((m) => m.from === s && now - m.at < 6000).slice(-1)[0];
   const recentQuick = (s: number) => p.snapQuicks.filter((m) => m.from === s && now - m.at < 5000).slice(-1)[0];
 
   let status = '';
@@ -325,7 +317,6 @@ function TableInner(p: InnerProps) {
         {room.seats.map((s) => {
           const [x, y] = pos(s.seat);
           const active = !h || h.seats.includes(s.seat);
-          const sena = recentSena(s.seat);
           const quick = recentQuick(s.seat);
           const isTurn = h && view.phase === 'hand' && h.turn === s.seat && h.phase === 'playing';
           return (
@@ -347,11 +338,6 @@ function TableInner(p: InnerProps) {
               {h?.muestraInHand && h.dealer === s.seat && rel(s.seat) !== 0 && (
                 <div className="muestra-in-hand">
                   <CardView card={h.muestra} small trump={h.trump} />
-                </div>
-              )}
-              {sena && (
-                <div className="bubble sena" title="Seña de tu compañero">
-                  🤫 {senaLabel(sena.sena)}
                 </div>
               )}
               {quick && <div className="bubble">{quick.text}</div>}
@@ -447,11 +433,6 @@ function TableInner(p: InnerProps) {
           </>
         )}
         {h?.canBet && <button onClick={() => act({ type: 'bet' })}>Apostar ({h.nextBet})</button>}
-        {h?.canFold && (
-          <button className="danger" onClick={() => confirm('¿Seguro que tu equipo se va de esta mano?') && act({ type: 'fold' })}>
-            Irse
-          </button>
-        )}
       </div>
 
       <div className="my-hand">
@@ -476,11 +457,6 @@ function TableInner(p: InnerProps) {
       </div>
 
       <footer className="toolbar">
-        {room.config.senas && myTeam !== null && (
-          <button className={p.panel === 'senas' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'senas' ? 'none' : 'senas')}>
-            🤫<span className="tb-label"> Señas</span>
-          </button>
-        )}
         <button className={p.panel === 'chat' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'chat' ? 'none' : 'chat')}>
           💬<span className="tb-label"> Chat</span>
         </button>
@@ -503,30 +479,6 @@ function TableInner(p: InnerProps) {
           <button className="close" aria-label="Cerrar" onClick={() => p.setPanel('none')}>
             ✕
           </button>
-          {p.panel === 'senas' && (
-            <>
-              <h4>Señas a tu compañero</h4>
-              <p className="muted">Solo las ve tu equipo. Se refieren a los triunfos que llevas.</p>
-              <div className="grid-buttons">
-                {SENAS.map((s) => (
-                  <button key={s.id} title={s.gesture} onClick={() => p.controller.sena(s.id)}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-              <h5>Recibidas</h5>
-              <ul className="log">
-                {p.snapSenas
-                  .slice(-6)
-                  .reverse()
-                  .map((m) => (
-                    <li key={m.at + m.from}>
-                      {name(m.from)}: <strong>{senaLabel(m.sena)}</strong>
-                    </li>
-                  ))}
-              </ul>
-            </>
-          )}
           {p.panel === 'chat' && (
             <ChatPanel messages={p.snapQuicks} name={name} onSend={(t) => p.controller.chat(t)} onQuick={(i) => p.controller.quick(i)} />
           )}

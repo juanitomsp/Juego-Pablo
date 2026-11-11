@@ -36,7 +36,6 @@ export type MatchEvent =
   | { id: number; kind: 'bet'; seat: number; value: number }
   | { id: number; kind: 'accept'; seat: number; value: number }
   | { id: number; kind: 'reject'; seat: number }
-  | { id: number; kind: 'fold'; seat: number }
   | { id: number; kind: 'quiero'; seat: number; play: boolean }
   | { id: number; kind: 'handEnd'; result: H.HandResult }
   | { id: number; kind: 'cuerno'; team: Team }
@@ -210,10 +209,6 @@ export function applyAction(state: MatchState, seat: number, action: Action, rng
     case 'reject':
       H.respond(h, seat, false);
       emit(m, { kind: 'reject', seat });
-      break;
-    case 'fold':
-      H.fold(h, seat);
-      emit(m, { kind: 'fold', seat });
       break;
     case 'quiero':
       H.decideQuiero(h, seat, action.play, cfg);

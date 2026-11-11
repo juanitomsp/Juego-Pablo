@@ -7,10 +7,8 @@ import {
   GameConfig,
   MatchState,
   Rng,
-  SenaId,
   advance,
   applyAction,
-  botSena,
   chooseBotAction,
   createMatch,
   getView,
@@ -19,7 +17,6 @@ import {
 
 export interface TableCallbacks {
   onChange: () => void;
-  onSena?: (from: number, sena: SenaId) => void;
 }
 
 export interface TableDelays {
@@ -34,7 +31,6 @@ export class GameTable {
   match: MatchState;
   private bots = new Set<number>();
   private timer: ReturnType<typeof setTimeout> | null = null;
-  private senaSent = new Set<string>();
   private disposed = false;
 
   constructor(
@@ -79,24 +75,8 @@ export class GameTable {
   }
 
   private changed() {
-    this.botSenas();
     this.cb.onChange();
     this.schedule();
-  }
-
-  /** Los bots hacen una seña a su equipo con su mejor triunfo al recibir las cartas. */
-  private botSenas() {
-    const h = this.match.hand;
-    if (!h || !this.match.config.senas || !this.cb.onSena || h.phase === 'done') return;
-    for (const s of h.seats) {
-      const key = `${this.match.handNumber}:${s}`;
-      if (!this.bots.has(s) || !h.received[s] || this.senaSent.has(key)) continue;
-      const partners = h.seats.filter((p) => p !== s && teamOf(p) === teamOf(s));
-      if (partners.length === 0) continue;
-      this.senaSent.add(key);
-      const sena = botSena(h.hands[s], h.trump);
-      if (sena) this.cb.onSena(s, sena);
-    }
   }
 
   private schedule() {

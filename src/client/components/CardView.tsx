@@ -12,6 +12,8 @@ import { useDeckStyle } from '../services/deckStyle';
 import { FaccionesBack, FaccionesFace } from './decks/Facciones';
 
 const IMAGE_BASE = (import.meta.env.VITE_CARD_IMAGES as string | undefined)?.replace(/\/$/, '');
+/** Baraja tradicional «Naipes Libres» (CC BY-SA 3.0), recortada en public/cartas/tradicional. */
+const TRADITIONAL_BASE = '/cartas/tradicional';
 
 export const SUIT_COLOR: Record<Suit, string> = {
   oros: '#c58f00',
@@ -230,7 +232,13 @@ export function CardView({ card, faceDown, trump, hints, playable, dimmed, small
   if (faceDown || !card) {
     return (
       <div className={cls} aria-label="Carta boca abajo">
-        {IMAGE_BASE ? <img src={`${IMAGE_BASE}/reverso.png`} alt="" draggable={false} /> : deck === 'facciones' && <FaccionesBack />}
+        {IMAGE_BASE ? (
+          <img src={`${IMAGE_BASE}/reverso.png`} alt="" draggable={false} />
+        ) : deck === 'tradicional' ? (
+          <img src={`${TRADITIONAL_BASE}/reverso.webp`} alt="" draggable={false} />
+        ) : (
+          deck === 'facciones' && <FaccionesBack />
+        )}
       </div>
     );
   }
@@ -244,6 +252,13 @@ export function CardView({ card, faceDown, trump, hints, playable, dimmed, small
     <Tag className={cls} style={{ ['--suit' as string]: col }} onClick={onClick} aria-label={label} title={label} type={onClick ? 'button' : undefined}>
       {IMAGE_BASE ? (
         <img src={`${IMAGE_BASE}/${card.rank}-${card.suit}.png`} alt={label} draggable={false} />
+      ) : deck === 'tradicional' ? (
+        <>
+          <img src={`${TRADITIONAL_BASE}/${card.rank}-${card.suit}.webp`} alt="" draggable={false} loading="lazy" />
+          {/* Número grande y legible encima del pequeño que trae la ilustración */}
+          <span className="big-idx tl">{card.rank}</span>
+          <span className="big-idx br">{card.rank}</span>
+        </>
       ) : deck === 'facciones' ? (
         <FaccionesFace card={card} />
       ) : (

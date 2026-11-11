@@ -1,8 +1,24 @@
 # Las cartas
 
-El juego trae **dos barajas**, ambas dibujadas en SVG propio y libres de derechos de terceros. Se elige en **Ver la baraja** (`#/baraja`); la elección se guarda en el navegador de cada jugador, así que cada uno puede ver la que prefiera.
+El juego trae **tres barajas**. Se elige en **Ver la baraja** (`#/baraja`). La elección se guarda en el navegador de cada jugador, así que cada uno puede ver la que prefiera.
 
-## Baraja «Cuatro Facciones» (por defecto)
+## Baraja «Tradicional» (por defecto)
+
+Ilustraciones clásicas de la baraja española, tomadas de la baraja libre **«Naipes Libres»**:
+
+- **Obra:** [Baraja española completa.png](https://commons.wikimedia.org/wiki/File:Baraja_espa%C3%B1ola_completa.png)
+- **Autor:** Basquetteur (Wikimedia Commons), con elementos de otros autores que cita la propia página.
+- **Licencia:** [Creative Commons Reconocimiento-CompartirIgual 3.0 (CC BY-SA 3.0)](https://creativecommons.org/licenses/by-sa/3.0/deed.es)
+- **Cambios:** la imagen original se ha dividido en una imagen por carta (sin los 8 y 9) y un dorso, en `public/cartas/tradicional/`. Esas imágenes recortadas se distribuyen con la misma licencia CC BY-SA 3.0 (ver `public/cartas/tradicional/LEEME.txt`).
+
+Qué exige la licencia y cómo se cumple:
+
+- **Reconocimiento:** el autor y la licencia aparecen en la página de la baraja, al pie de la portada y en este documento.
+- **Compartir igual:** las imágenes de las cartas (no el código del juego) se mantienen bajo CC BY-SA 3.0.
+
+Encima de cada carta, el juego pone el **número grande** en las esquinas, para que se lea bien en el móvil.
+
+## Baraja «Cuatro Facciones»
 
 Diseño original del proyecto, de fantasía medieval sombría (`src/client/components/decks/Facciones.tsx`). Cada palo es una facción humana:
 

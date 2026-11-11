@@ -27,7 +27,7 @@ Lista de comprobación para pasar de «funciona» a «publicado». No es asesora
 1. **Estadísticas escritas por el servidor** (`firebase-admin` + verificación de ID token) → permite rankings fiables.
 2. **Persistencia de salas** (Redis) para sobrevivir a reinicios y escalar a varias instancias (`@socket.io/redis-adapter`).
 3. **Temporizador de turno** opcional y expulsión por inactividad.
-4. Bots más listos (contar triunfos jugados, leer las señas del compañero).
+4. Bots más listos (contar triunfos jugados, leer el chat).
 5. Variante de **Lanjarón** (maíces gordos/chicos, Toro) como opción de sala.
 6. Moderación de apodos si el juego se hace público (lista de palabras o revisión).
 7. Tests de extremo a extremo del flujo online (Playwright).

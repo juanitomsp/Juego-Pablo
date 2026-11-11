@@ -14,7 +14,6 @@ import {
   KeyedLimiter,
   TokenBucket,
   clientIp,
-  isSena,
   originAllowed,
   parseAction,
   parseConfigPatch,
@@ -85,9 +84,6 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
 
   const manager = new RoomManager({
     broadcast: (room) => broadcast(room),
-    sendSena: (room, to, from, sena) => {
-      for (const pid of to) for (const sid of room.members.get(pid)?.socketIds ?? []) io.to(sid).emit('sena', { from, sena, at: Date.now() });
-    },
     sendQuick: (room, from, text) => io.to(room.code).emit('quick', { from, text, at: Date.now() }),
   });
 
@@ -205,15 +201,6 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
       const action = parseAction(p);
       if (!action) return ackOf(a)({ ok: false, error: 'Acción no válida.' });
       roomOp((r, id) => r.action(id, action))(a);
-    });
-    on('game:sena', (p) => {
-      const room = currentRoom();
-      const sena = (p as { sena?: unknown } | null)?.sena;
-      if (room && data.playerId && isSena(sena)) room.sena(data.playerId, sena);
-    });
-    on('game:chat', (p) => {
-      const room = currentRoom();
-      if (room && data.playerId) room.chat(data.playerId, (p as { text?: unknown } | null)?.text);
     });
     on('game:quick', (p) => {
       const room = currentRoom();
