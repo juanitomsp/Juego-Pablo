@@ -174,7 +174,7 @@ describe('apuestas', () => {
 describe('quiero', () => {
   it('con un equipo al quiero, ese equipo decide si juega; si se va, el rival gana 1', () => {
     let m = createMatch(cfg4, 0);
-    m.score = [23, 0];
+    m.score = [7, 0];
     m = applyAction(m, 0, { type: 'deal' }, seededRng(4));
     expect(m.hand!.phase).toBe('quiero');
     const v = getView(m, 0);
@@ -182,18 +182,18 @@ describe('quiero', () => {
     expect(v.hand!.partnerTrumps.map((p) => p.seat)).toEqual([2]);
     expect(getView(m, 1).hand!.partnerTrumps).toEqual([]);
     m = applyAction(m, 2, { type: 'quiero', play: false }, seededRng(4));
-    expect(m.score).toEqual([23, 1]);
+    expect(m.score).toEqual([7, 1]);
   });
   it('quiero forzoso: sin apuestas ni irse', () => {
     let m = createMatch(cfg4, 0);
-    m.score = [23, 23];
+    m.score = [7, 7];
     m = applyAction(m, 0, { type: 'deal' }, seededRng(4));
     expect(m.hand!.forced).toBe(true);
     expect(getView(m, 1).hand!.canFold).toBe(false);
   });
   it('ganar la mano al quiero da el cuerno y reinicia los puntos', () => {
     let m = createMatch(cfg4, 0);
-    m.score = [23, 5];
+    m.score = [7, 5];
     m = applyAction(m, 0, { type: 'deal' }, seededRng(4));
     m = applyAction(m, 0, { type: 'quiero', play: true }, seededRng(4));
     m = applyAction(m, 1, { type: 'fold' }, seededRng(4));
@@ -202,7 +202,7 @@ describe('quiero', () => {
   });
   it('dos cuernos hacen un Pablo', () => {
     let m = createMatch(cfg4, 0);
-    m.score = [23, 5];
+    m.score = [7, 5];
     m.cuernos = [1, 0];
     m = applyAction(m, 0, { type: 'deal' }, seededRng(4));
     m = applyAction(m, 0, { type: 'quiero', play: true }, seededRng(4));

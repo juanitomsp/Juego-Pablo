@@ -31,13 +31,13 @@ export interface GameConfig {
 
 export const DEFAULT_CONFIG: GameConfig = {
   players: 4,
-  pointsPerCuerno: 24,
+  pointsPerCuerno: 8,
   cuernosPerPablo: 2,
-  pablosToWin: 2,
+  pablosToWin: 1,
   handValue: 1,
   firstBetValue: 2,
   raiseStep: 1,
-  maxStake: 24,
+  maxStake: 8,
   carteta: true,
   senas: true,
   teamNames: ['Nosotros', 'Ellos'],

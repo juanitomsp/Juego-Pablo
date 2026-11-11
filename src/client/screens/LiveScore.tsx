@@ -34,9 +34,9 @@ const HAND = 1;
 
 const fresh = (prev?: Partial<LiveState>): LiveState => ({
   players: prev?.players ?? 4,
-  pointsPerCuerno: prev?.pointsPerCuerno ?? 24,
+  pointsPerCuerno: prev?.pointsPerCuerno ?? 8,
   cuernosPerPablo: prev?.cuernosPerPablo ?? 2,
-  pablosToWin: prev?.pablosToWin ?? 2,
+  pablosToWin: prev?.pablosToWin ?? 1,
   teamNames: prev?.teamNames ?? ['Nosotros', 'Ellos'],
   myTeam: prev?.myTeam ?? 0,
   dealer: 0,

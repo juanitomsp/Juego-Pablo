@@ -43,7 +43,7 @@ export function sanitizeConfig(base: GameConfig, patch: Partial<GameConfig>): Ga
   };
   const c = { ...base };
   if (patch.players !== undefined) c.players = patch.players === 6 ? 6 : 4;
-  if (patch.pointsPerCuerno !== undefined) c.pointsPerCuerno = int(patch.pointsPerCuerno, 6, 60, 24);
+  if (patch.pointsPerCuerno !== undefined) c.pointsPerCuerno = int(patch.pointsPerCuerno, 3, 60, 8);
   if (patch.cuernosPerPablo !== undefined) c.cuernosPerPablo = int(patch.cuernosPerPablo, 1, 5, 2);
   if (patch.pablosToWin !== undefined) c.pablosToWin = int(patch.pablosToWin, 1, 5, 2);
   if (patch.carteta !== undefined) c.carteta = !!patch.carteta;

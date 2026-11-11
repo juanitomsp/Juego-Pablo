@@ -54,11 +54,11 @@ Cartas que **no** son triunfo, de mayor a menor: **Rey, Caballo, Sota, As, 7, 6,
 
 - Cada **mano** se juega a 5 bazas: gana la mano el equipo que haga **3 bazas**.
 - Una mano sin apuestas vale **1 punto**.
-- El primer equipo en llegar a **24 puntos** gana un **cuerno**. Al ganarlo, los puntos de ambos equipos vuelven a 0.
+- El primer equipo en llegar a **8 puntos** gana un **cuerno** (también llamado *partida*). Al ganarlo, los puntos de ambos equipos vuelven a 0.
 - **2 cuernos** forman un **Pablo**.
-- Gana la partida el equipo que consiga **2 Pablos** antes que el rival.
+- **Gana el juego el equipo que consiga un Pablo**, es decir, **dos partidas de 8 puntos** antes que el rival.
 
-> 📌 **Decisión:** los puntos que sobrepasan los 24 se pierden. Todas estas cifras (24 puntos, 2 cuernos, 2 Pablos) son configurables al crear la sala, para partidas más cortas.
+> 📌 **Decisión:** los puntos que sobrepasan los 8 se pierden. Todas estas cifras (8 puntos, 2 cuernos, 1 Pablo) se pueden cambiar al crear la sala, para jugar partidas más largas o más cortas.
 
 ## 5. Desarrollo de una mano
 
@@ -96,7 +96,7 @@ Si no se han decidido los equipos, se reparten cartas boca arriba de una en una;
 
 - Se apuesta **en tu turno, antes de echar carta**.
 - La **primera apuesta** de una mano la puede hacer, como pronto, el **postre en la primera baza** (a 6 jugadores, el **segundo** en echar carta). Si algún equipo está al quiero, se puede apostar desde el principio.
-- Cada apuesta **sube 1 punto** el valor de la mano: si se acepta la primera, la mano pasa de 1 a **2**; la siguiente, a **3**; y así sucesivamente, hasta un máximo de 24.
+- Cada apuesta **sube 1 punto** el valor de la mano: si se acepta la primera, la mano pasa de 1 a **2**; la siguiente, a **3**; y así sucesivamente, hasta un máximo de 8 (lo que vale un cuerno).
 - Tras una apuesta, el equipo rival debe responder:
   - **Quiero:** la mano pasa a valer lo apostado y se sigue jugando.
   - **No quiero:** la mano termina y el equipo que apostó se lleva **lo que valía hasta ese momento** (sin la subida que no se ha aceptado).
@@ -128,7 +128,7 @@ Online, el botón **🤫 Señas** las envía **solo a tu equipo**. Se pueden des
 
 ### 8.1 Al quiero
 
-Un equipo está **al quiero** cuando le basta ganar una mano para ganar el cuerno (con las cifras por defecto, a partir de **23 puntos**).
+Un equipo está **al quiero** cuando le basta ganar una mano para ganar el cuerno (con las cifras por defecto, a partir de **7 puntos**).
 
 - Tras el reparto, los jugadores de ese equipo **se enseñan sus triunfos** entre ellos y deciden si **juegan** o **se van**.
 - Si se van, el rival gana **1 punto**.
@@ -144,7 +144,7 @@ También se usa la expresión **estar al canuto** cuando a un equipo le faltan d
 
 Una forma excepcional de jugar una mano por parejas de jugadores sueltos:
 
-- Solo si **ningún equipo ha pasado de la mitad del cuerno** (12 puntos) y **una vez por cuerno**.
+- Solo si **ningún equipo ha pasado de la mitad del cuerno** (4 puntos) y **una vez por cuerno**.
 - Si el mano quiere carteta, la reparte y el rival no puede negarse. Si la quiere el otro equipo, la **pide** y el mano decide si la reparte o no.
 - **A 4:** primero juegan el jugador a la derecha del mano contra el compañero del mano; después, el jugador a la izquierda del mano contra el propio mano.
 - **A 6:** primero los dos jugadores a la derecha del mano, después los dos siguientes y por último el jugador a la izquierda del mano contra el mano.
@@ -168,7 +168,7 @@ Una forma excepcional de jugar una mano por parejas de jugadores sueltos:
 - **Asistir:** echar carta del palo con el que se salió (o triunfo).
 - **Avarear / arrastrar / triunfar:** salir con un triunfo.
 - **Carteta:** mano especial jugada por parejas de jugadores sueltos.
-- **Cuerno:** se gana al llegar a 24 puntos.
+- **Cuerno (o partida):** se gana al llegar a 8 puntos.
 - **Dormido:** triunfo que se queda en el mazo y no juega.
 - **Ir ciego:** no llevar triunfos. **Ir cerrado:** llevar muchos.
 - **Irse:** abandonar la mano.
