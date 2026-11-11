@@ -224,6 +224,9 @@ function TableInner(p: InnerProps) {
   const showTrick = h ? (h.trick.length > 0 ? h.trick : lastTrickVisible ? h.lastTrick!.plays : []) : [];
   const trickDone = lastTrickVisible;
   const trickWinner = showTrick.length && h ? showTrick[trickWinnerIndex(showTrick, h.trump)].seat : null;
+  // ¿Va ganando la baza tu compañero? Entonces conviene no malgastar cartas buenas.
+  const partnerWinning =
+    !!h && h.turn === you && h.phase === 'playing' && h.trick.length > 0 && trickWinner !== null && trickWinner !== you && myTeam !== null && teamOf(trickWinner) === myTeam;
 
   const recentQuick = (s: number) => p.snapQuicks.filter((m) => m.from === s && now - m.at < 5000).slice(-1)[0];
 
@@ -245,6 +248,7 @@ function TableInner(p: InnerProps) {
     } else if (h.turn === you) {
       status = 'Te toca. Elige carta.';
       if (h.renuncio.length > 0) status = '¡Arrastre! Tienes que echar triunfo (el Pablo te lo puedes guardar).';
+      else if (partnerWinning) status = `${name(trickWinner!)} (tu compañero) va ganando la baza: echa una carta baja.`;
       else if (hints && h.winning.length > 0) status = 'Te toca. Tienes cartas que ganan esta baza (marcadas con ✓).';
     }
     else status = `Turno de ${name(h.turn)}.`;
@@ -371,7 +375,7 @@ function TableInner(p: InnerProps) {
             const ty = 50 + (y - 50) * 0.62;
             return (
               <div key={cardId(pl.card)} className="trick-card" style={{ left: `${tx}%`, top: `${ty}%` }}>
-                <CardView card={pl.card} small trump={h!.trump} hints={hints} highlight={trickDone && pl.seat === trickWinner} />
+                <CardView card={pl.card} small trump={h!.trump} hints={hints} highlight={(trickDone || partnerWinning) && pl.seat === trickWinner} />
               </div>
             );
           })}
@@ -459,7 +463,7 @@ function TableInner(p: InnerProps) {
               hints={hints}
               playable={playable}
               dimmed={isMyTurn && (!playable || (hints && h!.renuncio.includes(cardId(c))))}
-              wins={hints && isMyTurn && h!.winning.includes(cardId(c))}
+              wins={hints && isMyTurn && !partnerWinning && h!.winning.includes(cardId(c))}
               selected={selected === cardId(c)}
               highlight={!!h?.muestraInHand && h.dealer === you && c.suit === h.muestra.suit && c.rank === h.muestra.rank}
               onClick={playable ? () => onCard(c) : undefined}
