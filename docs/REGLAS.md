@@ -82,6 +82,9 @@ Si no se han decidido los equipos, se reparten cartas boca arriba de una en una;
 - Sale (echa la primera carta) el jugador a la **derecha del mano**. El último en echar es el **postre**; en la primera baza, el postre es el propio mano.
 - Gana la baza el **triunfo más alto**. Si nadie ha echado triunfo, gana la carta más alta del palo con el que se salió.
 - Quien gana la baza sale en la siguiente.
+- **La mano acaba en cuanto está decidida:** si un equipo ya lleva 2 bazas y echa en la siguiente una carta que nadie puede superar, gana la mano en ese momento, aunque falten jugadores por echar. Por ejemplo, yendo 2-2, el que saca el Pablo gana la mano directamente.
+
+> 📌 **Decisión:** para saber si una carta «ya no se puede superar» solo se tienen en cuenta las cartas que todos han visto (las jugadas y la muestra). Las del mazo cuentan como posibles, para que cerrar antes no desvele qué lleva nadie. Así, la Andorra solo cierra la mano si el Pablo ya ha salido.
 
 **Qué carta se puede echar:**
 

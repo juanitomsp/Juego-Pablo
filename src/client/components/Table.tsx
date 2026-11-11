@@ -402,6 +402,7 @@ function TableInner(p: InnerProps) {
                   {teamName(lastResult.result.winner)} gana {lastResult.result.points} puntos
                 </h3>
                 <p>{REASON[lastResult.result.reason]}</p>
+                {view.hand?.lastTrick?.early && <p className="muted">La última baza se cerró antes: nadie podía superar esa carta.</p>}
                 {lastResult.cuernoWonBy !== null && <p className="big">🐂 ¡Cuerno para {teamName(lastResult.cuernoWonBy)}!</p>}
                 {lastResult.pabloWonBy !== null && <p className="big">🏆 ¡Pablo para {teamName(lastResult.pabloWonBy)}!</p>}
               </>

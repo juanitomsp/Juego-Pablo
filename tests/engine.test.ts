@@ -14,6 +14,7 @@ import {
   drawTeamsByKings,
   getView,
   legalCards,
+  playCard,
   renuncioCards,
   winningCards,
   seededRng,
@@ -110,6 +111,59 @@ describe('echar cartas y arrastre', () => {
     m = applyAction(m, 2, { type: 'play', card: c(5, other) }, seededRng(1));
     expect(m.history[m.history.length - 1].result.reason).toBe('renuncio');
     expect(m.score).toEqual([0, 1]);
+  });
+});
+
+describe('cierre anticipado de la mano', () => {
+  /** Mano a 4 con la muestra de copas y las cartas que queramos, en la quinta baza (2-2). */
+  const setup = (wins: [number, number], hands: Card[][]) => {
+    const h = createHand(cfg4, { dealer: 0, seats: [1, 2, 3, 0], quieroTeams: [] }, seededRng(3));
+    h.muestra = c(5, 'oros');
+    h.trump = 'copas';
+    h.hands = hands;
+    h.wins = wins;
+    h.trickIndex = wins[0] + wins[1];
+    h.turn = 1;
+    return h;
+  };
+
+  it('yendo 2-2, si sale el Pablo la mano acaba aunque falten por echar', () => {
+    const h = setup([2, 2], [[c(1, 'oros')], [c(4, 'bastos')], [c(12, 'copas')], [c(3, 'copas')]]);
+    playCard(h, 1, c(4, 'bastos'));
+    expect(h.phase).toBe('done');
+    expect(h.result).toMatchObject({ winner: 1, reason: 'bazas' });
+    expect(h.tricks[h.tricks.length - 1]).toMatchObject({ early: true, winner: 1 });
+    expect(h.tricks[h.tricks.length - 1].plays).toHaveLength(1);
+  });
+
+  it('también si la carta no se puede superar porque las mayores ya han salido', () => {
+    const h = setup([1, 2], [[c(1, 'oros')], [c(3, 'copas')], [c(12, 'espadas')], [c(2, 'copas')]]);
+    // El Pablo ya salió en una baza anterior: la Andorra (3 de copas) es ahora imbatible.
+    h.tricks.push({ index: 0, leader: 1, winner: 1, plays: [{ seat: 1, card: c(4, 'bastos') }] });
+    playCard(h, 1, c(3, 'copas'));
+    expect(h.phase).toBe('done');
+    expect(h.result!.winner).toBe(1);
+  });
+
+  it('no se cierra si la baza no decide la mano', () => {
+    const h = setup([1, 1], [[c(1, 'oros')], [c(4, 'bastos'), c(7, 'oros')], [c(12, 'copas')], [c(3, 'copas')]]);
+    playCard(h, 1, c(4, 'bastos'));
+    expect(h.phase).toBe('playing');
+    expect(h.turn).toBe(2);
+  });
+
+  it('no se cierra si alguna carta que no se ha visto podría superarla', () => {
+    // El Rey de copas lo superan el Pablo, la Andorra, el Tuerto y la Malilla, que nadie ha visto.
+    const h = setup([2, 2], [[c(1, 'oros')], [c(12, 'copas')], [c(10, 'espadas')], [c(3, 'copas')]]);
+    playCard(h, 1, c(12, 'copas'));
+    expect(h.phase).toBe('playing');
+  });
+
+  it('las cartas del mazo cuentan como posibles: no se desvela quién tiene qué', () => {
+    // Nadie tiene el Pablo (está dormido en el mazo), pero como nadie lo sabe, la Andorra no cierra la mano.
+    const h = setup([2, 2], [[c(1, 'oros')], [c(3, 'copas')], [c(10, 'espadas')], [c(2, 'oros')]]);
+    playCard(h, 1, c(3, 'copas'));
+    expect(h.phase).toBe('playing');
   });
 });
 

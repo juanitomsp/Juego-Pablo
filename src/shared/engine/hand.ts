@@ -25,6 +25,8 @@ export interface CompletedTrick {
   leader: number;
   plays: PlayedCard[];
   winner: number;
+  /** La baza se cerró antes de que echaran todos: decidía la mano y la carta ganadora ya no se podía superar. */
+  early?: boolean;
 }
 
 export interface HandResult {
@@ -226,19 +228,46 @@ export function playCard(h: HandState, seat: number, card: Card): void {
     return;
   }
 
-  if (h.trick.length < h.seats.length) {
+  const early = h.trick.length < h.seats.length && decidedEarly(h);
+  if (h.trick.length < h.seats.length && !early) {
     h.turn = nextInHand(h, seat);
     return;
   }
 
   const winnerSeat = h.trick[trickWinnerIndex(h.trick, h.trump)].seat;
-  h.tricks.push({ index: h.trickIndex, leader: h.trick[0].seat, plays: h.trick, winner: winnerSeat });
+  h.tricks.push({ index: h.trickIndex, leader: h.trick[0].seat, plays: h.trick, winner: winnerSeat, ...(early ? { early: true } : {}) });
   h.trick = [];
   h.trickIndex++;
   const t = teamOf(winnerSeat);
   h.wins[t]++;
   h.turn = winnerSeat;
   if (h.wins[t] >= TRICKS_TO_WIN) finish(h, { winner: t, points: h.stake, reason: 'bazas' });
+}
+
+/**
+ * Cartas que ya ha visto todo el mundo en esta mano: las jugadas y, a 4 jugadores, la muestra
+ * (está en el centro y no es de nadie). Las del mazo no se cuentan: nadie sabe cuáles son.
+ */
+function publiclySeen(h: HandState): Card[] {
+  const seen = h.tricks.flatMap((t) => t.plays.map((p) => p.card)).concat(h.trick.map((p) => p.card));
+  if (h.muestraOwner === null) seen.push(h.muestra);
+  return seen;
+}
+
+/**
+ * ¿Se puede cerrar ya la baza (y con ella la mano)? Solo si:
+ *  - el equipo que va ganando la baza ya tiene 2 bazas, así que esta le da la mano, y
+ *  - con lo que todos han visto, ninguna carta que quede por salir puede superar a la que va ganando
+ *    (por ejemplo, el Pablo siempre; la Andorra si el Pablo ya salió).
+ * Se usa solo información pública, para que cerrar antes no desvele qué cartas tiene nadie.
+ */
+export function decidedEarly(h: HandState): boolean {
+  if (h.trick.length === 0) return false;
+  const winner = h.trick[trickWinnerIndex(h.trick, h.trump)];
+  if (h.wins[teamOf(winner.seat)] < TRICKS_TO_WIN - 1) return false;
+  const seen = publiclySeen(h);
+  const unseen = buildDeck(h.hands.length).filter((c) => !seen.some((s) => sameCard(s, c)));
+  return !unseen.some((c) => trickWinnerIndex([...h.trick, { seat: -1, card: c }], h.trump) === h.trick.length);
 }
 
 export function bet(h: HandState, seat: number, cfg: GameConfig): void {
