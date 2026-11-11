@@ -50,7 +50,9 @@ Envuelve un `MatchState` con:
 
 ## Servidor (`src/server`)
 
-- `index.ts`: Express + Socket.IO. Sirve el cliente compilado y `/api/health`.
+- `index.ts`: arranque (lee variables de entorno).
+- `app.ts`: `createGameServer()`: Express + Socket.IO, cabeceras de seguridad, límites de frecuencia, validación de mensajes. Sirve el cliente compilado y `/api/health`.
+- `security.ts`: validadores, limitadores y comprobación de origen (ver `SEGURIDAD.md`).
 - `rooms.ts`: `RoomManager` y `Room`. Salas **en memoria** con código de 5 caracteres. Se borran tras 15 min vacías o 3 h sin actividad.
 - Identificación: cada navegador genera un `playerId` aleatorio (localStorage). Con él se recupera el asiento al reconectar. Nunca se envía a otros jugadores.
 - Tras cada cambio, cada miembro recibe **su propia vista** (`state`). Las señas solo se envían a los compañeros.

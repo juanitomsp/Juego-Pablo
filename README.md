@@ -25,7 +25,7 @@ Abre <http://localhost:5173>. Arranca a la vez el servidor de juego (puerto 3001
 | Comando | Qué hace |
 |---|---|
 | `npm run dev` | Desarrollo con recarga automática |
-| `npm test` | Tests del motor de reglas (Vitest) |
+| `npm test` | Tests del motor de reglas y de seguridad del servidor (Vitest) |
 | `npm run typecheck` | Comprobación de tipos |
 | `npm run build` | Compila cliente (`dist/client`) y servidor (`dist/server`) |
 | `npm run jugar` | Compila y arranca; muestra la dirección para entrar desde los móviles de la misma WiFi |
@@ -44,6 +44,7 @@ Abre <http://localhost:5173>. Arranca a la vez el servidor de juego (puerto 3001
 | [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md) | Cómo publicarlo (Render, Railway, Fly.io, Docker, Vercel) |
 | [docs/PUBLICACION.md](docs/PUBLICACION.md) | Lista de comprobación legal y de producto antes de publicar |
 | [docs/CARTAS.md](docs/CARTAS.md) | Dibujos de las cartas y cómo usar imágenes propias |
+| [docs/SEGURIDAD.md](docs/SEGURIDAD.md) | Medidas de seguridad, pruebas y lista para el despliegue |
 | [docs/PRIVACIDAD.md](docs/PRIVACIDAD.md) | Plantilla de política de privacidad (también dentro del juego) |
 
 ## Estructura

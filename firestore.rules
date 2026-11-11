@@ -1,18 +1,37 @@
 rules_version = '2';
-// Reglas de seguridad de Firestore: cada usuario solo puede leer y escribir SUS partidas.
+// Reglas de seguridad de Firestore: cada usuario solo puede leer y escribir SUS partidas,
+// y solo con el formato exacto que escribe el juego.
 // Despliegue: firebase deploy --only firestore:rules  (ver docs/CUENTAS_Y_DATOS.md)
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid}/matches/{matchId} {
-      allow read, delete: if request.auth != null && request.auth.uid == uid;
-      allow create, update: if request.auth != null
-        && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['id', 'date', 'mode', 'players', 'won', 'pablos', 'hands',
-             'handsWon', 'tricksWon', 'betsMade', 'betsWon', 'cartetas'])
-        && request.resource.data.mode in ['online', 'practica', 'vivo']
-        && request.resource.data.players in [4, 6]
-        && request.resource.data.id == matchId;
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
     }
+
+    function smallInt(v) {
+      return v is int && v >= 0 && v <= 10000;
+    }
+
+    function validMatch(d, matchId) {
+      return d.keys().hasOnly(['id', 'date', 'mode', 'players', 'won', 'pablos', 'hands',
+               'handsWon', 'tricksWon', 'betsMade', 'betsWon', 'cartetas'])
+        && d.keys().hasAll(['id', 'date', 'mode', 'players', 'won', 'pablos'])
+        && d.id == matchId && d.id is string && d.id.size() <= 120
+        && d.date is string && d.date.size() <= 40
+        && d.mode in ['online', 'practica', 'vivo']
+        && d.players in [4, 6]
+        && (d.won == null || d.won is bool)
+        && d.pablos is list && d.pablos.size() == 2 && smallInt(d.pablos[0]) && smallInt(d.pablos[1])
+        && smallInt(d.get('hands', 0)) && smallInt(d.get('handsWon', 0)) && smallInt(d.get('tricksWon', 0))
+        && smallInt(d.get('betsMade', 0)) && smallInt(d.get('betsWon', 0)) && smallInt(d.get('cartetas', 0));
+    }
+
+    match /users/{uid}/matches/{matchId} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validMatch(request.resource.data, matchId);
+    }
+
     // Todo lo demás, cerrado.
     match /{document=**} {
       allow read, write: if false;

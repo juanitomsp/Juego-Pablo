@@ -34,5 +34,7 @@ Todos los mensajes del cliente que esperan respuesta usan *ack*: `{ ok: true, ..
 ## Seguridad
 
 - El servidor es la **autoridad**: valida cada acción con el motor. Un cliente modificado no puede jugar cartas ilegales ni ver cartas ajenas (no se le envían).
+- Todo lo que llega del cliente se valida y se reconstruye (`src/server/security.ts`) antes de usarlo; los campos desconocidos se descartan.
 - Apodos y nombres de equipo: máximo 20 caracteres, sin caracteres de control ni `<>`.
 - `playerId` debe ser un identificador alfanumérico de 8–64 caracteres. Funciona como «token» del asiento: no se comparte con otros clientes.
+- Códigos de sala: 6 caracteres. Límites de frecuencia por conexión y por IP. Detalles en [SEGURIDAD.md](SEGURIDAD.md).

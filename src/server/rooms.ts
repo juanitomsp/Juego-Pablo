@@ -5,6 +5,10 @@
 import { DEFAULT_CONFIG, GameConfig, QUICK_MESSAGES, RuleError, SenaId, drawTeamsByKings, getView, teamOf } from '../shared/engine';
 import type { RoomState, SeatInfo } from '../shared/protocol';
 import { GameTable } from '../shared/table';
+import { randomInt, webcrypto } from 'node:crypto';
+
+/** Azar criptográfico para barajar: el reparto no se puede predecir a partir de partidas anteriores. */
+export const secureRng = () => webcrypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
 
 export interface Seat {
   playerId: string | null;
@@ -26,6 +30,10 @@ export interface RoomHooks {
 }
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+/** Máximo de personas en una sala (jugadores + mirones). */
+export const MAX_MEMBERS = 12;
+/** Longitud del código de sala: 32^6 ≈ mil millones de combinaciones. */
+export const CODE_LENGTH = 6;
 const BOT_NAMES = ['Bot Paco', 'Bot Lola', 'Bot Manolo', 'Bot Carmen', 'Bot Antonio', 'Bot Rocío'];
 
 export const sanitizeName = (raw: unknown): string => {
@@ -45,7 +53,7 @@ export function sanitizeConfig(base: GameConfig, patch: Partial<GameConfig>): Ga
   if (patch.players !== undefined) c.players = patch.players === 6 ? 6 : 4;
   if (patch.pointsPerCuerno !== undefined) c.pointsPerCuerno = int(patch.pointsPerCuerno, 3, 60, 8);
   if (patch.cuernosPerPablo !== undefined) c.cuernosPerPablo = int(patch.cuernosPerPablo, 1, 5, 2);
-  if (patch.pablosToWin !== undefined) c.pablosToWin = int(patch.pablosToWin, 1, 5, 2);
+  if (patch.pablosToWin !== undefined) c.pablosToWin = int(patch.pablosToWin, 1, 5, 1);
   if (patch.carteta !== undefined) c.carteta = !!patch.carteta;
   if (patch.senas !== undefined) c.senas = !!patch.senas;
   if (patch.teamNames) c.teamNames = [sanitizeName(patch.teamNames[0]), sanitizeName(patch.teamNames[1])];
@@ -89,6 +97,12 @@ export class Room {
   }
 
   join(playerId: string, name: string, socketId: string) {
+    if (!this.members.has(playerId) && this.members.size >= MAX_MEMBERS) {
+      // Hace sitio quitando a alguien desconectado que no tenga asiento; si no hay, la sala está llena.
+      const gone = [...this.members.values()].find((x) => x.socketIds.size === 0 && this.seatOf(x.playerId) === null);
+      if (!gone) throw new RuleError('La sala está llena.');
+      this.members.delete(gone.playerId);
+    }
     const m = this.members.get(playerId) ?? { playerId, name, socketIds: new Set<string>() };
     m.name = name;
     m.socketIds.add(socketId);
@@ -176,7 +190,7 @@ export class Room {
     this.requireHost(playerId);
     this.requireLobby();
     if (this.seats.some((s) => !s.playerId && !s.bot)) throw new RuleError('Llena todos los asientos antes de sortear.');
-    const draw = drawTeamsByKings(this.seats.length);
+    const draw = drawTeamsByKings(this.seats.length, secureRng);
     const old = this.seats;
     const next = this.emptySeats(old.length);
     draw.seatFor.forEach((seat, player) => (next[seat] = old[player]));
@@ -190,7 +204,7 @@ export class Room {
     this.requireLobby();
     if (this.seats.some((s) => !s.playerId && !s.bot)) throw new RuleError('Faltan jugadores: añade bots o espera a que entren.');
     // Tras un sorteo por reyes, el mano es el asiento 0; si no, al azar.
-    const dealer = this.kingDraw ? 0 : Math.floor(Math.random() * this.seats.length);
+    const dealer = this.kingDraw ? 0 : randomInt(this.seats.length);
     this.startTable(dealer);
   }
 
@@ -203,7 +217,7 @@ export class Room {
         this.hooks.broadcast(this);
       },
       onSena: (from, sena) => this.relaySena(from, sena),
-    });
+    }, secureRng);
   }
 
   rematch(playerId: string) {
@@ -285,7 +299,7 @@ export class RoomManager {
   create(hostId: string, config: Partial<GameConfig>): Room {
     let code = '';
     do {
-      code = Array.from({ length: 5 }, () => CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]).join('');
+      code = Array.from({ length: CODE_LENGTH }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
     } while (this.rooms.has(code));
     const room = new Room(code, hostId, config, this.hooks);
     this.rooms.set(code, room);
