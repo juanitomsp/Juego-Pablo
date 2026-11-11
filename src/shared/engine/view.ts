@@ -30,7 +30,7 @@ export interface HandView {
   bets: H.BetRecord[];
   quieroTeams: Team[];
   forced: boolean;
-  /** Triunfos de tus compañeros: si tu equipo está al quiero, o mientras decidís si aceptáis una apuesta. */
+  /** Triunfos de tus compañeros (solo si tu equipo está al quiero). */
   partnerTrumps: { seat: number; cards: Card[] }[];
   phase: H.HandPhase;
   result: H.HandResult | null;
@@ -77,14 +77,7 @@ function handView(m: MatchState, h: H.HandState, you: number | null): HandView {
     h.hands[h.muestraOwner].some((c) => sameCard(c, h.muestra));
 
   const partnerTrumps: { seat: number; cards: Card[] }[] = [];
-  if (you !== null && h.pendingBet && h.phase === 'bet' && teamOf(you) !== h.pendingBet.team && h.seats.includes(you)) {
-    // Os han apostado: el equipo ve los triunfos que le quedan a cada compañero para decidir juntos.
-    for (const seat of h.seats) {
-      if (seat !== you && teamOf(seat) === teamOf(you) && h.received[seat]) {
-        partnerTrumps.push({ seat, cards: h.hands[seat].filter((c) => isTrumpCard(c, h.trump)) });
-      }
-    }
-  } else if (you !== null && h.quieroTeams.includes(teamOf(you))) {
+  if (you !== null && h.quieroTeams.includes(teamOf(you))) {
     for (const [s, cards] of Object.entries(h.quieroReveal)) {
       const seat = Number(s);
       if (seat !== you && teamOf(seat) === teamOf(you)) partnerTrumps.push({ seat, cards });

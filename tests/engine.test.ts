@@ -13,7 +13,6 @@ import {
   createMatch,
   drawTeamsByKings,
   getView,
-  isTrump,
   legalCards,
   renuncioCards,
   winningCards,
@@ -238,20 +237,11 @@ describe('apuestas', () => {
       expect(getView(m, turn).hand!.canBet).toBe(false);
     }
   });
-  it('al responder una apuesta, el equipo ve los triunfos del compañero; el que apuesta no', () => {
+  it('al responder una apuesta no se ven las cartas del compañero (solo al quiero)', () => {
     let m = firstHand(4);
     for (const s of [1, 2, 3]) m = playAny(m, s);
     m = applyAction(m, 0, { type: 'bet' }, seededRng(1));
-    const h = m.hand!;
-    const v1 = getView(m, 1).hand!;
-    expect(v1.partnerTrumps.map((p) => p.seat)).toEqual([3]);
-    expect(v1.partnerTrumps[0].cards.every((c) => isTrump(c, h.trump))).toBe(true);
-    expect(v1.partnerTrumps[0].cards).toHaveLength(h.hands[3].filter((c) => isTrump(c, h.trump)).length);
-    expect(getView(m, 0).hand!.partnerTrumps).toEqual([]);
-    expect(getView(m, 2).hand!.partnerTrumps).toEqual([]);
-    // Tras responder, se vuelven a ocultar.
-    m = applyAction(m, 3, { type: 'accept' }, seededRng(1));
-    expect(getView(m, 1).hand!.partnerTrumps).toEqual([]);
+    for (const seat of [0, 1, 2, 3]) expect(getView(m, seat).hand!.partnerTrumps).toEqual([]);
   });
   it('no existe la opción de irse: la mano se juega siempre', () => {
     const v = getView(firstHand(4), 1).hand!;

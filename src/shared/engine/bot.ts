@@ -51,9 +51,7 @@ export function chooseBotAction(v: PlayerView, rng: Rng = Math.random): Action |
   if (h.canRespond && h.pendingBet) {
     const myTeam = teamOf(me);
     const tricksAhead = h.wins[myTeam] - h.wins[1 - myTeam];
-    // Al responder ve también los triunfos de sus compañeros (cuenta la mitad: no los juega él).
-    const partners = h.partnerTrumps.flatMap((p) => p.cards);
-    const s = handStrength(mine, trump) + handStrength(partners, trump) * 0.5 + tricksAhead * 0.2;
+    const s = handStrength(mine, trump) + tricksAhead * 0.2;
     const need = 0.25 + (h.pendingBet.value - v.config.firstBetValue) * 0.08;
     // Si el rival está al quiero, cualquier mano le da el cuerno: aceptar no cuesta más.
     const rivalAlQuiero = h.quieroTeams.includes(h.pendingBet.team);
