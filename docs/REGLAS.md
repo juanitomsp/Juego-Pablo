@@ -48,6 +48,8 @@ Las viras bajas 7, 6 y 5 solo existen en la partida a 6. El cuatro del triunfo s
 
 Cartas que **no** son triunfo, de mayor a menor: **Rey, Caballo, Sota, As, 7, 6, 5, 4, 3, 2**. Ojo: fuera del triunfo, el 3 y el 2 son las cartas más bajas.
 
+> Ejemplo: con muestra de **bastos**, el 11 de oros es triunfo (el Tuerto): gana al 12 de oros y a todos los bastos salvo el 3 de bastos (Andorra) y el Pablo.
+
 > 📌 **Decisión:** el Pablo y el Tuerto pertenecen siempre al palo del triunfo (no al de bastos u oros). Si la propia muestra es el Pablo, el triunfo es bastos; si es el Tuerto, oros.
 
 ## 4. Objetivo y puntuación

@@ -53,6 +53,16 @@ describe('valores', () => {
     const plays = [{ seat: 0, card: c(2, 'oros') }, { seat: 1, card: c(3, 'oros') }, { seat: 2, card: c(12, 'espadas') }];
     expect(trickWinnerIndex(plays, 'copas')).toBe(1);
   });
+  it('el 11 de oros (Tuerto) es siempre triunfo: con muestra de bastos gana al 12 de oros y a casi todos los bastos', () => {
+    const t = 'bastos';
+    const lead = { seat: 0, card: c(11, 'oros') };
+    expect(trickWinnerIndex([lead, { seat: 1, card: c(12, 'oros') }], t)).toBe(0);
+    expect(trickWinnerIndex([lead, { seat: 1, card: c(12, 'bastos') }], t)).toBe(0);
+    expect(trickWinnerIndex([lead, { seat: 1, card: c(2, 'bastos') }], t)).toBe(0);
+    // Solo le ganan el 3 del triunfo (Andorra) y el Pablo.
+    expect(trickWinnerIndex([lead, { seat: 1, card: c(3, 'bastos') }], t)).toBe(1);
+    expect(trickWinnerIndex([lead, { seat: 1, card: c(4, 'bastos') }], t)).toBe(1);
+  });
   it('el Pablo cuenta como triunfo aunque la muestra no sea bastos', () => {
     const plays = [{ seat: 0, card: c(12, 'bastos') }, { seat: 1, card: c(4, 'bastos') }];
     expect(trickWinnerIndex(plays, 'oros')).toBe(1);
