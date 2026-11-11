@@ -1,0 +1,516 @@
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  Card,
+  MatchEvent,
+  PlayerView,
+  QUICK_MESSAGES,
+  SENAS,
+  Team,
+  cardId,
+  cardName,
+  sortValue,
+  teamOf,
+  trickWinnerIndex,
+  trumpRanking,
+} from '../../shared/engine';
+import type { RoomInfo } from '../../shared/protocol';
+import { Controller } from '../services/controller';
+import { recordMatch, summarize } from '../services/stats';
+import { CardView, SuitIcon } from './CardView';
+
+export function useSnapshot(c: Controller) {
+  return useSyncExternalStore(
+    (cb) => c.subscribe(cb),
+    () => c.snapshot(),
+  );
+}
+
+const POS4 = [
+  [50, 86],
+  [88, 50],
+  [50, 12],
+  [12, 50],
+];
+const POS6 = [
+  [50, 87],
+  [87, 68],
+  [87, 26],
+  [50, 10],
+  [13, 26],
+  [13, 68],
+];
+
+const REASON: Record<string, string> = {
+  bazas: 'por bazas',
+  irse: 'porque el rival se fue',
+  rechazo: 'porque el rival no quiso la apuesta',
+  quiero: 'porque el equipo al quiero se fue',
+};
+
+const senaLabel = (id: string) => SENAS.find((s) => s.id === id)?.label ?? id;
+
+export function describeEvent(e: MatchEvent, name: (s: number) => string, team: (t: Team) => string): string {
+  switch (e.kind) {
+    case 'deal':
+      return `${name(e.dealer)} reparte${e.carteta ? ' carteta' : ''}.`;
+    case 'cartetaRequest':
+      return `${team(e.team)} pide carteta.`;
+    case 'trick':
+      return `${name(e.winner)} gana la baza ${e.index + 1}.`;
+    case 'bet':
+      return `${name(e.seat)} apuesta: la mano valdría ${e.value}.`;
+    case 'accept':
+      return `${name(e.seat)} acepta. La mano vale ${e.value}.`;
+    case 'reject':
+      return `${name(e.seat)} no quiere.`;
+    case 'fold':
+      return `${name(e.seat)} se va.`;
+    case 'quiero':
+      return `${name(e.seat)} decide ${e.play ? 'jugar' : 'irse'} (al quiero).`;
+    case 'handEnd':
+      return `${team(e.result.winner)} gana ${e.result.points} puntos ${REASON[e.result.reason]}.`;
+    case 'cuerno':
+      return `¡${team(e.team)} gana un cuerno!`;
+    case 'pablo':
+      return `¡${team(e.team)} gana un Pablo!`;
+    case 'matchEnd':
+      return `¡${team(e.team)} gana la partida!`;
+  }
+}
+
+interface TableProps {
+  controller: Controller;
+  onLeave: () => void;
+  onReplaceWithBot?: (seat: number) => void;
+}
+
+export function Table({ controller, onLeave, onReplaceWithBot }: TableProps) {
+  const snap = useSnapshot(controller);
+  const room = snap.state?.room;
+  const view = snap.state?.view;
+  const [error, setError] = useState<string | null>(null);
+  const [hints, setHints] = useState(() => localStorage.getItem('pablo.hints') !== '0');
+  const [panel, setPanel] = useState<'none' | 'senas' | 'chat' | 'log' | 'orden'>('none');
+  const [now, setNow] = useState(Date.now());
+  const recorded = useRef(false);
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  useEffect(() => localStorage.setItem('pablo.hints', hints ? '1' : '0'), [hints]);
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => setError(null), 3500);
+    return () => clearTimeout(t);
+  }, [error]);
+
+  // Guardar estadísticas al terminar la partida.
+  useEffect(() => {
+    if (!view || !room) return;
+    if (view.phase !== 'finished') {
+      recorded.current = false;
+      return;
+    }
+    if (recorded.current) return;
+    recorded.current = true;
+    const s = summarize(view, controller.mode, `${controller.mode}-${room.code}-${Date.now()}`);
+    if (s) void recordMatch(s);
+  }, [view, room, controller.mode]);
+
+  if (!room || !view) return <div className="center-msg">Cargando partida…</div>;
+
+  const act = async (a: Parameters<Controller['act']>[0]) => {
+    const err = await controller.act(a);
+    if (err) setError(err);
+  };
+
+  return (
+    <TableInner
+      room={room}
+      view={view}
+      snapSenas={snap.senas}
+      snapQuicks={snap.quicks}
+      connected={snap.connected}
+      now={now}
+      hints={hints}
+      setHints={setHints}
+      panel={panel}
+      setPanel={setPanel}
+      error={error}
+      act={act}
+      controller={controller}
+      onLeave={onLeave}
+      onReplaceWithBot={onReplaceWithBot}
+    />
+  );
+}
+
+interface InnerProps {
+  room: RoomInfo;
+  view: PlayerView;
+  snapSenas: { from: number; sena: string; at: number }[];
+  snapQuicks: { from: number; text: string; at: number }[];
+  connected: boolean;
+  now: number;
+  hints: boolean;
+  setHints: (b: boolean) => void;
+  panel: 'none' | 'senas' | 'chat' | 'log' | 'orden';
+  setPanel: (p: InnerProps['panel']) => void;
+  error: string | null;
+  act: (a: Parameters<Controller['act']>[0]) => void;
+  controller: Controller;
+  onLeave: () => void;
+  onReplaceWithBot?: (seat: number) => void;
+}
+
+function TableInner(p: InnerProps) {
+  const { room, view, now, hints, act } = p;
+  const n = room.config.players;
+  const you = view.you;
+  const base = you ?? 0;
+  const h = view.hand;
+  const myTeam: Team | null = you === null ? null : teamOf(you);
+  const name = (s: number) => (s === you ? 'Tú' : room.seats[s]?.name ?? `Jugador ${s + 1}`);
+  const teamName = (t: Team) => room.config.teamNames[t];
+  const rel = (s: number) => (s - base + n) % n;
+  const pos = (s: number) => (n === 4 ? POS4 : POS6)[rel(s)];
+
+  const sortedHand = useMemo(
+    () => (h ? h.myCards.slice().sort((a, b) => (a.suit === b.suit ? 0 : a.suit < b.suit ? -1 : 1) || sortValue(b, h.trump) - sortValue(a, h.trump)) : []),
+    [h],
+  );
+  // Ordenar: triunfos primero.
+  const handCards = h
+    ? sortedHand.slice().sort((a, b) => {
+        const ta = sortValue(a, h.trump) >= 100 ? 1 : 0;
+        const tb = sortValue(b, h.trump) >= 100 ? 1 : 0;
+        return tb - ta;
+      })
+    : [];
+
+  const showTrick = h ? (h.trick.length > 0 ? h.trick : h.lastTrick?.plays ?? []) : [];
+  const trickDone = !!h && h.trick.length === 0 && !!h.lastTrick;
+  const trickWinner = showTrick.length && h ? showTrick[trickWinnerIndex(showTrick, h.trump)].seat : null;
+
+  const recentSena = (s: number) => p.snapSenas.filter((m) => m.from === s && now - m.at < 6000).slice(-1)[0];
+  const recentQuick = (s: number) => p.snapQuicks.filter((m) => m.from === s && now - m.at < 5000).slice(-1)[0];
+
+  let status = '';
+  if (view.phase === 'deal') {
+    status = view.canDeal ? 'Eres el mano: reparte.' : `Esperando a que ${name(view.dealer)} reparta.`;
+    if (view.cartetaRequest !== null) status += ` ${teamName(view.cartetaRequest)} ha pedido carteta.`;
+  } else if (h && view.phase === 'hand') {
+    if (h.phase === 'quiero') {
+      const t = h.quieroTeams[0];
+      status = h.canDecideQuiero
+        ? 'Tu equipo está al quiero: mirad los triunfos y decidid si jugáis o os vais.'
+        : `${teamName(t)} está al quiero y decide si juega.`;
+    } else if (h.phase === 'bet' && h.pendingBet) {
+      status = h.canRespond
+        ? `${name(h.pendingBet.seat)} apuesta: la mano pasaría a valer ${h.pendingBet.value}. ¿Lo quieres?`
+        : `${name(h.pendingBet.seat)} apuesta ${h.pendingBet.value}. Esperando respuesta del rival…`;
+    } else if (you !== null && h.seats.includes(you) && !h.received[you]) {
+      status = 'El mano aún no te ha dado las cartas (se reparten conforme juegan los rivales).';
+    } else if (h.turn === you) status = 'Te toca. Elige carta.';
+    else status = `Turno de ${name(h.turn)}.`;
+    if (you !== null && h.kind === 'carteta' && !h.seats.includes(you)) status = `Carteta entre ${name(h.seats[0])} y ${name(h.seats[1])}. Mira la partida.`;
+  }
+
+  const lastResult = view.phase === 'handEnd' || view.phase === 'finished' ? view.history[view.history.length - 1] : null;
+  const disconnected = room.seats.filter((s) => !s.connected && !s.bot && s.name);
+
+  return (
+    <div className="game">
+      <header className="scorebar">
+        {([0, 1] as Team[]).map((t) => (
+          <div key={t} className={`team-score team-${t} ${myTeam === t ? 'mine' : ''}`}>
+            <div className="team-name">{teamName(t)}</div>
+            <div className="pts">
+              <strong>{view.score[t]}</strong>
+              <small>/{room.config.pointsPerCuerno}</small>
+              {view.score[t] >= view.quieroThreshold && <span className="tag quiero">al quiero</span>}
+            </div>
+            <div className="sub">
+              Cuernos {view.cuernos[t]}/{room.config.cuernosPerPablo} · Pablos {view.pablos[t]}/{room.config.pablosToWin}
+            </div>
+          </div>
+        ))}
+        {h && (
+          <div className="hand-info">
+            <div className="muestra">
+              <CardView card={h.muestra} small trump={h.trump} />
+              <div>
+                <div className="lbl">Muestra</div>
+                <div className="trump-name">
+                  <SuitIcon suit={h.trump} size={16} /> {h.trump}
+                </div>
+              </div>
+            </div>
+            <div className="stake">
+              <div className="lbl">Vale</div>
+              <strong>{h.stake}</strong>
+            </div>
+            <div className="stake">
+              <div className="lbl">Bazas</div>
+              <strong>
+                {myTeam === null ? `${h.wins[0]}-${h.wins[1]}` : `${h.wins[myTeam]}-${h.wins[1 - myTeam]}`}
+              </strong>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {!p.connected && <div className="banner warn">Sin conexión con el servidor. Reintentando…</div>}
+      {disconnected.length > 0 && view.phase !== 'finished' && (
+        <div className="banner warn">
+          Desconectado: {disconnected.map((s) => s.name).join(', ')}.
+          {room.youAreHost && p.onReplaceWithBot &&
+            disconnected.map((s) => (
+              <button key={s.seat} className="link" onClick={() => p.onReplaceWithBot!(s.seat)}>
+                Sustituir a {s.name} por un bot
+              </button>
+            ))}
+        </div>
+      )}
+
+      <div className={`felt players-${n}`}>
+        {room.seats.map((s) => {
+          const [x, y] = pos(s.seat);
+          const active = !h || h.seats.includes(s.seat);
+          const sena = recentSena(s.seat);
+          const quick = recentQuick(s.seat);
+          const isTurn = h && view.phase === 'hand' && h.turn === s.seat && h.phase === 'playing';
+          return (
+            <div
+              key={s.seat}
+              className={`seat team-${teamOf(s.seat)} ${isTurn ? 'turn' : ''} ${active ? '' : 'inactive'} ${rel(s.seat) === 0 ? 'me' : ''}`}
+              style={{ left: `${x}%`, top: `${y}%` }}
+            >
+              <div className="seat-name">
+                {s.seat === you ? 'Tú' : s.name ?? '—'}
+                {s.bot && <span className="tag">bot</span>}
+                {!s.connected && <span className="tag off">desconectado</span>}
+              </div>
+              <div className="seat-tags">
+                {view.dealer === s.seat && <span className="tag mano">mano</span>}
+                {h && h.seats[h.seats.length - 1] === s.seat && view.phase === 'hand' && <span className="tag">postre</span>}
+                {h && rel(s.seat) !== 0 && h.counts[s.seat] > 0 && <span className="count">🂠 {h.counts[s.seat]}</span>}
+              </div>
+              {h?.muestraInHand && h.dealer === s.seat && rel(s.seat) !== 0 && (
+                <div className="muestra-in-hand">
+                  <CardView card={h.muestra} small trump={h.trump} />
+                </div>
+              )}
+              {sena && (
+                <div className="bubble sena" title="Seña de tu compañero">
+                  🤫 {senaLabel(sena.sena)}
+                </div>
+              )}
+              {quick && <div className="bubble">{quick.text}</div>}
+            </div>
+          );
+        })}
+
+        <div className="trick">
+          {showTrick.map((pl) => {
+            const [x, y] = pos(pl.seat);
+            const tx = 50 + (x - 50) * 0.38;
+            const ty = 50 + (y - 50) * 0.42;
+            return (
+              <div key={cardId(pl.card)} className="trick-card" style={{ left: `${tx}%`, top: `${ty}%` }}>
+                <CardView card={pl.card} small trump={h!.trump} hints={hints} highlight={trickDone && pl.seat === trickWinner} />
+              </div>
+            );
+          })}
+          {trickDone && trickWinner !== null && view.phase === 'hand' && (
+            <div className="trick-caption">Baza para {name(trickWinner)}</div>
+          )}
+        </div>
+
+        {lastResult && (
+          <div className="overlay-card">
+            {view.phase === 'finished' ? (
+              <>
+                <h2>{view.winner === myTeam ? '¡Habéis ganado!' : `Gana ${teamName(view.winner!)}`}</h2>
+                <p>
+                  Pablos: {teamName(0)} {view.pablos[0]} – {view.pablos[1]} {teamName(1)}
+                </p>
+                <div className="row">
+                  <button className="primary" onClick={() => void p.controller.rematch()}>
+                    Revancha
+                  </button>
+                  <button onClick={p.onLeave}>Salir</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3>
+                  {teamName(lastResult.result.winner)} gana {lastResult.result.points} puntos
+                </h3>
+                <p>{REASON[lastResult.result.reason]}</p>
+                {lastResult.cuernoWonBy !== null && <p className="big">🐂 ¡Cuerno para {teamName(lastResult.cuernoWonBy)}!</p>}
+                {lastResult.pabloWonBy !== null && <p className="big">🏆 ¡Pablo para {teamName(lastResult.pabloWonBy)}!</p>}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="status" role="status">
+        {status}
+        {p.error && <span className="error"> {p.error}</span>}
+      </div>
+
+      {h && h.partnerTrumps.length > 0 && view.phase === 'hand' && (
+        <div className="partner-trumps">
+          {h.partnerTrumps.map((pt) => (
+            <div key={pt.seat}>
+              Triunfos de {name(pt.seat)}:{' '}
+              {pt.cards.length === 0 ? <em>ninguno</em> : pt.cards.map((c) => <CardView key={cardId(c)} card={c} small trump={h.trump} hints={hints} />)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="actions">
+        {view.phase === 'deal' && view.canDeal && (
+          <>
+            <button className="primary" onClick={() => act({ type: 'deal' })}>
+              Repartir
+            </button>
+            {view.canDealCarteta && (
+              <button onClick={() => act({ type: 'deal', carteta: true })}>
+                Repartir carteta{view.cartetaRequest !== null ? ' (la piden)' : ''}
+              </button>
+            )}
+          </>
+        )}
+        {view.phase === 'deal' && view.canRequestCarteta && <button onClick={() => act({ type: 'requestCarteta' })}>Pedir carteta</button>}
+        {h?.canDecideQuiero && (
+          <>
+            <button className="primary" onClick={() => act({ type: 'quiero', play: true })}>
+              Jugamos
+            </button>
+            <button onClick={() => act({ type: 'quiero', play: false })}>Nos vamos</button>
+          </>
+        )}
+        {h?.canRespond && (
+          <>
+            <button className="primary" onClick={() => act({ type: 'accept' })}>
+              Quiero ({h.pendingBet?.value})
+            </button>
+            <button onClick={() => act({ type: 'reject' })}>No quiero</button>
+          </>
+        )}
+        {h?.canBet && <button onClick={() => act({ type: 'bet' })}>Apostar ({h.nextBet})</button>}
+        {h?.canFold && (
+          <button className="danger" onClick={() => confirm('¿Seguro que tu equipo se va de esta mano?') && act({ type: 'fold' })}>
+            Irse
+          </button>
+        )}
+      </div>
+
+      <div className="my-hand">
+        {handCards.map((c: Card) => {
+          const playable = !!h && h.legal.includes(cardId(c));
+          const isMyTurn = !!h && h.turn === you && h.phase === 'playing';
+          return (
+            <CardView
+              key={cardId(c)}
+              card={c}
+              trump={h!.trump}
+              hints={hints}
+              playable={playable}
+              dimmed={isMyTurn && !playable}
+              highlight={!!h?.muestraInHand && h.dealer === you && c.suit === h.muestra.suit && c.rank === h.muestra.rank}
+              onClick={playable ? () => act({ type: 'play', card: c }) : undefined}
+            />
+          );
+        })}
+      </div>
+
+      <footer className="toolbar">
+        {room.config.senas && myTeam !== null && (
+          <button className={p.panel === 'senas' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'senas' ? 'none' : 'senas')}>
+            🤫 Señas
+          </button>
+        )}
+        <button className={p.panel === 'chat' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'chat' ? 'none' : 'chat')}>
+          💬 Frases
+        </button>
+        <button className={p.panel === 'log' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'log' ? 'none' : 'log')}>
+          📜 Historial
+        </button>
+        <button className={p.panel === 'orden' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'orden' ? 'none' : 'orden')}>
+          🃏 Orden
+        </button>
+        <label className="toggle">
+          <input type="checkbox" checked={hints} onChange={(e) => p.setHints(e.target.checked)} /> Ayudas
+        </label>
+        <button className="link" onClick={() => confirm('¿Salir de la partida?') && p.onLeave()}>
+          Salir
+        </button>
+      </footer>
+
+      {p.panel !== 'none' && (
+        <aside className="side-panel">
+          {p.panel === 'senas' && (
+            <>
+              <h4>Señas a tu compañero</h4>
+              <p className="muted">Solo las ve tu equipo. Se refieren a los triunfos que llevas.</p>
+              <div className="grid-buttons">
+                {SENAS.map((s) => (
+                  <button key={s.id} title={s.gesture} onClick={() => p.controller.sena(s.id)}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              <h5>Recibidas</h5>
+              <ul className="log">
+                {p.snapSenas
+                  .slice(-6)
+                  .reverse()
+                  .map((m) => (
+                    <li key={m.at + m.from}>
+                      {name(m.from)}: <strong>{senaLabel(m.sena)}</strong>
+                    </li>
+                  ))}
+              </ul>
+            </>
+          )}
+          {p.panel === 'chat' && (
+            <div className="grid-buttons">
+              {QUICK_MESSAGES.map((q, i) => (
+                <button key={q} onClick={() => p.controller.quick(i)}>
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+          {p.panel === 'log' && (
+            <ul className="log">
+              {view.events
+                .slice()
+                .reverse()
+                .map((e) => (
+                  <li key={e.id}>{describeEvent(e, name, teamName)}</li>
+                ))}
+            </ul>
+          )}
+          {p.panel === 'orden' && h && (
+            <>
+              <h4>Triunfos de mayor a menor (muestra: {h.trump})</h4>
+              <ol className="ranking">
+                {trumpRanking(h.trump, n).map((c) => (
+                  <li key={cardId(c)}>{cardName(c)}</li>
+                ))}
+              </ol>
+              <p className="muted">Fuera del triunfo: Rey, Caballo, Sota, As, 7, 6, 5, 4, 3, 2.</p>
+            </>
+          )}
+        </aside>
+      )}
+    </div>
+  );
+}

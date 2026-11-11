@@ -1,0 +1,21 @@
+# Dependencias: se reinstalan con `npm install` a partir de package-lock.json
+node_modules/
+
+# Compilados: se generan con `npm run build`
+dist/
+coverage/
+
+# Secretos y configuración local (usa .env.example como plantilla)
+.env
+.env.local
+.env.*.local
+
+# Herramientas y sistema
+.claude/
+.vercel/
+.firebase/
+.vscode/
+.idea/
+*.log
+.DS_Store
+Thumbs.db

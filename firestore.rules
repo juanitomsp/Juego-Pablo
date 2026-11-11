@@ -1,0 +1,21 @@
+rules_version = '2';
+// Reglas de seguridad de Firestore: cada usuario solo puede leer y escribir SUS partidas.
+// Despliegue: firebase deploy --only firestore:rules  (ver docs/CUENTAS_Y_DATOS.md)
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/matches/{matchId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['id', 'date', 'mode', 'players', 'won', 'pablos', 'hands',
+             'handsWon', 'tricksWon', 'betsMade', 'betsWon', 'cartetas'])
+        && request.resource.data.mode in ['online', 'practica', 'vivo']
+        && request.resource.data.players in [4, 6]
+        && request.resource.data.id == matchId;
+    }
+    // Todo lo demás, cerrado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,266 @@
+/**
+ * Una "mano": desde que se reparte hasta que un equipo gana 3 bazas o se va.
+ * Funciones puras que mutan el estado recibido (match.ts clona antes de llamarlas).
+ */
+import {
+  Card,
+  PlayedCard,
+  Rng,
+  Suit,
+  buildDeck,
+  isTrump,
+  legalCards,
+  sameCard,
+  shuffle,
+  trickWinnerIndex,
+} from './cards';
+import { GameConfig, RuleError, Team, otherTeam, teamOf } from './types';
+
+export type HandKind = 'normal' | 'carteta';
+export type HandPhase = 'quiero' | 'playing' | 'bet' | 'done';
+export type HandEndReason = 'bazas' | 'irse' | 'rechazo' | 'quiero';
+
+export interface CompletedTrick {
+  index: number;
+  leader: number;
+  plays: PlayedCard[];
+  winner: number;
+}
+
+export interface HandResult {
+  winner: Team;
+  points: number;
+  reason: HandEndReason;
+  /** Asiento que provocó el final (quien se fue, quien apostó, etc.). */
+  bySeat?: number;
+}
+
+export interface PendingBet {
+  seat: number;
+  team: Team;
+  value: number;
+}
+
+export interface BetRecord {
+  seat: number;
+  value: number;
+  accepted: boolean | null;
+}
+
+export interface HandState {
+  kind: HandKind;
+  /** Asientos que juegan esta mano, en orden de juego (el primero sale, el último es el postre). */
+  seats: number[];
+  dealer: number;
+  muestra: Card;
+  trump: Suit;
+  /** Partida a 6: la muestra pertenece al mano (repartidor). */
+  muestraOwner: number | null;
+  /** Cartas de cada asiento (índice = asiento). */
+  hands: Card[][];
+  /** Partida a 6: el mano retiene cartas; false = aún no se le han dado. */
+  received: boolean[];
+  /** Cartas que quedan en el mazo y no participan ("dormidas"). */
+  dormant: Card[];
+  trick: PlayedCard[];
+  trickIndex: number;
+  tricks: CompletedTrick[];
+  wins: [number, number];
+  turn: number;
+  stake: number;
+  bets: BetRecord[];
+  pendingBet: PendingBet | null;
+  quieroTeams: Team[];
+  /** Quiero forzoso: ambos equipos al quiero. Sin apuestas ni retirada. */
+  forced: boolean;
+  /** Triunfos de cada jugador al empezar, visibles para su compañero si su equipo está al quiero. */
+  quieroReveal: Record<number, Card[]>;
+  phase: HandPhase;
+  result: HandResult | null;
+}
+
+export interface NewHandOptions {
+  kind: HandKind;
+  dealer: number;
+  seats: number[];
+  quieroTeams: Team[];
+}
+
+export const CARDS_PER_PLAYER = 5;
+export const TRICKS_TO_WIN = 3;
+
+export function createHand(cfg: GameConfig, opts: NewHandOptions, rng: Rng): HandState {
+  const n = cfg.players;
+  const deck = shuffle(buildDeck(n), rng);
+  const hands: Card[][] = Array.from({ length: n }, () => []);
+  const sixRetention = opts.kind === 'normal' && n === 6;
+
+  let k = 0;
+  let muestra: Card;
+  let dormant: Card[];
+  let muestraOwner: number | null = null;
+
+  if (sixRetention) {
+    // A 6: la muestra es la última carta del mazo y es del mano.
+    muestra = deck[deck.length - 1];
+    for (const seat of opts.seats) for (let i = 0; i < CARDS_PER_PLAYER; i++) hands[seat].push(deck[k++]);
+    hands[opts.dealer].push(muestra);
+    muestraOwner = opts.dealer;
+    dormant = deck.slice(k, deck.length - 1);
+  } else {
+    // A 4 (y en carteta): la muestra es la carta siguiente a la última repartida.
+    for (const seat of opts.seats) for (let i = 0; i < CARDS_PER_PLAYER; i++) hands[seat].push(deck[k++]);
+    muestra = deck[k];
+    dormant = deck.slice(k + 1);
+  }
+
+  const trump = muestra.suit;
+  const received = Array.from({ length: n }, (_, s) => opts.seats.includes(s));
+  // Retención de cartas a 6 (salvo si hay equipo al quiero: se reparte todo).
+  if (sixRetention && opts.quieroTeams.length === 0) {
+    opts.seats.forEach((s, i) => (received[s] = i < 2));
+  }
+
+  const quieroReveal: Record<number, Card[]> = {};
+  if (opts.quieroTeams.length > 0) {
+    for (const s of opts.seats) {
+      if (opts.quieroTeams.includes(teamOf(s))) quieroReveal[s] = hands[s].filter((c) => isTrump(c, trump));
+    }
+  }
+
+  return {
+    kind: opts.kind,
+    seats: opts.seats.slice(),
+    dealer: opts.dealer,
+    muestra,
+    trump,
+    muestraOwner,
+    hands,
+    received,
+    dormant,
+    trick: [],
+    trickIndex: 0,
+    tricks: [],
+    wins: [0, 0],
+    turn: opts.seats[0],
+    stake: cfg.handValue,
+    bets: [],
+    pendingBet: null,
+    quieroTeams: opts.quieroTeams.slice(),
+    forced: opts.quieroTeams.length === 2,
+    quieroReveal,
+    phase: opts.quieroTeams.length === 1 && opts.kind === 'normal' ? 'quiero' : 'playing',
+    result: null,
+  };
+}
+
+const nextInHand = (h: HandState, seat: number) => h.seats[(h.seats.indexOf(seat) + 1) % h.seats.length];
+
+export function legalFor(h: HandState, seat: number): Card[] {
+  if (h.phase !== 'playing' || h.turn !== seat || !h.received[seat]) return [];
+  return legalCards(h.hands[seat], h.trick, h.trump);
+}
+
+export function nextBetValue(h: HandState, cfg: GameConfig): number {
+  return h.bets.some((b) => b.accepted) ? h.stake + cfg.raiseStep : cfg.firstBetValue;
+}
+
+/**
+ * ¿Puede este jugador apostar ahora?
+ * - Solo en su turno, antes de echar carta.
+ * - La primera apuesta, como pronto, la hace el postre en la primera baza
+ *   (a 6: el segundo jugador en echar carta), salvo que algún equipo esté al quiero.
+ * - Nunca en quiero forzoso.
+ */
+export function canBet(h: HandState, seat: number, cfg: GameConfig): boolean {
+  if (h.phase !== 'playing' || h.turn !== seat || h.forced || !h.received[seat]) return false;
+  if (nextBetValue(h, cfg) > cfg.maxStake) return false;
+  const anyAccepted = h.bets.length > 0;
+  if (!anyAccepted && h.quieroTeams.length === 0 && h.trickIndex === 0) {
+    const minPos = h.kind === 'normal' && h.seats.length === 6 ? 1 : h.seats.length - 1;
+    if (h.trick.length < minPos) return false;
+  }
+  return true;
+}
+
+export const canFold = (h: HandState, seat: number) => h.phase === 'playing' && h.turn === seat && !h.forced;
+
+export const canRespond = (h: HandState, seat: number) =>
+  h.phase === 'bet' && !!h.pendingBet && h.seats.includes(seat) && teamOf(seat) !== h.pendingBet.team;
+
+export const canDecideQuiero = (h: HandState, seat: number) =>
+  h.phase === 'quiero' && h.seats.includes(seat) && h.quieroTeams.includes(teamOf(seat));
+
+function finish(h: HandState, result: HandResult) {
+  h.phase = 'done';
+  h.pendingBet = null;
+  h.result = result;
+}
+
+export function playCard(h: HandState, seat: number, card: Card): void {
+  if (h.phase !== 'playing') throw new RuleError('Ahora no se puede echar carta.');
+  if (h.turn !== seat) throw new RuleError('No es tu turno.');
+  const legal = legalFor(h, seat);
+  if (!legal.some((c) => sameCard(c, card))) throw new RuleError('Esa carta no se puede jugar (hay que asistir).');
+
+  const hand = h.hands[seat];
+  hand.splice(
+    hand.findIndex((c) => sameCard(c, card)),
+    1,
+  );
+  h.trick.push({ seat, card });
+
+  // Retención a 6: cuando juega el primer rival, se reparte a los dos siguientes; luego a los dos últimos.
+  if (h.trickIndex === 0 && h.received.some((r, s) => !r && h.seats.includes(s))) {
+    const pos = h.seats.indexOf(seat);
+    if (pos === 0) [2, 3].forEach((i) => (h.received[h.seats[i]] = true));
+    if (pos === 2) [4, 5].forEach((i) => (h.received[h.seats[i]] = true));
+  }
+
+  if (h.trick.length < h.seats.length) {
+    h.turn = nextInHand(h, seat);
+    return;
+  }
+
+  const winnerSeat = h.trick[trickWinnerIndex(h.trick, h.trump)].seat;
+  h.tricks.push({ index: h.trickIndex, leader: h.trick[0].seat, plays: h.trick, winner: winnerSeat });
+  h.trick = [];
+  h.trickIndex++;
+  const t = teamOf(winnerSeat);
+  h.wins[t]++;
+  h.turn = winnerSeat;
+  if (h.wins[t] >= TRICKS_TO_WIN) finish(h, { winner: t, points: h.stake, reason: 'bazas' });
+}
+
+export function bet(h: HandState, seat: number, cfg: GameConfig): void {
+  if (!canBet(h, seat, cfg)) throw new RuleError('Ahora no puedes apostar.');
+  const value = nextBetValue(h, cfg);
+  h.pendingBet = { seat, team: teamOf(seat), value };
+  h.bets.push({ seat, value, accepted: null });
+  h.phase = 'bet';
+}
+
+export function respond(h: HandState, seat: number, accept: boolean): void {
+  if (!canRespond(h, seat) || !h.pendingBet) throw new RuleError('No hay apuesta que responder.');
+  const last = h.bets[h.bets.length - 1];
+  last.accepted = accept;
+  if (accept) {
+    h.stake = h.pendingBet.value;
+    h.pendingBet = null;
+    h.phase = 'playing';
+  } else {
+    // Al no aceptar, el que apostó se lleva el valor que tenía la mano antes de la apuesta.
+    finish(h, { winner: h.pendingBet.team, points: h.stake, reason: 'rechazo', bySeat: seat });
+  }
+}
+
+export function fold(h: HandState, seat: number): void {
+  if (!canFold(h, seat)) throw new RuleError('Ahora no puedes irte.');
+  finish(h, { winner: otherTeam(teamOf(seat)), points: h.stake, reason: 'irse', bySeat: seat });
+}
+
+export function decideQuiero(h: HandState, seat: number, play: boolean, cfg: GameConfig): void {
+  if (!canDecideQuiero(h, seat)) throw new RuleError('No te toca decidir.');
+  if (play) h.phase = 'playing';
+  else finish(h, { winner: otherTeam(teamOf(seat)), points: cfg.handValue, reason: 'quiero', bySeat: seat });
+}
