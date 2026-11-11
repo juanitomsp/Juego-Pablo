@@ -32,15 +32,13 @@ export function handStrength(cards: Card[], trump: Suit): number {
 const lowest = (cards: Card[], trump: Suit) => cards.slice().sort((a, b) => sortValue(a, trump) - sortValue(b, trump))[0];
 const highest = (cards: Card[], trump: Suit) => cards.slice().sort((a, b) => sortValue(b, trump) - sortValue(a, trump))[0];
 
-/** Seña que haría el bot a su compañero al empezar la mano: su mejor triunfo. */
-export function botSena(cards: Card[], trump: Suit): SenaId {
+/** Seña que haría el bot: Pablo, Tuerto, «no llevo vira», o ninguna si solo lleva otros triunfos. */
+export function botSena(cards: Card[], trump: Suit): SenaId | null {
   const trumps = cards.filter((c) => isTrump(c, trump));
   if (trumps.length === 0) return 'nada';
-  const best = highest(trumps, trump);
-  if (isPablo(best)) return 'pablo';
-  if (isTuerto(best)) return 'tuerto';
-  const map: Record<number, SenaId> = { 3: 'andorra', 2: 'malilla', 12: 'rey', 11: 'caballo', 10: 'sota', 1: 'as' };
-  return map[best.rank] ?? 'bajas';
+  if (trumps.some(isPablo)) return 'pablo';
+  if (trumps.some(isTuerto)) return 'tuerto';
+  return null;
 }
 
 export function chooseBotAction(v: PlayerView, rng: Rng = Math.random): Action | null {

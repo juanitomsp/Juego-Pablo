@@ -94,7 +94,8 @@ export class GameTable {
       const partners = h.seats.filter((p) => p !== s && teamOf(p) === teamOf(s));
       if (partners.length === 0) continue;
       this.senaSent.add(key);
-      this.cb.onSena(s, botSena(h.hands[s], h.trump));
+      const sena = botSena(h.hands[s], h.trump);
+      if (sena) this.cb.onSena(s, sena);
     }
   }
 

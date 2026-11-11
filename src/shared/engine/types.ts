@@ -59,13 +59,6 @@ export class RuleError extends Error {}
 export const SENAS = [
   { id: 'pablo', label: 'Pablo', gesture: 'Limpia la mesa con la mano' },
   { id: 'tuerto', label: 'Tuerto', gesture: 'Guiña un ojo' },
-  { id: 'andorra', label: 'Andorra', gesture: 'Mano sobre el hombro' },
-  { id: 'malilla', label: 'Malilla', gesture: 'Mano a la cintura' },
-  { id: 'rey', label: 'Rey', gesture: 'Deja caer las cartas desde alto' },
-  { id: 'caballo', label: 'Caballo', gesture: 'Deja caer las cartas desde media altura' },
-  { id: 'sota', label: 'Sota', gesture: 'Deja caer las cartas desde poca altura' },
-  { id: 'as', label: 'As', gesture: 'Frota las cartas en el borde de la mesa' },
-  { id: 'bajas', label: 'Viras bajas', gesture: 'Frota las cartas en el borde de la mesa' },
   { id: 'nada', label: 'No llevo vira', gesture: 'Deja las cartas sobre la mesa' },
 ] as const;
 export type SenaId = (typeof SENAS)[number]['id'];

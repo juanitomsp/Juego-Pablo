@@ -118,12 +118,6 @@ Los compañeros pueden comunicarse con señas (sin hablar) sobre los triunfos qu
 |---|---|
 | Pablo | Pasar la mano por la mesa, «como limpiándola» (o decir «paso») |
 | Tuerto | Guiñar un ojo o llevarse la mano al pecho |
-| Andorra | Llevarse la mano por encima del hombro |
-| Malilla | Llevarse la mano a la cintura |
-| Rey | Dejar caer las cartas desde bastante altura |
-| Caballo | Dejar caer las cartas desde menos altura |
-| Sota | Dejar caer las cartas desde poca altura |
-| As / viras bajas | Frotar las cartas contra el borde de la mesa |
 | No llevar triunfo | Dejar las cartas sobre la mesa |
 
 Online, el botón **🤫 Señas** las envía **solo a tu equipo**. Se pueden desactivar al crear la sala. Lo habitual es hacer las señas al postre, que suele dirigir el juego.
