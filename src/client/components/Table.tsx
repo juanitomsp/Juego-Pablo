@@ -401,6 +401,7 @@ function TableInner(p: InnerProps) {
 
       {h && h.partnerTrumps.length > 0 && view.phase === 'hand' && (
         <div className="partner-trumps">
+          {h.phase === 'bet' && <div className="muted-light">Os han apostado: estos son los triunfos de tu equipo para decidir.</div>}
           {h.partnerTrumps.map((pt) => (
             <div key={pt.seat}>
               Triunfos de {name(pt.seat)}:{' '}

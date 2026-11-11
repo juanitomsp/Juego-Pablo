@@ -172,6 +172,9 @@ export function nextBetValue(h: HandState, cfg: GameConfig): number {
 export function canBet(h: HandState, seat: number, cfg: GameConfig): boolean {
   if (h.phase !== 'playing' || h.turn !== seat || h.forced || !h.received[seat]) return false;
   if (nextBetValue(h, cfg) > cfg.maxStake) return false;
+  // Quien apostó no puede volver a subir: la siguiente subida le corresponde al otro equipo.
+  const last = h.bets[h.bets.length - 1];
+  if (last && teamOf(last.seat) === teamOf(seat)) return false;
   const anyAccepted = h.bets.length > 0;
   if (!anyAccepted && h.quieroTeams.length === 0 && h.trickIndex === 0) {
     const minPos = h.seats.length === 6 ? 1 : h.seats.length - 1;

@@ -294,3 +294,5 @@ button, .card { touch-action: manipulation; -webkit-tap-highlight-color: transpa
 .big-idx.tl { top: 2px; left: 2px; }
 .big-idx.br { bottom: 2px; right: 2px; }
 .card.small .big-idx.br { display: none; }
+
+.partner-trumps .muted-light { opacity: 0.8; font-size: 0.85rem; }

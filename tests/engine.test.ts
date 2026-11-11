@@ -13,6 +13,7 @@ import {
   createMatch,
   drawTeamsByKings,
   getView,
+  isTrump,
   legalCards,
   renuncioCards,
   winningCards,
@@ -210,11 +211,47 @@ describe('apuestas', () => {
     m = applyAction(m, 0, { type: 'bet' }, seededRng(1));
     m = applyAction(m, 1, { type: 'accept' }, seededRng(1));
     m = playAny(m, 0);
-    const leader = m.hand!.turn;
-    m = applyAction(m, leader, { type: 'bet' }, seededRng(1));
+    // La siguiente subida le toca al equipo 1: jugamos hasta que sea turno de uno de sus jugadores.
+    while (m.phase === 'hand' && m.hand!.turn % 2 === 0) m = playAny(m, m.hand!.turn);
+    const raiser = m.hand!.turn;
+    m = applyAction(m, raiser, { type: 'bet' }, seededRng(1));
     expect(m.hand!.pendingBet!.value).toBe(3);
-    const rival = [1, 3].includes(leader) ? 0 : 1;
-    expect(applyAction(m, rival, { type: 'reject' }, seededRng(1)).score[leader % 2]).toBe(2);
+    // Si el equipo 0 no la quiere, el equipo 1 cobra lo ya aceptado (2).
+    expect(applyAction(m, 0, { type: 'reject' }, seededRng(1)).score[1]).toBe(2);
+  });
+  it('quien apuesta no puede volver a subir: la siguiente subida es del otro equipo', () => {
+    let m = firstHand(4);
+    for (const s of [1, 2, 3]) m = playAny(m, s);
+    m = applyAction(m, 0, { type: 'bet' }, seededRng(1)); // equipo 0 apuesta
+    m = applyAction(m, 1, { type: 'accept' }, seededRng(1));
+    // El mismo jugador, en su turno, ya no puede subir.
+    expect(getView(m, 0).hand!.canBet).toBe(false);
+    m = playAny(m, 0);
+    // Termina la baza; si sale alguien del equipo 0 tampoco puede subir, y del equipo 1 sí.
+    const turn = m.hand!.turn;
+    expect(getView(m, turn).hand!.canBet).toBe(turn % 2 === 1);
+    // Su compañero (asiento 2) tampoco puede subir cuando le toque.
+    if (turn % 2 === 1) {
+      m = applyAction(m, turn, { type: 'bet' }, seededRng(1));
+      m = applyAction(m, 0, { type: 'accept' }, seededRng(1));
+      expect(m.hand!.stake).toBe(3);
+      expect(getView(m, turn).hand!.canBet).toBe(false);
+    }
+  });
+  it('al responder una apuesta, el equipo ve los triunfos del compañero; el que apuesta no', () => {
+    let m = firstHand(4);
+    for (const s of [1, 2, 3]) m = playAny(m, s);
+    m = applyAction(m, 0, { type: 'bet' }, seededRng(1));
+    const h = m.hand!;
+    const v1 = getView(m, 1).hand!;
+    expect(v1.partnerTrumps.map((p) => p.seat)).toEqual([3]);
+    expect(v1.partnerTrumps[0].cards.every((c) => isTrump(c, h.trump))).toBe(true);
+    expect(v1.partnerTrumps[0].cards).toHaveLength(h.hands[3].filter((c) => isTrump(c, h.trump)).length);
+    expect(getView(m, 0).hand!.partnerTrumps).toEqual([]);
+    expect(getView(m, 2).hand!.partnerTrumps).toEqual([]);
+    // Tras responder, se vuelven a ocultar.
+    m = applyAction(m, 3, { type: 'accept' }, seededRng(1));
+    expect(getView(m, 1).hand!.partnerTrumps).toEqual([]);
   });
   it('no existe la opción de irse: la mano se juega siempre', () => {
     const v = getView(firstHand(4), 1).hand!;
