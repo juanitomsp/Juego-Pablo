@@ -104,9 +104,9 @@ Si no se han decidido los equipos, se reparten cartas boca arriba de una en una;
 - Tras una apuesta, el equipo rival debe responder:
   - **Quiero:** la mano pasa a valer lo apostado y se sigue jugando.
   - **No quiero:** la mano termina y el equipo que apostó se lleva **lo que valía hasta ese momento** (sin la subida que no se ha aceptado).
-- **Quien apuesta no puede volver a subir:** después de una apuesta, la siguiente subida solo la puede hacer el **otro equipo**. Las subidas se van alternando.
+- **Una apuesta por turno:** cada vez que te toca puedes apostar 1 (no se puede subir 2 o más de golpe). Si en la misma mano te vuelve a tocar, puedes volver a apostar; lo mismo cualquier otro jugador, sea del equipo que sea.
 
-> Ejemplo: la mano vale 1. Apuesto: si el rival acepta, vale 2; si no quiere, gano 1. Ya no puedo volver a subir yo ni mi compañero. Si después el rival sube y aceptamos, vale 3; si no la queremos, el rival gana 2.
+> Ejemplo: la mano vale 1. Apuesto: si el rival acepta, vale 2; si no quiere, gano 1. En ese mismo turno ya no puedo subir más. Cuando me vuelva a tocar puedo apostar otra vez: si aceptan, vale 3; si no la quieren, gano 2.
 - **No se puede abandonar la mano:** se juega siempre hasta el final. Lo único que termina una mano antes de tiempo es no querer una apuesta (o el renuncio).
 
 > 📌 **Decisión:** responde cualquier jugador del equipo al que le han apostado (pueden hablarlo antes por el chat); vale la primera respuesta.

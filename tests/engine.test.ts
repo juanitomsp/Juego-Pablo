@@ -218,23 +218,23 @@ describe('apuestas', () => {
     // Si el equipo 0 no la quiere, el equipo 1 cobra lo ya aceptado (2).
     expect(applyAction(m, 0, { type: 'reject' }, seededRng(1)).score[1]).toBe(2);
   });
-  it('quien apuesta no puede volver a subir: la siguiente subida es del otro equipo', () => {
+  it('solo se puede apostar una vez por turno, pero en el siguiente turno se puede volver a apostar', () => {
     let m = firstHand(4);
     for (const s of [1, 2, 3]) m = playAny(m, s);
-    m = applyAction(m, 0, { type: 'bet' }, seededRng(1)); // equipo 0 apuesta
+    m = applyAction(m, 0, { type: 'bet' }, seededRng(1));
     m = applyAction(m, 1, { type: 'accept' }, seededRng(1));
-    // El mismo jugador, en su turno, ya no puede subir.
+    // En el mismo turno no puede volver a subir (no se sube 2 de golpe).
     expect(getView(m, 0).hand!.canBet).toBe(false);
+    expect(() => applyAction(m, 0, { type: 'bet' }, seededRng(1))).toThrow();
     m = playAny(m, 0);
-    // Termina la baza; si sale alguien del equipo 0 tampoco puede subir, y del equipo 1 sí.
+    // En la siguiente baza, quien salga puede volver a apostar, sea del equipo que sea.
     const turn = m.hand!.turn;
-    expect(getView(m, turn).hand!.canBet).toBe(turn % 2 === 1);
-    // Su compañero (asiento 2) tampoco puede subir cuando le toque.
-    if (turn % 2 === 1) {
-      m = applyAction(m, turn, { type: 'bet' }, seededRng(1));
-      m = applyAction(m, 0, { type: 'accept' }, seededRng(1));
-      expect(m.hand!.stake).toBe(3);
-      expect(getView(m, turn).hand!.canBet).toBe(false);
+    expect(getView(m, turn).hand!.canBet).toBe(true);
+    // Y si vuelve a ser el asiento 0, también puede apostar otra vez.
+    while (m.phase === 'hand' && m.hand!.turn !== 0) m = playAny(m, m.hand!.turn);
+    if (m.phase === 'hand') {
+      m = applyAction(m, 0, { type: 'bet' }, seededRng(1));
+      expect(m.hand!.pendingBet!.value).toBe(3);
     }
   });
   it('al responder una apuesta no se ven las cartas del compañero (solo al quiero)', () => {
@@ -322,7 +322,7 @@ describe('GameTable', () => {
     const h = t.match.hand!;
     h.phase = 'bet';
     h.pendingBet = { seat: 1, team: 1, value: 6 };
-    h.bets.push({ seat: 1, value: 6, accepted: null });
+    h.bets.push({ seat: 1, value: 6, accepted: null, trickIndex: 0, position: 0 });
     (t as unknown as { schedule: () => void }).schedule();
     await new Promise((r) => setTimeout(r, 30));
     expect(t.match.hand!.phase).toBe('bet');

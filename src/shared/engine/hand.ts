@@ -45,6 +45,9 @@ export interface BetRecord {
   seat: number;
   value: number;
   accepted: boolean | null;
+  /** Turno en que se hizo (baza y posición dentro de la baza): solo se puede apostar una vez por turno. */
+  trickIndex: number;
+  position: number;
 }
 
 export interface HandState {
@@ -172,9 +175,9 @@ export function nextBetValue(h: HandState, cfg: GameConfig): number {
 export function canBet(h: HandState, seat: number, cfg: GameConfig): boolean {
   if (h.phase !== 'playing' || h.turn !== seat || h.forced || !h.received[seat]) return false;
   if (nextBetValue(h, cfg) > cfg.maxStake) return false;
-  // Quien apostó no puede volver a subir: la siguiente subida le corresponde al otro equipo.
+  // Una sola apuesta por turno: no se puede subir 2 o más de golpe. En el siguiente turno, sí.
   const last = h.bets[h.bets.length - 1];
-  if (last && teamOf(last.seat) === teamOf(seat)) return false;
+  if (last && last.seat === seat && last.trickIndex === h.trickIndex && last.position === h.trick.length) return false;
   const anyAccepted = h.bets.length > 0;
   if (!anyAccepted && h.quieroTeams.length === 0 && h.trickIndex === 0) {
     const minPos = h.seats.length === 6 ? 1 : h.seats.length - 1;
@@ -242,7 +245,7 @@ export function bet(h: HandState, seat: number, cfg: GameConfig): void {
   if (!canBet(h, seat, cfg)) throw new RuleError('Ahora no puedes apostar.');
   const value = nextBetValue(h, cfg);
   h.pendingBet = { seat, team: teamOf(seat), value };
-  h.bets.push({ seat, value, accepted: null });
+  h.bets.push({ seat, value, accepted: null, trickIndex: h.trickIndex, position: h.trick.length });
   h.phase = 'bet';
 }
 
