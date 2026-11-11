@@ -23,7 +23,7 @@ Funciones **puras y deterministas** (el azar entra por un parámetro `rng`, así
 | `cards.ts` | Baraja según jugadores, triunfos, fuerza de cartas, ganador de baza, cartas legales (asistir) |
 | `types.ts` | `GameConfig`, `Action`, equipos (`teamOf`: asiento par = equipo 0), señas, frases rápidas |
 | `hand.ts` | Una mano: reparto (incluida la retención a 6), bazas, apuestas, irse, decisión al quiero |
-| `match.ts` | Partida: puntos → cuernos → Pablos, rotación del mano, carteta, historial, eventos. `applyAction()` y `advance()` |
+| `match.ts` | Partida: puntos → cuernos → Pablos, rotación del mano, quiero, historial, eventos. `applyAction()` y `advance()` |
 | `view.ts` | `getView(match, asiento)`: lo que puede ver un jugador (oculta cartas ajenas y el mazo) |
 | `bot.ts` | Jugador automático que decide **solo con su vista** (no hace trampas) |
 | `teams.ts` | Sorteo de equipos por reyes |
@@ -31,7 +31,7 @@ Funciones **puras y deterministas** (el azar entra por un parámetro `rng`, así
 Flujo de estados de la partida (`MatchState.phase`):
 
 ```
-deal ──(el mano reparte / reparte carteta)──▶ hand ──(fin de la mano)──▶ handEnd ──advance()──▶ deal
+deal ──(el mano reparte)──▶ hand ──(fin de la mano)──▶ handEnd ──advance()──▶ deal
                                                                    └──▶ finished (alguien llega a los Pablos)
 ```
 
@@ -81,4 +81,4 @@ Heurísticas sencillas (`bot.ts`):
 
 ## Tests
 
-`tests/engine.test.ts` cubre baraja, orden de cartas, asistir (incluido el Pablo y el Tuerto), reparto a 4 y 6, apuestas, irse, quiero y quiero forzoso, cuernos y Pablos, carteta, que la vista no filtre cartas ajenas, sorteo por reyes, y **partidas completas entre bots** a 4 y 6 jugadores con varias semillas.
+`tests/engine.test.ts` cubre baraja, orden de cartas, carta libre, arrastre y renuncio (incluidos el Pablo y el Tuerto), reparto a 4 y 6, apuestas, irse, quiero y quiero forzoso, cuernos y Pablos, chat censurado, que la vista no filtre cartas ajenas, sorteo por reyes, y **partidas completas entre bots** a 4 y 6 jugadores con varias semillas.

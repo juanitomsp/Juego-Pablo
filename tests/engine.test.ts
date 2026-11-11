@@ -8,7 +8,6 @@ import {
   applyAction,
   buildDeck,
   cardId,
-  cartetaPairs,
   chooseBotAction,
   createHand,
   createMatch,
@@ -18,7 +17,6 @@ import {
   renuncioCards,
   winningCards,
   seededRng,
-  teamOf,
   trickWinnerIndex,
   trumpPower,
 } from '../src/shared/engine';
@@ -131,13 +129,13 @@ describe('chat', () => {
 
 describe('reparto', () => {
   it('a 4: 5 cartas cada uno, muestra aparte y 7 dormidas', () => {
-    const h = createHand(cfg4, { kind: 'normal', dealer: 0, seats: [1, 2, 3, 0], quieroTeams: [] }, seededRng(1));
+    const h = createHand(cfg4, { dealer: 0, seats: [1, 2, 3, 0], quieroTeams: [] }, seededRng(1));
     expect(h.hands.every((x) => x.length === 5)).toBe(true);
     expect(h.dormant).toHaveLength(7);
     expect(h.turn).toBe(1);
   });
   it('a 6: el mano tiene la muestra (6 cartas) y retiene las cartas de los últimos', () => {
-    const h = createHand(cfg6, { kind: 'normal', dealer: 0, seats: [1, 2, 3, 4, 5, 0], quieroTeams: [] }, seededRng(2));
+    const h = createHand(cfg6, { dealer: 0, seats: [1, 2, 3, 4, 5, 0], quieroTeams: [] }, seededRng(2));
     expect(h.hands[0]).toHaveLength(6);
     expect(h.received).toEqual([false, true, true, false, false, false]);
   });
@@ -263,33 +261,6 @@ describe('quiero', () => {
     m = applyAction(m, 1, { type: 'fold' }, seededRng(4));
     expect(m.pablos).toEqual([1, 0]);
     expect(m.cuernos).toEqual([0, 0]);
-  });
-});
-
-describe('carteta', () => {
-  it('parejas a 4 y a 6', () => {
-    expect(cartetaPairs(4, 0)).toEqual([[1, 2], [3, 0]]);
-    expect(cartetaPairs(6, 0)).toEqual([[1, 2], [3, 4], [5, 0]]);
-  });
-  it('se juega una vez por cuerno y en cada mano solo participan dos jugadores', () => {
-    let m = createMatch(cfg4, 0);
-    const rng = seededRng(5);
-    m = applyAction(m, 0, { type: 'deal', carteta: true }, rng);
-    expect(m.hand!.seats).toEqual([1, 2]);
-    expect(teamOf(1)).not.toBe(teamOf(2));
-    m = applyAction(m, 1, { type: 'fold' }, rng);
-    m = advance(m, rng);
-    expect(m.hand!.seats).toEqual([3, 0]);
-    m = applyAction(m, 3, { type: 'fold' }, rng);
-    m = advance(m, rng);
-    expect(m.phase).toBe('deal');
-    expect(m.dealer).toBe(1);
-    expect(getView(m, 1).canDealCarteta).toBe(false);
-  });
-  it('el equipo que no es mano puede pedirla; el del mano no', () => {
-    const m = applyAction(createMatch(cfg4, 0), 1, { type: 'requestCarteta' }, seededRng(1));
-    expect(m.cartetaRequest).toBe(1);
-    expect(() => applyAction(createMatch(cfg4, 0), 2, { type: 'requestCarteta' }, seededRng(1))).toThrow();
   });
 });
 

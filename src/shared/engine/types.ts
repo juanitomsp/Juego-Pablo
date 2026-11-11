@@ -22,8 +22,6 @@ export interface GameConfig {
   raiseStep: number;
   /** Tope de valor de una mano. */
   maxStake: number;
-  /** Permitir jugar carteta. */
-  carteta: boolean;
   /** Permitir señas entre compañeros. */
   senas: boolean;
   teamNames: [string, string];
@@ -38,14 +36,12 @@ export const DEFAULT_CONFIG: GameConfig = {
   firstBetValue: 2,
   raiseStep: 1,
   maxStake: 8,
-  carteta: true,
   senas: true,
   teamNames: ['Nosotros', 'Ellos'],
 };
 
 export type Action =
-  | { type: 'deal'; carteta?: boolean }
-  | { type: 'requestCarteta' }
+  | { type: 'deal' }
   | { type: 'play'; card: Card }
   | { type: 'bet' }
   | { type: 'accept' }

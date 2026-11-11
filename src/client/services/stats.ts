@@ -18,7 +18,6 @@ export interface MatchSummary {
   tricksWon: number;
   betsMade: number;
   betsWon: number;
-  cartetas: number;
 }
 
 const KEY = 'pablo.matches';
@@ -92,7 +91,6 @@ export function summarize(v: PlayerView, mode: MatchSummary['mode'], id: string)
     tricksWon: mine?.tricksWon ?? 0,
     betsMade: mine?.betsMade ?? 0,
     betsWon: mine?.betsWon ?? 0,
-    cartetas: v.history.filter((h) => h.kind === 'carteta').length,
   };
 }
 

@@ -73,7 +73,9 @@ export async function signOutUser(): Promise<void> {
 
 export async function saveRemoteMatch(uid: string, m: MatchSummary): Promise<void> {
   const { db, f } = await load();
-  await f.setDoc(f.doc(db, 'users', uid, 'matches', m.id), m);
+  // Solo los campos que admiten las reglas de Firestore (las partidas antiguas pueden traer otros).
+  const { id, date, mode, players, won, pablos, hands, handsWon, tricksWon, betsMade, betsWon } = m;
+  await f.setDoc(f.doc(db, 'users', uid, 'matches', id), { id, date, mode, players, won, pablos, hands, handsWon, tricksWon, betsMade, betsWon });
 }
 
 export async function loadRemoteMatches(uid: string): Promise<MatchSummary[]> {

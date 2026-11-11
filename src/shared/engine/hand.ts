@@ -17,7 +17,6 @@ import {
 } from './cards';
 import { GameConfig, RuleError, Team, otherTeam, teamOf } from './types';
 
-export type HandKind = 'normal' | 'carteta';
 export type HandPhase = 'quiero' | 'playing' | 'bet' | 'done';
 export type HandEndReason = 'bazas' | 'irse' | 'rechazo' | 'quiero' | 'renuncio';
 
@@ -49,7 +48,6 @@ export interface BetRecord {
 }
 
 export interface HandState {
-  kind: HandKind;
   /** Asientos que juegan esta mano, en orden de juego (el primero sale, el último es el postre). */
   seats: number[];
   dealer: number;
@@ -81,7 +79,6 @@ export interface HandState {
 }
 
 export interface NewHandOptions {
-  kind: HandKind;
   dealer: number;
   seats: number[];
   quieroTeams: Team[];
@@ -94,7 +91,7 @@ export function createHand(cfg: GameConfig, opts: NewHandOptions, rng: Rng): Han
   const n = cfg.players;
   const deck = shuffle(buildDeck(n), rng);
   const hands: Card[][] = Array.from({ length: n }, () => []);
-  const sixRetention = opts.kind === 'normal' && n === 6;
+  const sixRetention = n === 6;
 
   let k = 0;
   let muestra: Card;
@@ -109,7 +106,7 @@ export function createHand(cfg: GameConfig, opts: NewHandOptions, rng: Rng): Han
     muestraOwner = opts.dealer;
     dormant = deck.slice(k, deck.length - 1);
   } else {
-    // A 4 (y en carteta): la muestra es la carta siguiente a la última repartida.
+    // A 4: la muestra es la carta siguiente a la última repartida.
     for (const seat of opts.seats) for (let i = 0; i < CARDS_PER_PLAYER; i++) hands[seat].push(deck[k++]);
     muestra = deck[k];
     dormant = deck.slice(k + 1);
@@ -130,7 +127,6 @@ export function createHand(cfg: GameConfig, opts: NewHandOptions, rng: Rng): Han
   }
 
   return {
-    kind: opts.kind,
     seats: opts.seats.slice(),
     dealer: opts.dealer,
     muestra,
@@ -150,7 +146,7 @@ export function createHand(cfg: GameConfig, opts: NewHandOptions, rng: Rng): Han
     quieroTeams: opts.quieroTeams.slice(),
     forced: opts.quieroTeams.length === 2,
     quieroReveal,
-    phase: opts.quieroTeams.length === 1 && opts.kind === 'normal' ? 'quiero' : 'playing',
+    phase: opts.quieroTeams.length === 1 ? 'quiero' : 'playing',
     result: null,
   };
 }
@@ -178,7 +174,7 @@ export function canBet(h: HandState, seat: number, cfg: GameConfig): boolean {
   if (nextBetValue(h, cfg) > cfg.maxStake) return false;
   const anyAccepted = h.bets.length > 0;
   if (!anyAccepted && h.quieroTeams.length === 0 && h.trickIndex === 0) {
-    const minPos = h.kind === 'normal' && h.seats.length === 6 ? 1 : h.seats.length - 1;
+    const minPos = h.seats.length === 6 ? 1 : h.seats.length - 1;
     if (h.trick.length < minPos) return false;
   }
   return true;

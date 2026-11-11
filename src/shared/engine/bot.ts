@@ -46,12 +46,7 @@ export function chooseBotAction(v: PlayerView, rng: Rng = Math.random): Action |
   if (me === null) return null;
 
   if (v.phase === 'deal') {
-    if (v.canDeal) {
-      // El bot repartidor acepta la carteta pedida la mitad de las veces.
-      if (v.cartetaRequest !== null && v.canDealCarteta && rng() < 0.5) return { type: 'deal', carteta: true };
-      return { type: 'deal' };
-    }
-    return null;
+    return v.canDeal ? { type: 'deal' } : null;
   }
 
   const h = v.hand;

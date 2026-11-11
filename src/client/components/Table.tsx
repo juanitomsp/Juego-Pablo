@@ -57,9 +57,7 @@ const senaLabel = (id: string) => SENAS.find((s) => s.id === id)?.label ?? id;
 export function describeEvent(e: MatchEvent, name: (s: number) => string, team: (t: Team) => string): string {
   switch (e.kind) {
     case 'deal':
-      return `${name(e.dealer)} reparte${e.carteta ? ' carteta' : ''}.`;
-    case 'cartetaRequest':
-      return `${team(e.team)} pide carteta.`;
+      return `${name(e.dealer)} reparte.`;
     case 'trick':
       return `${name(e.winner)} gana la baza ${e.index + 1}.`;
     case 'bet':
@@ -228,7 +226,6 @@ function TableInner(p: InnerProps) {
   let status = '';
   if (view.phase === 'deal') {
     status = view.canDeal ? 'Eres el mano: reparte.' : `Esperando a que ${name(view.dealer)} reparta.`;
-    if (view.cartetaRequest !== null) status += ` ${teamName(view.cartetaRequest)} ha pedido carteta.`;
   } else if (h && view.phase === 'hand') {
     if (h.phase === 'quiero') {
       const t = h.quieroTeams[0];
@@ -247,7 +244,6 @@ function TableInner(p: InnerProps) {
       else if (hints && h.winning.length > 0) status = 'Te toca. Tienes cartas que ganan esta baza (marcadas con ✓).';
     }
     else status = `Turno de ${name(h.turn)}.`;
-    if (you !== null && h.kind === 'carteta' && !h.seats.includes(you)) status = `Carteta entre ${name(h.seats[0])} y ${name(h.seats[1])}. Mira la partida.`;
   }
 
   const lastResult = view.phase === 'handEnd' || view.phase === 'finished' ? view.history[view.history.length - 1] : null;
@@ -430,18 +426,10 @@ function TableInner(p: InnerProps) {
 
       <div className="actions">
         {view.phase === 'deal' && view.canDeal && (
-          <>
-            <button className="primary" onClick={() => act({ type: 'deal' })}>
-              Repartir
-            </button>
-            {view.canDealCarteta && (
-              <button onClick={() => act({ type: 'deal', carteta: true })}>
-                Repartir carteta{view.cartetaRequest !== null ? ' (la piden)' : ''}
-              </button>
-            )}
-          </>
+          <button className="primary" onClick={() => act({ type: 'deal' })}>
+            Repartir
+          </button>
         )}
-        {view.phase === 'deal' && view.canRequestCarteta && <button onClick={() => act({ type: 'requestCarteta' })}>Pedir carteta</button>}
         {h?.canDecideQuiero && (
           <>
             <button className="primary" onClick={() => act({ type: 'quiero', play: true })}>

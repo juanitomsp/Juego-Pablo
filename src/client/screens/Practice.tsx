@@ -6,7 +6,6 @@ import { LocalController } from '../services/controller';
 export function Practice() {
   const [players, setPlayers] = useState<4 | 6>(4);
   const [pablos, setPablos] = useState(1);
-  const [carteta, setCarteta] = useState(true);
   const [ctrl, setCtrl] = useState<LocalController | null>(null);
 
   useEffect(() => {
@@ -47,11 +46,8 @@ export function Practice() {
             ))}
           </div>
         </div>
-        <label className="toggle">
-          <input type="checkbox" checked={carteta} onChange={(e) => setCarteta(e.target.checked)} /> Permitir carteta
-        </label>
         <div className="row">
-          <button className="primary" onClick={() => setCtrl(new LocalController({ players, pablosToWin: pablos, carteta, teamNames: ['Tu equipo', 'Bots rivales'] }))}>
+          <button className="primary" onClick={() => setCtrl(new LocalController({ players, pablosToWin: pablos, teamNames: ['Tu equipo', 'Bots rivales'] }))}>
             Empezar
           </button>
         </div>

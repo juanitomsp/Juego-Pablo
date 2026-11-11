@@ -53,7 +53,7 @@ users/{uid}/matches/{matchId}
   players: 4 | 6
   won: boolean | null
   pablos: [mios, rivales]
-  hands, handsWon, tricksWon, betsMade, betsWon, cartetas: number
+  hands, handsWon, tricksWon, betsMade, betsWon: number
 ```
 
 ## Limitación: las estadísticas las escribe el cliente

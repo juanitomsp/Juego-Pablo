@@ -55,7 +55,6 @@ export function sanitizeConfig(base: GameConfig, patch: Partial<GameConfig>): Ga
   if (patch.pointsPerCuerno !== undefined) c.pointsPerCuerno = int(patch.pointsPerCuerno, 3, 60, 8);
   if (patch.cuernosPerPablo !== undefined) c.cuernosPerPablo = int(patch.cuernosPerPablo, 1, 5, 2);
   if (patch.pablosToWin !== undefined) c.pablosToWin = int(patch.pablosToWin, 1, 5, 1);
-  if (patch.carteta !== undefined) c.carteta = !!patch.carteta;
   if (patch.senas !== undefined) c.senas = !!patch.senas;
   if (patch.teamNames) c.teamNames = [sanitizeName(patch.teamNames[0]), sanitizeName(patch.teamNames[1])];
   c.maxStake = c.pointsPerCuerno;

@@ -144,18 +144,7 @@ Un equipo está **al quiero** cuando le basta ganar una mano para ganar el cuern
 
 También se usa la expresión **estar al canuto** cuando a un equipo le faltan dos manos para el cuerno; en esta versión por puntos no cambia ninguna regla.
 
-### 8.2 Carteta
-
-Una forma excepcional de jugar una mano por parejas de jugadores sueltos:
-
-- Solo si **ningún equipo ha pasado de la mitad del cuerno** (4 puntos) y **una vez por cuerno**.
-- Si el mano quiere carteta, la reparte y el rival no puede negarse. Si la quiere el otro equipo, la **pide** y el mano decide si la reparte o no.
-- **A 4:** primero juegan el jugador a la derecha del mano contra el compañero del mano; después, el jugador a la izquierda del mano contra el propio mano.
-- **A 6:** primero los dos jugadores a la derecha del mano, después los dos siguientes y por último el jugador a la izquierda del mano contra el mano.
-- Cada carteta se juega como una mano normal (5 bazas, gana quien haga 3, con apuestas), pero entre dos jugadores, con su propio reparto y muestra. Los puntos son para el equipo del ganador.
-- Terminadas las cartetas, el nuevo mano es el de la derecha, como siempre.
-
-> 📌 **Decisión:** en las cartetas no se aplica la regla del quiero. Si un equipo gana el cuerno en la primera carteta, las restantes no se juegan.
+> 📌 **Decisión:** no se juega la *carteta* (manos sueltas de uno contra uno) que aparece en algunas versiones del reglamento: siempre se juega la mano normal por equipos.
 
 ## 9. Consejos de estrategia
 
@@ -172,7 +161,6 @@ Una forma excepcional de jugar una mano por parejas de jugadores sueltos:
 - **Arrastre:** salir con un triunfo; obliga a los demás a echar triunfo (menos el Pablo).
 - **Renuncio:** no echar triunfo en un arrastre teniéndolo; el equipo pierde la mano.
 - **Avarear / triunfar:** salir con un triunfo (es decir, hacer arrastre).
-- **Carteta:** mano especial jugada por parejas de jugadores sueltos.
 - **Cuerno (o partida):** se gana al llegar a 8 puntos.
 - **Dormido:** triunfo que se queda en el mazo y no juega.
 - **Ir ciego:** no llevar triunfos. **Ir cerrado:** llevar muchos.

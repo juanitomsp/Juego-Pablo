@@ -21,7 +21,6 @@ interface LiveState {
   pablos: [number, number];
   stake: number;
   betCount: number;
-  cartetaUsed: boolean;
   hands: number;
   log: string[];
   winner: 0 | 1 | null;
@@ -45,7 +44,6 @@ const fresh = (prev?: Partial<LiveState>): LiveState => ({
   pablos: [0, 0],
   stake: HAND,
   betCount: 0,
-  cartetaUsed: false,
   hands: 0,
   log: [],
   winner: null,
@@ -77,8 +75,6 @@ export function LiveScore() {
   const quiero = s.pointsPerCuerno - HAND;
   const alQuiero = (t: 0 | 1) => s.score[t] >= quiero;
   const forced = alQuiero(0) && alQuiero(1);
-  const half = s.pointsPerCuerno / 2;
-  const cartetaOk = !s.cartetaUsed && s.score[0] < half && s.score[1] < half;
 
   const win = (t: 0 | 1, points: number, why: string) => {
     const n: LiveState = structuredClone(s);
@@ -88,7 +84,6 @@ export function LiveScore() {
     if (n.score[t] >= n.pointsPerCuerno) {
       n.cuernos[t]++;
       n.score = [0, 0];
-      n.cartetaUsed = false;
       n.log.unshift(`🐂 Cuerno para ${s.teamNames[t]}`);
       if (n.cuernos[t] >= n.cuernosPerPablo) {
         n.pablos[t]++;
@@ -110,7 +105,6 @@ export function LiveScore() {
               tricksWon: 0,
               betsMade: 0,
               betsWon: 0,
-              cartetas: 0,
             });
         }
       }
@@ -234,14 +228,6 @@ export function LiveScore() {
         <p className="muted small">
           Si un equipo no acepta una apuesta, pulsa «Gana la mano» del equipo que apostó con el valor que tenía la mano antes de apostar.
         </p>
-        <div>
-          Carteta: {cartetaOk ? 'se puede jugar en este cuerno' : 'no disponible'}{' '}
-          {cartetaOk && (
-            <button className="link" onClick={() => commit({ ...s, cartetaUsed: true })}>
-              marcar como jugada
-            </button>
-          )}
-        </div>
         <div className="row">
           <button disabled={undo.length === 0} onClick={() => (setS(undo[undo.length - 1]), setUndo(undo.slice(0, -1)))}>
             ↶ Deshacer

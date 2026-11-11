@@ -4,11 +4,10 @@
  */
 import { Card, PlayedCard, Suit, cardId, isTrump as isTrumpCard, renuncioCards, sameCard, winningCards } from './cards';
 import * as H from './hand';
-import { HandRecord, MatchEvent, MatchPhase, MatchState, SeatStats, cartetaAllowed, quieroThreshold } from './match';
+import { HandRecord, MatchEvent, MatchPhase, MatchState, SeatStats, quieroThreshold } from './match';
 import { GameConfig, Team, teamOf } from './types';
 
 export interface HandView {
-  kind: H.HandKind;
   seats: number[];
   dealer: number;
   trump: Suit;
@@ -62,10 +61,6 @@ export interface PlayerView {
   quieroThreshold: number;
   hand: HandView | null;
   canDeal: boolean;
-  canDealCarteta: boolean;
-  canRequestCarteta: boolean;
-  cartetaRequest: Team | null;
-  cartetaUsed: boolean;
   history: HandRecord[];
   seatStats: SeatStats[];
   events: MatchEvent[];
@@ -92,7 +87,6 @@ function handView(m: MatchState, h: H.HandState, you: number | null): HandView {
 
   const legal = you === null ? [] : H.legalFor(h, you).map(cardId);
   return {
-    kind: h.kind,
     seats: h.seats.slice(),
     dealer: h.dealer,
     trump: h.trump,
@@ -130,7 +124,6 @@ function handView(m: MatchState, h: H.HandState, you: number | null): HandView {
 
 export function getView(m: MatchState, you: number | null): PlayerView {
   const dealPhase = m.phase === 'deal';
-  const cart = cartetaAllowed(m);
   return {
     you,
     config: m.config,
@@ -143,10 +136,6 @@ export function getView(m: MatchState, you: number | null): PlayerView {
     quieroThreshold: quieroThreshold(m.config),
     hand: m.hand ? handView(m, m.hand, you) : null,
     canDeal: dealPhase && you === m.dealer,
-    canDealCarteta: dealPhase && you === m.dealer && cart,
-    canRequestCarteta: dealPhase && you !== null && teamOf(you) !== teamOf(m.dealer) && cart && m.cartetaRequest === null,
-    cartetaRequest: m.cartetaRequest,
-    cartetaUsed: m.cartetaUsed,
     history: m.history.slice(-30),
     seatStats: m.seatStats,
     events: m.events.slice(-20),

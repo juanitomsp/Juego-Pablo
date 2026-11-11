@@ -1,5 +1,5 @@
 /**
- * Partida completa: puntos -> cuernos -> Pablos, rotación del mano, quiero y carteta.
+ * Partida completa: puntos -> cuernos -> Pablos, rotación del mano y quiero.
  * `applyAction` es puro: devuelve un estado nuevo (clonado) o lanza RuleError.
  */
 import { Card, Rng, Suit } from './cards';
@@ -10,7 +10,6 @@ export type MatchPhase = 'deal' | 'hand' | 'handEnd' | 'finished';
 
 export interface HandRecord {
   number: number;
-  kind: H.HandKind;
   dealer: number;
   seats: number[];
   trump: Suit;
@@ -32,8 +31,7 @@ export interface SeatStats {
 }
 
 export type MatchEvent =
-  | { id: number; kind: 'deal'; dealer: number; carteta: boolean }
-  | { id: number; kind: 'cartetaRequest'; team: Team }
+  | { id: number; kind: 'deal'; dealer: number }
   | { id: number; kind: 'trick'; winner: number; index: number }
   | { id: number; kind: 'bet'; seat: number; value: number }
   | { id: number; kind: 'accept'; seat: number; value: number }
@@ -57,11 +55,6 @@ export interface MatchState {
   phase: MatchPhase;
   hand: H.HandState | null;
   handNumber: number;
-  /** La carteta ya se ha jugado en este cuerno (medio Pablo). */
-  cartetaUsed: boolean;
-  cartetaRequest: Team | null;
-  /** Parejas pendientes de jugar en la carteta en curso. */
-  cartetaQueue: number[][];
   history: HandRecord[];
   seatStats: SeatStats[];
   events: MatchEvent[];
@@ -81,9 +74,6 @@ export function createMatch(config: GameConfig, dealer = 0): MatchState {
     phase: 'deal',
     hand: null,
     handNumber: 0,
-    cartetaUsed: false,
-    cartetaRequest: null,
-    cartetaQueue: [],
     history: [],
     seatStats: Array.from({ length: config.players }, () => ({ tricksWon: 0, betsMade: 0, betsWon: 0, handsPlayed: 0 })),
     events: [],
@@ -106,33 +96,15 @@ export function quieroTeams(m: MatchState): Team[] {
   return ([0, 1] as Team[]).filter((team) => m.score[team] >= t);
 }
 
-/** Carteta: una vez por cuerno, y solo si ningún equipo ha pasado de la mitad del cuerno ("chinos buenos"). */
-export function cartetaAllowed(m: MatchState): boolean {
-  const half = m.config.pointsPerCuerno / 2;
-  return m.config.carteta && !m.cartetaUsed && m.score[0] < half && m.score[1] < half && quieroTeams(m).length === 0;
-}
-
 export function playOrder(n: number, dealer: number): number[] {
   return Array.from({ length: n }, (_, i) => (dealer + 1 + i) % n);
 }
 
-/** Parejas de la carteta: los dos a la derecha del mano, los dos siguientes... y por último el de su izquierda y él. */
-export function cartetaPairs(n: number, dealer: number): number[][] {
-  const order = playOrder(n, dealer);
-  const pairs: number[][] = [];
-  for (let i = 0; i < n; i += 2) pairs.push([order[i], order[i + 1]]);
-  return pairs;
-}
-
-function startHand(m: MatchState, rng: Rng, kind: H.HandKind, seats: number[]) {
-  m.hand = H.createHand(
-    m.config,
-    { kind, dealer: m.dealer, seats, quieroTeams: kind === 'normal' ? quieroTeams(m) : [] },
-    rng,
-  );
+function startHand(m: MatchState, rng: Rng) {
+  const seats = playOrder(m.config.players, m.dealer);
+  m.hand = H.createHand(m.config, { dealer: m.dealer, seats, quieroTeams: quieroTeams(m) }, rng);
   m.handNumber++;
   m.phase = 'hand';
-  m.cartetaRequest = null;
   for (const s of seats) m.seatStats[s].handsPlayed++;
 }
 
@@ -155,8 +127,6 @@ function resolveHand(m: MatchState) {
     cuernoWonBy = r.winner;
     m.cuernos[r.winner]++;
     m.score = [0, 0];
-    m.cartetaUsed = false;
-    m.cartetaQueue = [];
     emit(m, { kind: 'cuerno', team: r.winner });
     if (m.cuernos[r.winner] >= cfg.cuernosPerPablo) {
       pabloWonBy = r.winner;
@@ -168,7 +138,6 @@ function resolveHand(m: MatchState) {
 
   m.history.push({
     number: m.handNumber,
-    kind: h.kind,
     dealer: h.dealer,
     seats: h.seats.slice(),
     trump: h.trump,
@@ -191,15 +160,10 @@ function resolveHand(m: MatchState) {
   }
 }
 
-/** Pasa de 'handEnd' a la siguiente carteta o al siguiente reparto. Lo llama el servidor tras una pausa. */
-export function advance(state: MatchState, rng: Rng): MatchState {
+/** Pasa de 'handEnd' al siguiente reparto (el nuevo mano es el de la derecha). Lo llama el servidor tras una pausa. */
+export function advance(state: MatchState, _rng?: Rng): MatchState {
   if (state.phase !== 'handEnd') return state;
   const m = structuredClone(state);
-  if (m.cartetaQueue.length > 0) {
-    const pair = m.cartetaQueue.shift()!;
-    startHand(m, rng, 'carteta', pair);
-    return m;
-  }
   m.dealer = (m.dealer + 1) % m.config.players;
   m.hand = null;
   m.phase = 'deal';
@@ -214,24 +178,8 @@ export function applyAction(state: MatchState, seat: number, action: Action, rng
     case 'deal': {
       if (m.phase !== 'deal') throw new RuleError('No es momento de repartir.');
       if (seat !== m.dealer) throw new RuleError('Reparte el mano.');
-      if (action.carteta) {
-        if (!cartetaAllowed(m)) throw new RuleError('Ahora no se puede jugar carteta.');
-        m.cartetaUsed = true;
-        m.cartetaQueue = cartetaPairs(cfg.players, m.dealer);
-        emit(m, { kind: 'deal', dealer: m.dealer, carteta: true });
-        startHand(m, rng, 'carteta', m.cartetaQueue.shift()!);
-      } else {
-        emit(m, { kind: 'deal', dealer: m.dealer, carteta: false });
-        startHand(m, rng, 'normal', playOrder(cfg.players, m.dealer));
-      }
-      return m;
-    }
-    case 'requestCarteta': {
-      if (m.phase !== 'deal') throw new RuleError('Solo se puede pedir carteta antes de repartir.');
-      if (teamOf(seat) === teamOf(m.dealer)) throw new RuleError('Tu equipo es mano: puede repartir carteta directamente.');
-      if (!cartetaAllowed(m)) throw new RuleError('Ahora no se puede jugar carteta.');
-      m.cartetaRequest = teamOf(seat);
-      emit(m, { kind: 'cartetaRequest', team: teamOf(seat) });
+      emit(m, { kind: 'deal', dealer: m.dealer });
+      startHand(m, rng);
       return m;
     }
   }

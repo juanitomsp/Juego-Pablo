@@ -14,8 +14,7 @@ export function parseAction(a: unknown): Action | null {
   if (!isObj(a)) return null;
   switch (a.type) {
     case 'deal':
-      return { type: 'deal', carteta: a.carteta === true };
-    case 'requestCarteta':
+      return { type: 'deal' };
     case 'bet':
     case 'accept':
     case 'reject':
@@ -47,7 +46,6 @@ export function parseConfigPatch(p: unknown): Partial<GameConfig> {
   for (const k of ['pointsPerCuerno', 'cuernosPerPablo', 'pablosToWin'] as const) {
     if (typeof p[k] === 'number' && Number.isFinite(p[k])) out[k] = p[k] as number;
   }
-  if (typeof p.carteta === 'boolean') out.carteta = p.carteta;
   if (typeof p.senas === 'boolean') out.senas = p.senas;
   if (Array.isArray(p.teamNames) && p.teamNames.length === 2 && p.teamNames.every((n) => typeof n === 'string')) {
     out.teamNames = [p.teamNames[0] as string, p.teamNames[1] as string];

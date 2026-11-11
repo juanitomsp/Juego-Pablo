@@ -15,7 +15,7 @@ service cloud.firestore {
 
     function validMatch(d, matchId) {
       return d.keys().hasOnly(['id', 'date', 'mode', 'players', 'won', 'pablos', 'hands',
-               'handsWon', 'tricksWon', 'betsMade', 'betsWon', 'cartetas'])
+               'handsWon', 'tricksWon', 'betsMade', 'betsWon'])
         && d.keys().hasAll(['id', 'date', 'mode', 'players', 'won', 'pablos'])
         && d.id == matchId && d.id is string && d.id.size() <= 120
         && d.date is string && d.date.size() <= 40
@@ -24,7 +24,7 @@ service cloud.firestore {
         && (d.won == null || d.won is bool)
         && d.pablos is list && d.pablos.size() == 2 && smallInt(d.pablos[0]) && smallInt(d.pablos[1])
         && smallInt(d.get('hands', 0)) && smallInt(d.get('handsWon', 0)) && smallInt(d.get('tricksWon', 0))
-        && smallInt(d.get('betsMade', 0)) && smallInt(d.get('betsWon', 0)) && smallInt(d.get('cartetas', 0));
+        && smallInt(d.get('betsMade', 0)) && smallInt(d.get('betsWon', 0));
     }
 
     match /users/{uid}/matches/{matchId} {
