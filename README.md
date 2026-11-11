@@ -28,6 +28,7 @@ Abre <http://localhost:5173>. Arranca a la vez el servidor de juego (puerto 3001
 | `npm test` | Tests del motor de reglas (Vitest) |
 | `npm run typecheck` | Comprobación de tipos |
 | `npm run build` | Compila cliente (`dist/client`) y servidor (`dist/server`) |
+| `npm run jugar` | Compila y arranca; muestra la dirección para entrar desde los móviles de la misma WiFi |
 | `npm start` | Producción: un único proceso Node sirve el juego en `PORT` (3001) |
 | `npx tsx scripts/bot-client.ts CODIGO` | Mete un «jugador» automático en una sala online, para probar |
 
@@ -35,12 +36,14 @@ Abre <http://localhost:5173>. Arranca a la vez el servidor de juego (puerto 3001
 
 | Documento | Contenido |
 |---|---|
+| [docs/JUGAR_CON_AMIGOS.md](docs/JUGAR_CON_AMIGOS.md) | **Cómo jugar con amigos desde el móvil** (misma WiFi o por internet) |
 | [docs/REGLAS.md](docs/REGLAS.md) | Reglas tal como las aplica el juego y decisiones de interpretación (también se ve dentro del juego) |
 | [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Estructura del código, motor de reglas, servidor, cliente, bots |
 | [docs/PROTOCOLO.md](docs/PROTOCOLO.md) | Mensajes entre cliente y servidor (Socket.IO) |
 | [docs/CUENTAS_Y_DATOS.md](docs/CUENTAS_Y_DATOS.md) | Qué datos se guardan, dónde, y cómo activar las cuentas de Google |
 | [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md) | Cómo publicarlo (Render, Railway, Fly.io, Docker, Vercel) |
 | [docs/PUBLICACION.md](docs/PUBLICACION.md) | Lista de comprobación legal y de producto antes de publicar |
+| [docs/CARTAS.md](docs/CARTAS.md) | Dibujos de las cartas y cómo usar imágenes propias |
 | [docs/PRIVACIDAD.md](docs/PRIVACIDAD.md) | Plantilla de política de privacidad (también dentro del juego) |
 
 ## Estructura

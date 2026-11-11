@@ -107,6 +107,16 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
           >
             {copied ? '¡Copiado!' : 'Copiar enlace'}
           </button>
+          {'share' in navigator && (
+            <button
+              className="primary"
+              onClick={() =>
+                navigator.share({ title: 'El Pablo', text: `¡Vente a jugar al Pablo! Sala ${room.code}`, url: link }).catch(() => {})
+              }
+            >
+              Compartir
+            </button>
+          )}
         </div>
       </section>
 

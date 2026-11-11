@@ -14,6 +14,7 @@
     "build": "vite build && npm run build:server",
     "build:server": "esbuild src/server/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/server/index.js",
     "start": "node dist/server/index.js",
+    "jugar": "npm run build && npm start",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

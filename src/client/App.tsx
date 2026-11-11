@@ -3,6 +3,7 @@ import { Home } from './screens/Home';
 import { LiveScore } from './screens/LiveScore';
 import { Practice } from './screens/Practice';
 import { DocPage } from './screens/DocPage';
+import { DeckScreen } from './screens/DeckScreen';
 import { RoomScreen } from './screens/RoomScreen';
 import { StatsScreen } from './screens/StatsScreen';
 import reglas from '../../docs/REGLAS.md?raw';
@@ -37,6 +38,8 @@ export function App() {
       return <DocPage title="Reglas del Pablo" source={reglas} />;
     case 'privacidad':
       return <DocPage title="Privacidad" source={privacidad} />;
+    case 'baraja':
+      return <DeckScreen />;
     case 'estadisticas':
       return <StatsScreen />;
     default:

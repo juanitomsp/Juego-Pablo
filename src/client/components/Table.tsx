@@ -25,20 +25,23 @@ export function useSnapshot(c: Controller) {
   );
 }
 
+// Posición de cada asiento en la mesa (% del tapete), empezando por ti (abajo) y siguiendo hacia tu derecha.
+// Los asientos laterales se anclan por su borde exterior para que no se salgan en pantallas estrechas.
 const POS4 = [
   [50, 86],
-  [88, 50],
+  [97, 50],
   [50, 12],
-  [12, 50],
+  [3, 50],
 ];
 const POS6 = [
   [50, 87],
-  [87, 68],
-  [87, 26],
+  [97, 70],
+  [97, 28],
   [50, 10],
-  [13, 26],
-  [13, 68],
+  [3, 28],
+  [3, 70],
 ];
+const sideClass = (x: number) => (x < 20 ? 'side-left' : x > 80 ? 'side-right' : '');
 
 const REASON: Record<string, string> = {
   bazas: 'por bazas',
@@ -164,8 +167,32 @@ interface InnerProps {
   onReplaceWithBot?: (seat: number) => void;
 }
 
+/** En pantallas táctiles, la primera pulsación selecciona la carta y la segunda la juega (evita toques accidentales). */
+const isTouch = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+
+/** Mantiene la pantalla encendida mientras se juega (si el navegador lo permite). */
+function useWakeLock() {
+  useEffect(() => {
+    type WakeLock = { release: () => Promise<void> };
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<WakeLock> } };
+    if (!nav.wakeLock) return;
+    let lock: WakeLock | null = null;
+    const request = () => {
+      if (document.visibilityState === 'visible') nav.wakeLock!.request('screen').then((l) => (lock = l)).catch(() => {});
+    };
+    request();
+    document.addEventListener('visibilitychange', request);
+    return () => {
+      document.removeEventListener('visibilitychange', request);
+      void lock?.release().catch(() => {});
+    };
+  }, []);
+}
+
 function TableInner(p: InnerProps) {
   const { room, view, now, hints, act } = p;
+  const [selected, setSelected] = useState<string | null>(null);
+  useWakeLock();
   const n = room.config.players;
   const you = view.you;
   const base = you ?? 0;
@@ -220,6 +247,22 @@ function TableInner(p: InnerProps) {
   const lastResult = view.phase === 'handEnd' || view.phase === 'finished' ? view.history[view.history.length - 1] : null;
   const disconnected = room.seats.filter((s) => !s.connected && !s.bot && s.name);
 
+  // Vibrar (en móviles que lo permitan) cuando te toca actuar; y olvidar la carta seleccionada al cambiar de turno.
+  const needsMe = !!h && view.phase === 'hand' && ((h.phase === 'playing' && h.turn === you) || h.canRespond || h.canDecideQuiero);
+  const needsMeKey = needsMe ? `${view.handNumber}-${h!.trickIndex}-${h!.trick.length}-${h!.phase}` : '';
+  useEffect(() => {
+    setSelected(null);
+    if (needsMeKey) navigator.vibrate?.(60);
+  }, [needsMeKey]);
+
+  const onCard = (c: Card) => {
+    const id = cardId(c);
+    if (isTouch && selected !== id) return setSelected(id);
+    setSelected(null);
+    act({ type: 'play', card: c });
+  };
+  if (isTouch && h && h.turn === you && selected && status.startsWith('Te toca')) status = 'Toca otra vez la carta para jugarla.';
+
   return (
     <div className="game">
       <header className="scorebar">
@@ -232,7 +275,8 @@ function TableInner(p: InnerProps) {
               {view.score[t] >= view.quieroThreshold && <span className="tag quiero">al quiero</span>}
             </div>
             <div className="sub">
-              Cuernos {view.cuernos[t]}/{room.config.cuernosPerPablo} · Pablos {view.pablos[t]}/{room.config.pablosToWin}
+              <span title="Cuernos (partidas) ganados">🐂 {view.cuernos[t]}/{room.config.cuernosPerPablo}</span>
+              {room.config.pablosToWin > 1 && <span title="Pablos ganados"> · 🏆 {view.pablos[t]}/{room.config.pablosToWin}</span>}
             </div>
           </div>
         ))}
@@ -284,7 +328,7 @@ function TableInner(p: InnerProps) {
           return (
             <div
               key={s.seat}
-              className={`seat team-${teamOf(s.seat)} ${isTurn ? 'turn' : ''} ${active ? '' : 'inactive'} ${rel(s.seat) === 0 ? 'me' : ''}`}
+              className={`seat ${sideClass(x)} team-${teamOf(s.seat)} ${isTurn ? 'turn' : ''} ${active ? '' : 'inactive'} ${rel(s.seat) === 0 ? 'me' : ''}`}
               style={{ left: `${x}%`, top: `${y}%` }}
             >
               <div className="seat-name">
@@ -315,7 +359,7 @@ function TableInner(p: InnerProps) {
         <div className="trick">
           {showTrick.map((pl) => {
             const [x, y] = pos(pl.seat);
-            const tx = 50 + (x - 50) * 0.38;
+            const tx = 50 + (x - 50) * 0.36;
             const ty = 50 + (y - 50) * 0.42;
             return (
               <div key={cardId(pl.card)} className="trick-card" style={{ left: `${tx}%`, top: `${ty}%` }}>
@@ -423,8 +467,9 @@ function TableInner(p: InnerProps) {
               hints={hints}
               playable={playable}
               dimmed={isMyTurn && !playable}
+              selected={selected === cardId(c)}
               highlight={!!h?.muestraInHand && h.dealer === you && c.suit === h.muestra.suit && c.rank === h.muestra.rank}
-              onClick={playable ? () => act({ type: 'play', card: c }) : undefined}
+              onClick={playable ? () => onCard(c) : undefined}
             />
           );
         })}
@@ -433,17 +478,17 @@ function TableInner(p: InnerProps) {
       <footer className="toolbar">
         {room.config.senas && myTeam !== null && (
           <button className={p.panel === 'senas' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'senas' ? 'none' : 'senas')}>
-            🤫 Señas
+            🤫<span className="tb-label"> Señas</span>
           </button>
         )}
         <button className={p.panel === 'chat' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'chat' ? 'none' : 'chat')}>
-          💬 Frases
+          💬<span className="tb-label"> Frases</span>
         </button>
         <button className={p.panel === 'log' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'log' ? 'none' : 'log')}>
-          📜 Historial
+          📜<span className="tb-label"> Historial</span>
         </button>
         <button className={p.panel === 'orden' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'orden' ? 'none' : 'orden')}>
-          🃏 Orden
+          🃏<span className="tb-label"> Orden</span>
         </button>
         <label className="toggle">
           <input type="checkbox" checked={hints} onChange={(e) => p.setHints(e.target.checked)} /> Ayudas
@@ -455,6 +500,9 @@ function TableInner(p: InnerProps) {
 
       {p.panel !== 'none' && (
         <aside className="side-panel">
+          <button className="close" aria-label="Cerrar" onClick={() => p.setPanel('none')}>
+            ✕
+          </button>
           {p.panel === 'senas' && (
             <>
               <h4>Señas a tu compañero</h4>

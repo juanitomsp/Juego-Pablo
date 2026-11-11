@@ -6,6 +6,7 @@
 import express from 'express';
 import { createServer } from 'node:http';
 import { existsSync } from 'node:fs';
+import { networkInterfaces } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Server, Socket } from 'socket.io';
@@ -141,4 +142,12 @@ if (clientDir) {
   app.get(/^(?!\/socket\.io|\/api).*/, (_req, res) => res.sendFile(join(clientDir, 'index.html')));
 }
 
-http.listen(PORT, () => console.log(`Servidor del Pablo escuchando en http://localhost:${PORT}`));
+http.listen(PORT, () => {
+  console.log(`Servidor del Pablo escuchando en http://localhost:${PORT}`);
+  // Direcciones para entrar desde otros dispositivos de la misma red WiFi (móviles).
+  const lan = Object.values(networkInterfaces())
+    .flat()
+    .filter((i) => i && i.family === 'IPv4' && !i.internal)
+    .map((i) => `http://${i!.address}:${PORT}`);
+  if (clientDir && lan.length) console.log(`Desde los móviles en la misma WiFi: ${lan.join('  o  ')}`);
+});

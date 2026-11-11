@@ -107,7 +107,7 @@ export function Home() {
       </section>
 
       <footer className="site-footer">
-        <a href="#/privacidad">Privacidad</a> · <a href="#/reglas">Reglas</a> · Reglas basadas en el artículo «Paulo (juego de naipes)» de Wikipedia (CC BY-SA 4.0)
+        <a href="#/privacidad">Privacidad</a> · <a href="#/reglas">Reglas</a> · <a href="#/baraja">Ver la baraja</a> · Reglas basadas en el artículo «Paulo (juego de naipes)» de Wikipedia (CC BY-SA 4.0)
       </footer>
     </main>
   );
