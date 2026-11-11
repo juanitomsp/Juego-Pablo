@@ -51,6 +51,7 @@ Recomendación: instala **Node 22 LTS**, actualiza `vitest` y revisa `npm audit 
 - [ ] Si el servidor está detrás de un proxy (nginx, Caddy, Render, Railway…): `TRUST_PROXY=1`. **No lo actives si no hay proxy**, o cualquiera podría falsear su IP para saltarse los límites.
 - [ ] Si el cliente va en otro dominio (Vercel): `CORS_ORIGIN=https://tu-dominio.vercel.app` en el servidor.
 - [ ] Abrir en el firewall solo los puertos 80/443 (y SSH). El puerto de Node (3001) solo hacia el proxy local.
+- [ ] Que Node escuche solo en local (`HOST=127.0.0.1`), para que nadie se salte el proxy. El script de instalación ya lo hace.
 - [ ] Ejecutar Node con un usuario sin privilegios y reiniciarlo automáticamente (systemd, pm2 o Docker con `--restart unless-stopped`).
 - [ ] Actualizaciones del sistema operativo y de Node al día.
 - [ ] `npm audit --omit=dev` sin avisos nuevos.

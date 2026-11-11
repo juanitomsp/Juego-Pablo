@@ -2,14 +2,20 @@
 # =============================================================================
 #  Instalación de El Pablo en un servidor Ubuntu / Debian.
 #
-#  Uso (en el servidor, como usuario con sudo):
-#    sudo DOMINIO=pablo.tudominio.es bash scripts/instalar-servidor.sh
+#  Dos modos:
+#
+#  A) Con dominio propio (https con Caddy, puertos 80/443 abiertos a internet):
+#       sudo DOMINIO=pablo.tudominio.es bash instalar-servidor.sh
+#
+#  B) Sin dominio, con Tailscale Funnel (servidor en casa, sin abrir puertos del router):
+#       sudo bash instalar-servidor.sh
+#     El juego queda en https://NOMBRE-DEL-EQUIPO.TU-TAILNET.ts.net
 #
 #  Variables opcionales:
 #    REPO=https://github.com/juanitomsp/Juego-Pablo.git   Repositorio a descargar
 #    RAMA=juego-pablo                                       Rama
 #    PUERTO=3001                                            Puerto interno de Node
-#    FIREWALL=si|no                                         Activar ufw (por defecto: si)
+#    FIREWALL=si|no                                         Activar ufw (por defecto: si con dominio, no con Tailscale)
 #
 #  Se puede ejecutar varias veces: actualiza lo que ya exista.
 #  Ver docs/DESPLIEGUE.md (opción B).
@@ -20,7 +26,6 @@ DOMINIO="${DOMINIO:-}"
 REPO="${REPO:-https://github.com/juanitomsp/Juego-Pablo.git}"
 RAMA="${RAMA:-juego-pablo}"
 PUERTO="${PUERTO:-3001}"
-FIREWALL="${FIREWALL:-si}"
 USUARIO="pablo"
 DIR="/home/$USUARIO/app"
 
@@ -30,10 +35,20 @@ error() { printf '\033[1;31m[x] %s\033[0m\n' "$*" >&2; exit 1; }
 
 # ----------------------------------------------------------------- Comprobaciones
 [ "$(id -u)" -eq 0 ] || error "Ejecútalo con sudo:  sudo DOMINIO=tu.dominio.es bash $0"
-[ -n "$DOMINIO" ] || error "Falta el dominio. Ejemplo:  sudo DOMINIO=pablo.tudominio.es bash $0"
-[[ "$DOMINIO" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]] || error "El dominio '$DOMINIO' no parece válido (sin https:// ni barras)."
 command -v apt-get >/dev/null || error "Este script es para Ubuntu o Debian (necesita apt-get)."
 
+if [ -n "$DOMINIO" ]; then
+  MODO=caddy
+  [[ "$DOMINIO" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]] || error "El dominio '$DOMINIO' no parece válido (sin https:// ni barras)."
+elif command -v tailscale >/dev/null && tailscale status >/dev/null 2>&1; then
+  MODO=tailscale
+else
+  error "Indica un dominio (sudo DOMINIO=pablo.tudominio.es bash $0) o instala y conecta Tailscale para usar Funnel."
+fi
+FIREWALL="${FIREWALL:-$([ "$MODO" = caddy ] && echo si || echo no)}"
+echo "Modo de publicación: $MODO"
+
+if [ "$MODO" = caddy ]; then
 # Si otro programa (nginx, apache...) ya usa los puertos 80/443, Caddy no podría arrancar.
 OCUPADOS="$(ss -tlnpH '( sport = :80 or sport = :443 )' 2>/dev/null | grep -v caddy || true)"
 if [ -n "$OCUPADOS" ]; then
@@ -47,6 +62,7 @@ IP_DOMINIO="$(getent ahostsv4 "$DOMINIO" 2>/dev/null | awk 'NR==1{print $1}' || 
 if [ -n "$IP_PUBLICA" ] && [ "$IP_PUBLICA" != "$IP_DOMINIO" ]; then
   aviso "El dominio $DOMINIO apunta a '${IP_DOMINIO:-nada}', pero este servidor es $IP_PUBLICA."
   aviso "Crea un registro A en tu proveedor de dominio. Sin eso, https no funcionará (puedes seguir y se arreglará solo cuando apunte)."
+fi
 fi
 
 # ----------------------------------------------------------------- Paquetes
@@ -63,7 +79,7 @@ if [ "${NODE_MAYOR:-0}" -lt 20 ]; then
 fi
 echo "Node $(node -v)"
 
-if ! command -v caddy >/dev/null; then
+if [ "$MODO" = caddy ] && ! command -v caddy >/dev/null; then
   verde "Instalando Caddy (servidor web con https automático)"
   if ! apt-cache policy caddy 2>/dev/null | grep -q 'Candidate: [0-9]'; then
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
@@ -103,6 +119,8 @@ WorkingDirectory=$DIR
 Environment=NODE_ENV=production
 Environment=PORT=$PUERTO
 Environment=TRUST_PROXY=1
+# Solo accesible a través del proxy (Caddy o Tailscale), nunca directamente desde fuera.
+Environment=HOST=127.0.0.1
 ExecStart=$(command -v node) dist/server/index.js
 Restart=always
 RestartSec=3
@@ -120,7 +138,8 @@ systemctl daemon-reload
 systemctl enable pablo >/dev/null 2>&1
 systemctl restart pablo
 
-# ----------------------------------------------------------------- Caddy (https)
+# ----------------------------------------------------------------- Publicación
+if [ "$MODO" = caddy ]; then
 verde "Configurando https para $DOMINIO"
 CADDYFILE=/etc/caddy/Caddyfile
 BLOQUE="$DOMINIO {
@@ -141,6 +160,20 @@ fi
 caddy validate --config "$CADDYFILE" --adapter caddyfile >/dev/null || error "La configuración de Caddy no es válida. Revisa $CADDYFILE"
 systemctl enable caddy >/dev/null 2>&1
 systemctl reload caddy 2>/dev/null || systemctl restart caddy
+URL="https://$DOMINIO"
+else
+  verde "Publicando con Tailscale Funnel"
+  NOMBRE="$(tailscale status --json | python3 -c 'import sys, json; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')"
+  URL="https://$NOMBRE"
+  echo "Si es la primera vez, Tailscale puede mostrar un enlace para activar Funnel en tu cuenta:"
+  echo "ábrelo en el navegador, actívalo y el script continuará solo."
+  if ! tailscale funnel --bg "$PUERTO"; then
+    aviso "No se pudo activar Funnel. Entra en https://login.tailscale.com/admin/dns y activa 'HTTPS Certificates',"
+    aviso "luego en https://login.tailscale.com/admin/acls permite Funnel para este equipo, y vuelve a ejecutar este script."
+    exit 1
+  fi
+  tailscale funnel status || true
+fi
 
 # ----------------------------------------------------------------- Firewall
 if [ "$FIREWALL" = "si" ]; then
@@ -167,10 +200,15 @@ done
 [ "${OK:-0}" = 1 ] || error "El juego no arranca. Mira el registro con:  sudo journalctl -u pablo -n 50"
 
 verde "¡Listo!"
-echo "  Abre:        https://$DOMINIO"
+echo "  Abre:        $URL"
 echo "  Estado:      sudo systemctl status pablo"
 echo "  Registro:    sudo journalctl -u pablo -f"
 echo "  Actualizar:  sudo bash $DIR/scripts/actualizar-servidor.sh"
-echo
-echo "  Si tu proveedor (Hetzner, OVH, AWS, Oracle...) tiene un firewall en su panel web,"
-echo "  abre allí también los puertos 80 y 443."
+if [ "$MODO" = caddy ]; then
+  echo
+  echo "  Si tu proveedor (Hetzner, OVH, AWS, Oracle...) tiene un firewall en su panel web,"
+  echo "  abre allí también los puertos 80 y 443."
+else
+  echo
+  echo "  La primera visita puede tardar unos segundos mientras Tailscale genera el certificado https."
+fi

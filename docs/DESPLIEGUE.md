@@ -237,6 +237,33 @@ sudo journalctl -u pablo -f
 
 Al reiniciar se cierran las salas abiertas: hazlo cuando nadie esté jugando.
 
+## B2. Servidor en casa con Tailscale (sin dominio)
+
+Si tu servidor está en casa y lo usas a través de **Tailscale** (su IP empieza por `100.`), no hace falta dominio ni abrir puertos en el router. **Tailscale Funnel** publica el juego en internet con https en una dirección del tipo `https://NOMBRE.TU-TAILNET.ts.net`. Tus amigos **no** necesitan instalar Tailscale.
+
+1. 💻 Entra en el servidor (con tu alias de `~/.ssh/config`, por ejemplo):
+   ```bash
+   ssh torre
+   ```
+2. 🖥️ Pega esto, **sin** `DOMINIO`:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/juanitomsp/Juego-Pablo/juego-pablo/scripts/instalar-servidor.sh -o instalar.sh && sudo bash instalar.sh
+   ```
+3. La primera vez, Tailscale puede mostrar un **enlace para activar Funnel** en tu cuenta. Ábrelo en el navegador, acepta y el script sigue solo.
+   Si en vez de un enlace sale un error, activa en el panel de Tailscale:
+   - <https://login.tailscale.com/admin/dns>: **HTTPS Certificates**
+   - <https://login.tailscale.com/admin/acls>: el permiso `funnel` (el panel ofrece añadirlo con un botón)
+
+   Después, vuelve a ejecutar el script.
+4. Al terminar muestra la dirección pública. Mándasela a tus amigos.
+
+Detalles de este modo:
+
+- El juego escucha solo en `127.0.0.1`; desde fuera únicamente se llega a través de Funnel.
+- El firewall no se toca (en casa no hay puertos abiertos al exterior).
+- Para quitarlo de internet: `sudo tailscale funnel --https=443 off`. Para volver a publicarlo: `sudo tailscale funnel --bg 3001`.
+- El servidor tiene que estar encendido para jugar.
+
 ## C. Vercel (cliente) + tu servidor (juego)
 
 1. Monta el servidor como en la **opción B**, con su dominio y https (por ejemplo `api.tudominio.es`). Añade en el servicio:

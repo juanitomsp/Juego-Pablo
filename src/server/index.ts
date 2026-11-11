@@ -6,6 +6,8 @@
  *   CORS_ORIGIN   Orígenes permitidos si el cliente está en otro dominio (p. ej. Vercel), separados por comas.
  *   TRUST_PROXY   1 si el servidor está detrás de un proxy (nginx, Caddy, Render...) para leer la IP real.
  *   MAX_ROOMS     Máximo de salas simultáneas (por defecto 500).
+ *   HOST          Interfaz de escucha. 127.0.0.1 = solo accesible a través del proxy (Caddy, Tailscale).
+ *                 Por defecto, todas (necesario para jugar en la WiFi de casa con `npm run jugar`).
  */
 import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
@@ -15,6 +17,7 @@ import { createGameServer } from './app';
 
 const portArg = process.argv.indexOf('--port');
 const PORT = Number(portArg > 0 ? process.argv[portArg + 1] : (process.env.PORT ?? 3001));
+const HOST = process.env.HOST || undefined;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const clientDir = [join(here, '../client'), join(process.cwd(), 'dist/client')].find((d) => existsSync(join(d, 'index.html')));
@@ -31,14 +34,14 @@ const server = createGameServer({
 
 process.on('unhandledRejection', (e) => console.error('Promesa rechazada sin capturar:', e));
 
-server.http.listen(PORT, () => {
-  console.log(`Servidor del Pablo escuchando en http://localhost:${PORT}`);
+server.http.listen(PORT, HOST, () => {
+  console.log(`Servidor del Pablo escuchando en http://${HOST ?? 'localhost'}:${PORT}`);
   // Direcciones para entrar desde otros dispositivos de la misma red WiFi (móviles).
   const lan = Object.values(networkInterfaces())
     .flat()
     .filter((i) => i && i.family === 'IPv4' && !i.internal)
     .map((i) => `http://${i!.address}:${PORT}`);
-  if (clientDir && lan.length) console.log(`Desde los móviles en la misma WiFi: ${lan.join('  o  ')}`);
+  if (clientDir && lan.length && !HOST) console.log(`Desde los móviles en la misma WiFi: ${lan.join('  o  ')}`);
 });
 
 const shutdown = () => {
