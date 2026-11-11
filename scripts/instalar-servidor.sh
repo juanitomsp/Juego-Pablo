@@ -15,6 +15,7 @@
 #    REPO=https://github.com/juanitomsp/Juego-Pablo.git   Repositorio a descargar
 #    RAMA=juego-pablo                                       Rama
 #    PUERTO=3001                                            Puerto interno de Node
+#    CORS_ORIGIN=https://tu-juego.vercel.app                Web en otro dominio (Vercel) que puede conectarse
 #    FIREWALL=si|no                                         Activar ufw (por defecto: si con dominio, no con Tailscale)
 #
 #  Se puede ejecutar varias veces: actualiza lo que ya exista.
@@ -26,6 +27,7 @@ DOMINIO="${DOMINIO:-}"
 REPO="${REPO:-https://github.com/juanitomsp/Juego-Pablo.git}"
 RAMA="${RAMA:-juego-pablo}"
 PUERTO="${PUERTO:-3001}"
+CORS_ORIGIN="${CORS_ORIGIN:-}"
 USUARIO="pablo"
 DIR="/home/$USUARIO/app"
 
@@ -47,6 +49,12 @@ else
 fi
 FIREWALL="${FIREWALL:-$([ "$MODO" = caddy ] && echo si || echo no)}"
 echo "Modo de publicación: $MODO"
+if [ -n "$CORS_ORIGIN" ]; then
+  for o in ${CORS_ORIGIN//,/ }; do
+    [[ "$o" =~ ^https://[a-zA-Z0-9.-]+(:[0-9]+)?$ ]] || error "CORS_ORIGIN '$o' no es válido: debe ser https://dominio, sin barra final."
+  done
+  echo "Webs externas permitidas: $CORS_ORIGIN"
+fi
 
 if [ "$MODO" = caddy ]; then
 # Si otro programa (nginx, apache...) ya usa los puertos 80/443, Caddy no podría arrancar.
@@ -121,6 +129,7 @@ Environment=PORT=$PUERTO
 Environment=TRUST_PROXY=1
 # Solo accesible a través del proxy (Caddy o Tailscale), nunca directamente desde fuera.
 Environment=HOST=127.0.0.1
+$( [ -n "$CORS_ORIGIN" ] && echo "Environment=CORS_ORIGIN=$CORS_ORIGIN" || true )
 ExecStart=$(command -v node) dist/server/index.js
 Restart=always
 RestartSec=3

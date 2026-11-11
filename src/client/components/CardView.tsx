@@ -8,6 +8,8 @@
  * (p. ej. 4-bastos.png, 11-oros.png) y un reverso.png. Ver docs/CARTAS.md.
  */
 import { Card, Suit, cardName, trumpRole } from '../../shared/engine';
+import { useDeckStyle } from '../services/deckStyle';
+import { FaccionesBack, FaccionesFace } from './decks/Facciones';
 
 const IMAGE_BASE = (import.meta.env.VITE_CARD_IMAGES as string | undefined)?.replace(/\/$/, '');
 
@@ -218,14 +220,15 @@ function FrameLine({ y, pintas, col }: { y: number; pintas: number; col: string 
 }
 
 export function CardView({ card, faceDown, trump, hints, playable, dimmed, small, highlight, selected, onClick }: CardProps) {
-  const cls = ['card', small && 'small', faceDown && 'back', playable && 'playable', dimmed && 'dimmed', highlight && 'highlight', selected && 'selected']
+  const deck = useDeckStyle();
+  const cls = ['card', `deck-${deck}`, small && 'small', faceDown && 'back', playable && 'playable', dimmed && 'dimmed', highlight && 'highlight', selected && 'selected']
     .filter(Boolean)
     .join(' ');
 
   if (faceDown || !card) {
     return (
       <div className={cls} aria-label="Carta boca abajo">
-        {IMAGE_BASE && <img src={`${IMAGE_BASE}/reverso.png`} alt="" draggable={false} />}
+        {IMAGE_BASE ? <img src={`${IMAGE_BASE}/reverso.png`} alt="" draggable={false} /> : deck === 'facciones' && <FaccionesBack />}
       </div>
     );
   }
@@ -239,6 +242,8 @@ export function CardView({ card, faceDown, trump, hints, playable, dimmed, small
     <Tag className={cls} style={{ ['--suit' as string]: col }} onClick={onClick} aria-label={label} title={label} type={onClick ? 'button' : undefined}>
       {IMAGE_BASE ? (
         <img src={`${IMAGE_BASE}/${card.rank}-${card.suit}.png`} alt={label} draggable={false} />
+      ) : deck === 'facciones' ? (
+        <FaccionesFace card={card} />
       ) : (
         <svg viewBox="0 0 100 150" className="face" aria-hidden="true">
           <rect x="1" y="1" width="98" height="148" rx="8" fill="#fffdf6" />
