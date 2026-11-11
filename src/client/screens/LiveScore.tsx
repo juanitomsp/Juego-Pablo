@@ -29,7 +29,8 @@ interface LiveState {
 }
 
 const KEY = 'pablo.live';
-const HAND = 3;
+/** Valor de una mano sin apuestas; cada apuesta aceptada suma 1. */
+const HAND = 1;
 
 const fresh = (prev?: Partial<LiveState>): LiveState => ({
   players: prev?.players ?? 4,
@@ -120,7 +121,7 @@ export function LiveScore() {
     commit(n);
   };
 
-  const bet = () => commit({ ...s, stake: s.betCount === 0 ? 6 : s.stake + 3, betCount: s.betCount + 1 });
+  const bet = () => commit({ ...s, stake: s.stake + 1, betCount: s.betCount + 1 });
 
   return (
     <main className="page live">
@@ -221,7 +222,7 @@ export function LiveScore() {
             <em>Quiero forzoso: sin apuestas.</em>
           ) : (
             <>
-              <button onClick={bet}>Apuesta aceptada → {s.betCount === 0 ? 6 : s.stake + 3}</button>{' '}
+              <button onClick={bet}>Apuesta aceptada → {s.stake + 1}</button>{' '}
               {s.betCount > 0 && (
                 <button className="link" onClick={() => setS({ ...s, stake: HAND, betCount: 0 })}>
                   reiniciar

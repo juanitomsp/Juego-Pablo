@@ -53,7 +53,7 @@ Cartas que **no** son triunfo, de mayor a menor: **Rey, Caballo, Sota, As, 7, 6,
 ## 4. Objetivo y puntuación
 
 - Cada **mano** se juega a 5 bazas: gana la mano el equipo que haga **3 bazas**.
-- Una mano sin apuestas vale **3 puntos**.
+- Una mano sin apuestas vale **1 punto**.
 - El primer equipo en llegar a **24 puntos** gana un **cuerno**. Al ganarlo, los puntos de ambos equipos vuelven a 0.
 - **2 cuernos** forman un **Pablo**.
 - Gana la partida el equipo que consiga **2 Pablos** antes que el rival.
@@ -96,10 +96,12 @@ Si no se han decidido los equipos, se reparten cartas boca arriba de una en una;
 
 - Se apuesta **en tu turno, antes de echar carta**.
 - La **primera apuesta** de una mano la puede hacer, como pronto, el **postre en la primera baza** (a 6 jugadores, el **segundo** en echar carta). Si algún equipo está al quiero, se puede apostar desde el principio.
-- La primera apuesta, si se acepta, hace que la mano valga **6 puntos**. Cada apuesta posterior **sube 3** (9, 12, 15…), hasta un máximo de 24.
+- Cada apuesta **sube 1 punto** el valor de la mano: si se acepta la primera, la mano pasa de 1 a **2**; la siguiente, a **3**; y así sucesivamente, hasta un máximo de 24.
 - Tras una apuesta, el equipo rival debe responder:
   - **Quiero:** la mano pasa a valer lo apostado y se sigue jugando.
-  - **No quiero:** el equipo que apostó gana la mano y se lleva **lo que valía antes** de la apuesta.
+  - **No quiero:** la mano termina y el equipo que apostó se lleva **lo que valía hasta ese momento** (sin la subida que no se ha aceptado).
+
+> Ejemplo: la mano vale 1. Apuesto: si el rival acepta, vale 2; si no quiere, gano 1. Si aceptó y vuelvo a subir: si acepta, vale 3; si no quiere, gano 2.
 - Un equipo puede **irse** (abandonar) en su turno: el rival gana lo que vale la mano en ese momento.
 
 > 📌 **Decisión:** cualquier jugador puede apostar o subir en su turno (no es obligatorio alternar equipos). Responde cualquier jugador del equipo rival; vale la primera respuesta. Aceptar una apuesta no impide irse después, pero entonces el rival cobra el valor ya aceptado.
@@ -126,10 +128,10 @@ Online, el botón **🤫 Señas** las envía **solo a tu equipo**. Se pueden des
 
 ### 8.1 Al quiero
 
-Un equipo está **al quiero** cuando le basta ganar una mano para ganar el cuerno (con las cifras por defecto, a partir de **21 puntos**).
+Un equipo está **al quiero** cuando le basta ganar una mano para ganar el cuerno (con las cifras por defecto, a partir de **23 puntos**).
 
 - Tras el reparto, los jugadores de ese equipo **se enseñan sus triunfos** entre ellos y deciden si **juegan** o **se van**.
-- Si se van, el rival gana **3 puntos**.
+- Si se van, el rival gana **1 punto**.
 - Si juegan, se puede apostar desde el primer momento.
 - A 6 jugadores, cuando hay un equipo al quiero se reparten todas las cartas de golpe (sin retención).
 - **Quiero forzoso:** si los dos equipos están al quiero, se juega la mano sin opción a irse ni a apostar; quien la gane se lleva el cuerno.

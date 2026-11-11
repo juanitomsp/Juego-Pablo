@@ -70,7 +70,7 @@ export function chooseBotAction(v: PlayerView, rng: Rng = Math.random): Action |
     const myTeam = teamOf(me);
     const tricksAhead = h.wins[myTeam] - h.wins[1 - myTeam];
     const s = handStrength(mine, trump) + tricksAhead * 0.2;
-    const need = 0.25 + (h.pendingBet.value - v.config.firstBetValue) * 0.03;
+    const need = 0.25 + (h.pendingBet.value - v.config.firstBetValue) * 0.08;
     // Si el rival está al quiero, cualquier mano le da el cuerno: aceptar no cuesta más.
     const rivalAlQuiero = h.quieroTeams.includes(h.pendingBet.team);
     return { type: s >= need || rivalAlQuiero || rng() < 0.15 ? 'accept' : 'reject' };
@@ -83,7 +83,7 @@ export function chooseBotAction(v: PlayerView, rng: Rng = Math.random): Action |
     const myTeam = teamOf(me);
     const s = handStrength(mine, trump) + (h.wins[myTeam] - h.wins[1 - myTeam]) * 0.2;
     const rivalAlQuiero = h.quieroTeams.length > 0 && !h.quieroTeams.includes(myTeam);
-    if ((s > 0.6 && h.stake < 12) || (rivalAlQuiero && s > 0.3) || rng() < 0.04) return { type: 'bet' };
+    if ((s > 0.6 && h.stake < 4) || (rivalAlQuiero && s > 0.3) || rng() < 0.04) return { type: 'bet' };
   }
 
   const legal = mine.filter((c) => h.legal.includes(cardId(c)));

@@ -138,21 +138,21 @@ describe('apuestas', () => {
     const m = playAny(firstHand(6), 1);
     expect(getView(m, 2).hand!.canBet).toBe(true);
   });
-  it('apuesta aceptada vale 6 y rechazada da 3 al que apostó', () => {
+  it('apuesta aceptada vale 2 y rechazada da 1 (lo que valía) al que apostó', () => {
     let m = firstHand(4);
     for (const s of [1, 2, 3]) m = playAny(m, s);
     expect(getView(m, 0).hand!.canBet).toBe(true);
     const rng = seededRng(9);
     m = applyAction(m, 0, { type: 'bet' }, rng);
-    expect(m.hand!.pendingBet!.value).toBe(6);
+    expect(m.hand!.pendingBet!.value).toBe(2);
     const accepted = applyAction(m, 1, { type: 'accept' }, rng);
-    expect(accepted.hand!.stake).toBe(6);
+    expect(accepted.hand!.stake).toBe(2);
     expect(accepted.hand!.turn).toBe(0);
     const rejected = applyAction(m, 3, { type: 'reject' }, rng);
-    expect(rejected.score).toEqual([3, 0]);
+    expect(rejected.score).toEqual([1, 0]);
     expect(() => applyAction(m, 2, { type: 'accept' }, rng)).toThrow();
   });
-  it('cada subida añade 3', () => {
+  it('cada subida añade 1, y si no la quieren se cobra lo ya aceptado', () => {
     let m = firstHand(4);
     for (const s of [1, 2, 3]) m = playAny(m, s);
     m = applyAction(m, 0, { type: 'bet' }, seededRng(1));
@@ -160,19 +160,21 @@ describe('apuestas', () => {
     m = playAny(m, 0);
     const leader = m.hand!.turn;
     m = applyAction(m, leader, { type: 'bet' }, seededRng(1));
-    expect(m.hand!.pendingBet!.value).toBe(9);
+    expect(m.hand!.pendingBet!.value).toBe(3);
+    const rival = [1, 3].includes(leader) ? 0 : 1;
+    expect(applyAction(m, rival, { type: 'reject' }, seededRng(1)).score[leader % 2]).toBe(2);
   });
   it('irse da al rival el valor actual de la mano', () => {
     const m = applyAction(firstHand(4), 1, { type: 'fold' }, seededRng(1));
-    expect(m.score).toEqual([3, 0]);
+    expect(m.score).toEqual([1, 0]);
     expect(m.phase).toBe('handEnd');
   });
 });
 
 describe('quiero', () => {
-  it('con un equipo al quiero, ese equipo decide si juega; si se va, el rival gana 3', () => {
+  it('con un equipo al quiero, ese equipo decide si juega; si se va, el rival gana 1', () => {
     let m = createMatch(cfg4, 0);
-    m.score = [21, 0];
+    m.score = [23, 0];
     m = applyAction(m, 0, { type: 'deal' }, seededRng(4));
     expect(m.hand!.phase).toBe('quiero');
     const v = getView(m, 0);
@@ -180,18 +182,18 @@ describe('quiero', () => {
     expect(v.hand!.partnerTrumps.map((p) => p.seat)).toEqual([2]);
     expect(getView(m, 1).hand!.partnerTrumps).toEqual([]);
     m = applyAction(m, 2, { type: 'quiero', play: false }, seededRng(4));
-    expect(m.score).toEqual([21, 3]);
+    expect(m.score).toEqual([23, 1]);
   });
   it('quiero forzoso: sin apuestas ni irse', () => {
     let m = createMatch(cfg4, 0);
-    m.score = [21, 22];
+    m.score = [23, 23];
     m = applyAction(m, 0, { type: 'deal' }, seededRng(4));
     expect(m.hand!.forced).toBe(true);
     expect(getView(m, 1).hand!.canFold).toBe(false);
   });
   it('ganar la mano al quiero da el cuerno y reinicia los puntos', () => {
     let m = createMatch(cfg4, 0);
-    m.score = [21, 5];
+    m.score = [23, 5];
     m = applyAction(m, 0, { type: 'deal' }, seededRng(4));
     m = applyAction(m, 0, { type: 'quiero', play: true }, seededRng(4));
     m = applyAction(m, 1, { type: 'fold' }, seededRng(4));
@@ -200,7 +202,7 @@ describe('quiero', () => {
   });
   it('dos cuernos hacen un Pablo', () => {
     let m = createMatch(cfg4, 0);
-    m.score = [21, 5];
+    m.score = [23, 5];
     m.cuernos = [1, 0];
     m = applyAction(m, 0, { type: 'deal' }, seededRng(4));
     m = applyAction(m, 0, { type: 'quiero', play: true }, seededRng(4));
