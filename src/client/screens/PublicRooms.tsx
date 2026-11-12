@@ -5,6 +5,7 @@ import { Icon } from '../components/Icon';
 import { SpectatorCount } from '../components/SpectatorCount';
 import { createRoom, fetchPublicRooms } from '../services/controller';
 import { getName } from '../services/identity';
+import { t, tServer } from '../i18n';
 
 /**
  * Partidas públicas: salas abiertas a cualquiera, para jugar con gente de todo el mundo
@@ -32,7 +33,7 @@ export function PublicRooms() {
 
   const needName = () => {
     if (getName().trim()) return false;
-    setError('Antes, escribe tu apodo en la pantalla de inicio.');
+    setError(t('Antes, escribe tu apodo en la pantalla de inicio.'));
     return true;
   };
 
@@ -43,7 +44,7 @@ export function PublicRooms() {
     const r = await createRoom({ players }, true);
     setBusy(false);
     if (r.code) go(`/sala/${r.code}`);
-    else setError(r.error ?? 'No se pudo crear la sala.');
+    else setError(tServer(r.error) || t('No se pudo crear la sala.'));
   };
 
   const waiting = rooms?.filter((r) => !r.started) ?? [];
@@ -53,53 +54,50 @@ export function PublicRooms() {
     <main className="page public-rooms">
       <nav className="topnav">
         <button className="link" onClick={() => go('/')}>
-          ← Inicio
+          ← {t('Inicio')}
         </button>
-        <span>Partidas públicas</span>
+        <span>{t('Partidas públicas')}</span>
       </nav>
 
       <section className="panel">
         <h2>
-          <Icon name="globe" size={22} /> Juega con gente de todas partes
+          <Icon name="globe" size={22} /> {t('Juega con gente de todas partes')}
         </h2>
         <p className="muted">
-          Únete a una mesa que esté buscando jugadores o crea la tuya. También puedes mirar partidas que ya se están jugando.
-          Recuerda: en el chat no se puede insultar.
+          {t('Únete a una mesa que esté buscando jugadores o crea la tuya. También puedes mirar partidas que ya se están jugando. Recuerda: en el chat no se puede insultar.')}
         </p>
         <div className="row">
           <button className="primary" disabled={busy} onClick={() => create(4)}>
-            Crear mesa pública 2 contra 2
+            {t('Crear mesa pública 2 contra 2')}
           </button>
           <button disabled={busy} onClick={() => create(6)}>
-            3 contra 3
+            {t('3 contra 3')}
           </button>
         </div>
         {error && <p className="error">{error}</p>}
       </section>
 
-      {failed && !rooms && <p className="error">No se puede conectar con el servidor. Comprueba tu conexión.</p>}
-      {!rooms && !failed && <p className="muted center">Buscando partidas…</p>}
+      {failed && !rooms && <p className="error">{t('No se puede conectar con el servidor. Comprueba tu conexión.')}</p>}
+      {!rooms && !failed && <p className="muted center">{t('Buscando partidas…')}</p>}
 
       {rooms && (
         <>
           <section className="panel">
-            <h3>Buscando jugadores</h3>
+            <h3>{t('Buscando jugadores')}</h3>
             {waiting.length === 0 ? (
-              <p className="muted">Ahora mismo no hay mesas esperando. ¡Crea una y que se unan los demás!</p>
+              <p className="muted">{t('Ahora mismo no hay mesas esperando. ¡Crea una y que se unan los demás!')}</p>
             ) : (
               <ul className="room-list">
                 {waiting.map((r) => (
                   <li key={r.code} className="room-item">
                     <div className="room-main">
-                      <strong>{r.players === 4 ? '2 contra 2' : '3 contra 3'}</strong>
-                      <span className="muted small">
-                        {r.seated}/{r.players} jugadores
-                      </span>
+                      <strong>{r.players === 4 ? t('2 contra 2') : t('3 contra 3')}</strong>
+                      <span className="muted small">{t('{a}/{b} jugadores', { a: r.seated, b: r.players })}</span>
                     </div>
                     <SeatDots seated={r.seated} total={r.players} />
                     <div className="row tight">
                       <button className="primary" disabled={r.seated >= r.players} onClick={() => !needName() && go(`/sala/${r.code}`)}>
-                        Unirme
+                        {t('Unirme')}
                       </button>
                     </div>
                   </li>
@@ -109,24 +107,24 @@ export function PublicRooms() {
           </section>
 
           <section className="panel">
-            <h3>Jugándose ahora</h3>
+            <h3>{t('Jugándose ahora')}</h3>
             {playing.length === 0 ? (
-              <p className="muted">No hay partidas públicas en juego en este momento.</p>
+              <p className="muted">{t('No hay partidas públicas en juego en este momento.')}</p>
             ) : (
               <ul className="room-list">
                 {playing.map((r) => (
                   <li key={r.code} className="room-item">
                     <div className="room-main">
-                      <strong>{r.players === 4 ? '2 contra 2' : '3 contra 3'}</strong>
+                      <strong>{r.players === 4 ? t('2 contra 2') : t('3 contra 3')}</strong>
                       {r.score && (
                         <span className="muted small">
-                          Marcador {r.score[0]} – {r.score[1]}
+                          {t('Marcador')} {r.score[0]} – {r.score[1]}
                         </span>
                       )}
                     </div>
                     <SpectatorCount n={r.spectators} />
                     <button onClick={() => !needName() && go(`/ver/${r.code}`)}>
-                      <Icon name="eye" size={16} /> Mirar
+                      <Icon name="eye" size={16} /> {t('Mirar')}
                     </button>
                   </li>
                 ))}

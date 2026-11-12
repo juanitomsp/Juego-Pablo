@@ -6,6 +6,8 @@ import { go } from '../App';
 import { Table, useSnapshot } from '../components/Table';
 import { OnlineController } from '../services/controller';
 import { getName, setName } from '../services/identity';
+import { clearLastRoom, setLastRoom } from '../services/lastRoom';
+import { t, tServer } from '../i18n';
 
 export function RoomScreen({ code, watch = false }: { code: string; watch?: boolean }) {
   const [needName, setNeedName] = useState(!getName());
@@ -19,7 +21,7 @@ export function RoomScreen({ code, watch = false }: { code: string; watch?: bool
   }, [code, needName, watch]);
 
   if (needName) return <AskName onDone={() => setNeedName(false)} />;
-  if (!ctrl) return <div className="center-msg">Conectando…</div>;
+  if (!ctrl) return <div className="center-msg">{t('Conectando…')}</div>;
   return <Room ctrl={ctrl} />;
 }
 
@@ -28,8 +30,8 @@ function AskName({ onDone }: { onDone: () => void }) {
   return (
     <main className="page narrow">
       <section className="panel">
-        <h2>¿Cómo te llamamos?</h2>
-        <input autoFocus value={name} maxLength={20} placeholder="Tu apodo" onChange={(e) => setN(e.target.value)} />
+        <h2>{t('¿Cómo te llamamos?')}</h2>
+        <input autoFocus value={name} maxLength={20} placeholder={t('Tu apodo')} onChange={(e) => setN(e.target.value)} />
         <div className="row">
           <button
             className="primary"
@@ -39,7 +41,7 @@ function AskName({ onDone }: { onDone: () => void }) {
               onDone();
             }}
           >
-            Entrar en la sala
+            {t('Entrar en la sala')}
           </button>
         </div>
       </section>
@@ -53,16 +55,26 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
   const [copied, setCopied] = useState(false);
   const leave = () => {
     ctrl.leave();
+    clearLastRoom();
     go('/');
   };
+  const st = snap.state;
+  const seated = !!st?.room.started && st.room.yourSeat !== null;
+  const finished = st?.view?.phase === 'finished';
+  // Recordar la partida para poder volver si se cierra la app.
+  useEffect(() => {
+    if (!st) return;
+    if (seated && !finished) setLastRoom(st.room.code);
+    else if (finished) clearLastRoom();
+  }, [st, seated, finished]);
 
   if (ctrl.kickedReason)
     return (
       <main className="page narrow">
         <section className="panel">
-          <p className="error">⛔ {ctrl.kickedReason}</p>
-          <p className="muted">Recuerda que en el chat no se puede insultar.</p>
-          <button onClick={() => go('/')}>Volver al inicio</button>
+          <p className="error">⛔ {tServer(ctrl.kickedReason)}</p>
+          <p className="muted">{t('Recuerda: en el chat no se puede insultar y hay que respetar a los demás.')}</p>
+          <button onClick={() => go('/')}>{t('Volver al inicio')}</button>
         </section>
       </main>
     );
@@ -70,20 +82,20 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
     return (
       <main className="page narrow">
         <section className="panel">
-          <p className="error">{ctrl.joinError}</p>
-          <button onClick={() => go('/')}>Volver al inicio</button>
+          <p className="error">{tServer(ctrl.joinError)}</p>
+          <button onClick={() => go('/')}>{t('Volver al inicio')}</button>
         </section>
       </main>
     );
   const state = snap.state;
-  if (!state) return <div className="center-msg">{snap.connected ? 'Entrando en la sala…' : 'Conectando con el servidor…'}</div>;
+  if (!state) return <div className="center-msg">{snap.connected ? t('Entrando en la sala…') : t('Conectando con el servidor…')}</div>;
 
   const { room } = state;
   if (room.started) return <Table controller={ctrl} onLeave={leave} onReplaceWithBot={(s) => void ctrl.replaceWithBot(s)} />;
 
   const run = async (p: Promise<string | null>) => {
     const e = await p;
-    setError(e);
+    setError(e ? tServer(e) : null);
   };
   const link = `${window.location.origin}/#/sala/${room.code}`;
   const cfg = room.config;
@@ -94,33 +106,34 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
     <main className="page">
       <nav className="topnav">
         <button className="link" onClick={leave}>
-          ← Salir
+          ← {t('Salir')}
         </button>
-        <span>Sala {room.code}</span>
+        <span>{t('Sala {code}', { code: room.code })}</span>
         <SpectatorCount n={room.spectators} />
       </nav>
       {room.yourSeat === null && (
         <p className="watch-banner">
-          <Icon name="eye" size={18} /> Estás mirando. Si queda un asiento libre, puedes sentarte a jugar.
+          <Icon name="eye" size={18} /> {t('Estás mirando. Si queda un asiento libre, puedes sentarte a jugar.')}
         </p>
       )}
 
       <section className="panel">
         <h2>
-          Código de la sala: <span className="code">{room.code}</span>
+          {t('Código de la sala:')} <span className="code">{room.code}</span>
         </h2>
         <p className="muted">
           {room.isPublic
-            ? 'Sala pública: aparece en «Partidas públicas» y puede entrar cualquiera.'
-            : 'Sala privada: solo entra quien tenga el código o el enlace.'}
+            ? t('Sala pública: aparece en «Partidas públicas» y puede entrar cualquiera.')
+            : t('Sala privada: solo entra quien tenga el código o el enlace.')}
         </p>
+        {room.autoStartAt && <AutoStart at={room.autoStartAt} />}
         {host && (
-          <div className="segmented visibility" role="group" aria-label="Tipo de sala">
+          <div className="segmented visibility" role="group" aria-label={t('Tipo de sala')}>
             <button className={!room.isPublic ? 'on' : ''} onClick={() => run(ctrl.setPublic(false))}>
-              Privada
+              {t('Privada')}
             </button>
             <button className={room.isPublic ? 'on' : ''} onClick={() => run(ctrl.setPublic(true))}>
-              Pública
+              {t('Pública')}
             </button>
           </div>
         )}
@@ -133,48 +146,48 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               } catch {
-                setError('No se pudo copiar; copia el enlace a mano.');
+                setError(t('No se pudo copiar; copia el enlace a mano.'));
               }
             }}
           >
-            {copied ? '¡Copiado!' : 'Copiar enlace'}
+            {copied ? t('¡Copiado!') : t('Copiar enlace')}
           </button>
           {'share' in navigator && (
             <button
               className="primary"
               onClick={() =>
-                navigator.share({ title: 'El Pablo', text: `¡Vente a jugar al Pablo! Sala ${room.code}`, url: link }).catch(() => {})
+                navigator.share({ title: 'El Pablo', text: t('¡Vente a jugar al Pablo! Sala {code}', { code: room.code }), url: link }).catch(() => {})
               }
             >
-              Compartir
+              {t('Compartir')}
             </button>
           )}
         </div>
       </section>
 
       <section className="panel">
-        <h3>Mesa ({cfg.players} jugadores)</h3>
-        <p className="muted small">Los equipos se sientan alternos. Pulsa un asiento libre para cambiarte.</p>
+        <h3>{t('Mesa ({n} jugadores)', { n: cfg.players })}</h3>
+        <p className="muted small">{t('Los equipos se sientan alternos. Pulsa un asiento libre para cambiarte.')}</p>
         <div className="teams">
-          {([0, 1] as const).map((t) => (
-            <div key={t} className={`team-col team-${t}`}>
-              <h4>{cfg.teamNames[t]}</h4>
+          {([0, 1] as const).map((tm) => (
+            <div key={tm} className={`team-col team-${tm}`}>
+              <h4>{cfg.teamNames[tm]}</h4>
               {room.seats
-                .filter((s) => teamOf(s.seat) === t)
+                .filter((s) => teamOf(s.seat) === tm)
                 .map((s) => (
                   <div key={s.seat} className={`lobby-seat ${s.isYou ? 'me' : ''}`}>
                     <span>
-                      Asiento {s.seat + 1}: {s.name ? <strong>{s.name}</strong> : <em>libre</em>}
+                      {t('Asiento {n}:', { n: s.seat + 1 })} {s.name ? <strong>{s.name}</strong> : <em>{t('libre')}</em>}
                       {s.bot && <span className="tag">bot</span>}
-                      {s.isHost && <span className="tag">anfitrión</span>}
-                      {s.name && !s.connected && <span className="tag off">desconectado</span>}
+                      {s.isHost && <span className="tag">{t('anfitrión')}</span>}
+                      {s.name && !s.connected && <span className="tag off">{t('desconectado')}</span>}
                     </span>
                     <span className="row tight">
-                      {!s.name && <button onClick={() => run(ctrl.sit(s.seat))}>Sentarme</button>}
-                      {!s.name && host && <button onClick={() => run(ctrl.addBot(s.seat))}>+ Bot</button>}
+                      {!s.name && <button onClick={() => run(ctrl.sit(s.seat))}>{t('Sentarme')}</button>}
+                      {!s.name && host && <button onClick={() => run(ctrl.addBot(s.seat))}>{t('+ Bot')}</button>}
                       {s.name && host && !s.isYou && (
                         <button className="link" onClick={() => run(ctrl.clearSeat(s.seat))}>
-                          Quitar
+                          {t('Quitar')}
                         </button>
                       )}
                     </span>
@@ -185,17 +198,17 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
         </div>
         {room.kingDraw && (
           <p className="muted">
-            Sorteo por reyes: {room.kingDraw.join(', ')} sacaron rey primero y forman equipo. {room.kingDraw[0]} será el mano.
+            {t('Sorteo por reyes: {names} sacaron rey primero y forman equipo. {first} será el mano.', { names: room.kingDraw.join(', '), first: room.kingDraw[0] })}
           </p>
         )}
       </section>
 
       {host ? (
         <section className="panel">
-          <h3>Opciones</h3>
+          <h3>{t('Opciones')}</h3>
           <div className="options">
             <div className="field">
-              <span>Jugadores</span>
+              <span>{t('Jugadores')}</span>
               <div className="segmented">
                 {([4, 6] as const).map((n) => (
                   <button key={n} className={cfg.players === n ? 'on' : ''} onClick={() => run(ctrl.setConfig({ players: n }))}>
@@ -204,31 +217,49 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
                 ))}
               </div>
             </div>
-            <NumberField label="Puntos por cuerno" value={cfg.pointsPerCuerno} onChange={(v) => run(ctrl.setConfig({ pointsPerCuerno: v }))} />
-            <NumberField label="Cuernos por Pablo" value={cfg.cuernosPerPablo} onChange={(v) => run(ctrl.setConfig({ cuernosPerPablo: v }))} />
-            <NumberField label="Pablos para ganar" value={cfg.pablosToWin} onChange={(v) => run(ctrl.setConfig({ pablosToWin: v }))} />
+            <NumberField label={t('Puntos por cuerno')} value={cfg.pointsPerCuerno} onChange={(v) => run(ctrl.setConfig({ pointsPerCuerno: v }))} />
+            <NumberField label={t('Cuernos por Pablo')} value={cfg.cuernosPerPablo} onChange={(v) => run(ctrl.setConfig({ cuernosPerPablo: v }))} />
+            <NumberField label={t('Pablos para ganar')} value={cfg.pablosToWin} onChange={(v) => run(ctrl.setConfig({ pablosToWin: v }))} />
             <TeamNames names={cfg.teamNames} onChange={(n) => run(ctrl.setConfig({ teamNames: n }))} />
           </div>
           <div className="row">
-            <button disabled={!full} onClick={() => run(ctrl.drawTeams())} title="Reparte cartas boca arriba: los primeros en sacar rey forman equipo">
-              Sortear equipos por reyes
+            <button disabled={!full} onClick={() => run(ctrl.drawTeams())} title={t('Reparte cartas boca arriba: los primeros en sacar rey forman equipo')}>
+              {t('Sortear equipos por reyes')}
             </button>
             <button className="primary" disabled={!full} onClick={() => run(ctrl.start())}>
-              Empezar partida
+              {t('Empezar partida')}
             </button>
           </div>
-          {!full && <p className="muted small">Faltan jugadores. Puedes rellenar los huecos con bots.</p>}
+          {!full && <p className="muted small">{t('Faltan jugadores. Puedes rellenar los huecos con bots.')}</p>}
         </section>
       ) : (
         <section className="panel">
           <p className="muted">
-            Esperando a que el anfitrión empiece. Partida a {cfg.pointsPerCuerno} puntos por cuerno, {cfg.cuernosPerPablo} cuernos por Pablo,{' '}
-            {cfg.pablosToWin} Pablo(s) para ganar.
+            {t('Esperando a que el anfitrión empiece. Partida a {a} puntos por cuerno, {b} cuernos por Pablo, {c} Pablo(s) para ganar.', {
+              a: cfg.pointsPerCuerno,
+              b: cfg.cuernosPerPablo,
+              c: cfg.pablosToWin,
+            })}
           </p>
         </section>
       )}
       {error && <p className="error">{error}</p>}
     </main>
+  );
+}
+
+/** Cuenta atrás de una mesa pública: si no entra nadie más, empieza con bots. */
+function AutoStart({ at }: { at: number }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const s = Math.max(0, Math.ceil((at - now) / 1000));
+  return (
+    <p className="autostart">
+      {t('Si no entra nadie más, la partida empezará con bots en')} <strong>{s} s</strong>.
+    </p>
   );
 }
 
@@ -246,7 +277,7 @@ function TeamNames({ names, onChange }: { names: [string, string]; onChange: (n:
   const [b, setB] = useState(names[1]);
   return (
     <div className="field">
-      <span>Nombres de los equipos</span>
+      <span>{t('Nombres de los equipos')}</span>
       <div className="row tight">
         <input value={a} maxLength={20} onChange={(e) => setA(e.target.value)} onBlur={() => onChange([a, b])} />
         <input value={b} maxLength={20} onChange={(e) => setB(e.target.value)} onBlur={() => onChange([a, b])} />

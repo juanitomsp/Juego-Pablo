@@ -59,6 +59,14 @@ Más detalles y otras plataformas en [DESPLIEGUE.md](DESPLIEGUE.md).
 - **Salas privadas:** son las de siempre, solo entra quien tenga el código.
 - **Partidas públicas:** desde la portada, «Partidas públicas». Ahí ves las mesas que buscan jugadores y las que se están jugando para mirarlas. El anfitrión puede cambiar su sala entre privada y pública en la sala de espera.
 
+## Partida rápida, reportar, retos e idioma
+
+- **Partida rápida** (portada): te sienta en una mesa pública que esté esperando gente, o crea una. Si en un minuto no entra nadie más, la partida empieza con bots en los huecos.
+- **Reportar:** en el chat de la mesa, «Reportar a un jugador». Si lo reporta la mitad del resto de la mesa, se le expulsa y juega un bot por él. Al reportarlo, además, se le silencia para ti.
+- **Volver a tu partida:** si se cierra la app a mitad de partida, en la portada sale «Volver a la partida».
+- **Retos diarios:** en «Jugar contra bots» hay 3 retos cada día (uno de baza, uno de mano y uno de partida) y una racha de días seguidos. Se guardan solo en el móvil.
+- **English:** al pie de la portada se puede cambiar a inglés. Si el móvil no está en español, el juego sale en inglés directamente. Las reglas en inglés están en `docs/RULES.en.md`.
+
 ## Instalarlo como app en el móvil
 
 Con la página abierta:

@@ -7,9 +7,10 @@
  * VITE_CARD_IMAGES=/cartas y coloca los ficheros en public/cartas/{rank}-{palo}.png
  * (p. ej. 4-bastos.png, 11-oros.png) y un reverso.png. Ver docs/CARTAS.md.
  */
-import { Card, Suit, cardName, trumpRole } from '../../shared/engine';
+import { Card, Suit, trumpRole } from '../../shared/engine';
 import { useDeckStyle } from '../services/deckStyle';
 import { FaccionesBack, FaccionesFace } from './decks/Facciones';
+import { cardLabel, t } from '../i18n';
 
 const IMAGE_BASE = (import.meta.env.VITE_CARD_IMAGES as string | undefined)?.replace(/\/$/, '');
 /** Baraja tradicional «Naipes Libres» (CC BY-SA 3.0), recortada en public/cartas/tradicional. */
@@ -231,7 +232,7 @@ export function CardView({ card, faceDown, trump, hints, playable, dimmed, small
 
   if (faceDown || !card) {
     return (
-      <div className={cls} aria-label="Carta boca abajo">
+      <div className={cls} aria-label={t('Carta boca abajo')}>
         {IMAGE_BASE ? (
           <img src={`${IMAGE_BASE}/reverso.png`} alt="" draggable={false} />
         ) : deck === 'tradicional' ? (
@@ -244,7 +245,7 @@ export function CardView({ card, faceDown, trump, hints, playable, dimmed, small
   }
 
   const role = trump ? trumpRole(card, trump) : null;
-  const label = cardName(card) + (role && role !== 'Vira' ? ` (${role})` : '');
+  const label = cardLabel(card) + (role && role !== 'Vira' ? ` (${role})` : '');
   const col = SUIT_COLOR[card.suit];
   const Tag = onClick ? 'button' : 'div';
 
@@ -277,9 +278,9 @@ export function CardView({ card, faceDown, trump, hints, playable, dimmed, small
           {card.rank >= 10 ? <Figure card={card} /> : <Pips card={card} />}
         </svg>
       )}
-      {wins && <span className="wins-mark" aria-label="Gana la baza">✓</span>}
+      {wins && <span className="wins-mark" aria-label={t('Gana la baza')}>✓</span>}
       {hints && role && role !== 'Vira' && <span className="role">{role}</span>}
-      {hints && role === 'Vira' && <span className="role vira">triunfo</span>}
+      {hints && role === 'Vira' && <span className="role vira">{t('triunfo')}</span>}
     </Tag>
   );
 }

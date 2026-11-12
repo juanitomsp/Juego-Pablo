@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { go } from '../App';
-import { createRoom } from '../services/controller';
+import { createRoom, quickMatch } from '../services/controller';
+import { checkLastRoom } from '../services/lastRoom';
 import { getName, setName } from '../services/identity';
 import { CardView } from '../components/CardView';
 import { Icon, type IconName } from '../components/Icon';
 import { tutorialDone } from './TutorialScreen';
+import { lang, setLang, t, tServer } from '../i18n';
 
 export function Home() {
   const [name, setNameState] = useState(getName());
@@ -13,6 +15,24 @@ export function Home() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showOnline, setShowOnline] = useState(false);
+  const [resume, setResume] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void checkLastRoom().then((c) => alive && setResume(c));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const quick = async () => {
+    if (needName()) return;
+    setBusy(true);
+    setError(null);
+    const r = await quickMatch();
+    setBusy(false);
+    if (r.code) go(`/sala/${r.code}`);
+    else setError(r.error ?? t('No se pudo encontrar partida.'));
+  };
 
   const saveName = (v: string) => {
     setNameState(v);
@@ -21,7 +41,7 @@ export function Home() {
 
   const needName = () => {
     if (name.trim()) return false;
-    setError('Escribe tu apodo primero.');
+    setError(t('Escribe tu apodo primero.'));
     document.getElementById('apodo')?.focus();
     return true;
   };
@@ -33,13 +53,13 @@ export function Home() {
     const r = await createRoom({ players });
     setBusy(false);
     if (r.code) go(`/sala/${r.code}`);
-    else setError(r.error ?? 'No se pudo crear la sala.');
+    else setError(r.error ?? t('No se pudo crear la sala.'));
   };
 
   const join = () => {
     if (needName()) return;
     const c = code.trim().toUpperCase();
-    if (c.length < 4) return setError('Escribe el código de la sala.');
+    if (c.length < 4) return setError(t('Escribe el código de la sala.'));
     go(`/sala/${c}`);
   };
 
@@ -52,52 +72,72 @@ export function Home() {
           <CardView card={{ suit: 'copas', rank: 3 }} trump="copas" />
         </div>
         <h1 className="wordmark">El Pablo</h1>
-        <p className="tagline">El juego de cartas de Níjar y Mairena del Alcor</p>
+        <p className="tagline">{t('El juego de cartas de Níjar y Mairena del Alcor')}</p>
       </header>
 
       <section className="panel name-panel">
         <label className="field" htmlFor="apodo">
-          <span>Tu apodo</span>
+          <span>{t('Tu apodo')}</span>
         </label>
-        <input id="apodo" value={name} maxLength={20} placeholder="¿Cómo te llamamos?" onChange={(e) => saveName(e.target.value)} />
-        <p className="muted small">Sin registro. Solo lo ven los jugadores de tu mesa.</p>
+        <input id="apodo" value={name} maxLength={20} placeholder={t('¿Cómo te llamamos?')} onChange={(e) => saveName(e.target.value)} />
+        <p className="muted small">{t('Sin registro. Solo lo ven los jugadores de tu mesa.')}</p>
       </section>
+
+      {resume && (
+        <section className="panel resume-banner">
+          <div>
+            <strong>{t('Tienes una partida en curso.')}</strong> {t('Tu asiento te espera.')}
+          </div>
+          <button className="primary" onClick={() => go(`/sala/${resume}`)}>
+            {t('Volver a la partida')}
+          </button>
+        </section>
+      )}
 
       {!tutorialDone() && (
         <section className="panel tut-banner">
           <div>
-            <strong>¿Primera vez?</strong> Aprende a jugar en 2 minutos, con ejemplos.
+            <strong>{t('¿Primera vez?')}</strong> {t('Aprende a jugar en 2 minutos, con ejemplos.')}
           </div>
           <button className="primary" onClick={() => go('/tutorial')}>
-            Aprender
+            {t('Aprender')}
           </button>
         </section>
       )}
 
       <section className="main-actions">
+        <button className="action-card quick-card" disabled={busy} onClick={() => void quick()}>
+          <span className="action-icon">
+            <Icon name="bolt" size={28} />
+          </span>
+          <span className="action-text">
+            <strong>{busy ? t('Buscando mesa…') : t('Partida rápida')}</strong>
+            <span>{t('Te sentamos en una mesa pública con gente de todas partes')}</span>
+          </span>
+        </button>
         <button className={`action-card ${showOnline ? 'open' : ''}`} onClick={() => setShowOnline((x) => !x)}>
           <span className="action-icon">
             <Icon name="online" size={28} />
           </span>
           <span className="action-text">
-            <strong>Jugar con amigos</strong>
-            <span>Sala privada: crea una o únete con un código</span>
+            <strong>{t('Jugar con amigos')}</strong>
+            <span>{t('Sala privada: crea una o únete con un código')}</span>
           </span>
         </button>
 
         {showOnline && (
           <div className="panel online-panel">
             <div className="row">
-              <div className="segmented" role="group" aria-label="Jugadores">
+              <div className="segmented" role="group" aria-label={t('Jugadores')}>
                 <button className={players === 4 ? 'on' : ''} onClick={() => setPlayers(4)}>
-                  2 contra 2
+                  {t('2 contra 2')}
                 </button>
                 <button className={players === 6 ? 'on' : ''} onClick={() => setPlayers(6)}>
-                  3 contra 3
+                  {t('3 contra 3')}
                 </button>
               </div>
               <button className="primary" disabled={busy} onClick={create}>
-                {busy ? 'Creando…' : 'Crear sala'}
+                {busy ? t('Creando…') : t('Crear sala')}
               </button>
             </div>
             <div className="row">
@@ -105,33 +145,41 @@ export function Home() {
                 className="code-input"
                 value={code}
                 maxLength={6}
-                placeholder="CÓDIGO"
-                aria-label="Código de la sala"
+                placeholder={t('CÓDIGO')}
+                aria-label={t('Código de la sala')}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === 'Enter' && join()}
               />
-              <button onClick={join}>Unirse</button>
+              <button onClick={join}>{t('Unirse')}</button>
             </div>
           </div>
         )}
 
-        <ActionCard icon="globe" title="Partidas públicas" sub="Juega con gente de todas partes o mira partidas" onClick={() => go('/publicas')} />
-        <ActionCard icon="bot" title="Jugar contra bots" sub="Fácil, normal o difícil. También sin conexión" onClick={() => go('/practica')} />
-        <ActionCard icon="learn" title="Aprender a jugar" sub="Tutorial corto con ejercicios" onClick={() => go('/tutorial')} />
-        {error && <p className="error">{error}</p>}
+        <ActionCard icon="globe" title={t('Partidas públicas')} sub={t('Juega con gente de todas partes o mira partidas')} onClick={() => go('/publicas')} />
+        <ActionCard icon="bot" title={t('Jugar contra bots')} sub={t('Fácil, normal o difícil. Retos diarios. También sin conexión')} onClick={() => go('/practica')} />
+        <ActionCard icon="learn" title={t('Aprender a jugar')} sub={t('Tutorial corto con ejercicios')} onClick={() => go('/tutorial')} />
+        {error && <p className="error">{tServer(error)}</p>}
       </section>
 
-      <nav className="secondary-actions" aria-label="Más opciones">
-        <SmallLink icon="live" label="Marcador en vivo" to="/vivo" />
-        <SmallLink icon="book" label="Reglas" to="/reglas" />
-        <SmallLink icon="chart" label="Estadísticas" to="/estadisticas" />
-        <SmallLink icon="cards" label="La baraja" to="/baraja" />
+      <nav className="secondary-actions" aria-label={t('Más opciones')}>
+        <SmallLink icon="live" label={t('Marcador en vivo')} to="/vivo" />
+        <SmallLink icon="book" label={t('Reglas')} to="/reglas" />
+        <SmallLink icon="chart" label={t('Estadísticas')} to="/estadisticas" />
+        <SmallLink icon="cards" label={t('La baraja')} to="/baraja" />
       </nav>
 
       <footer className="site-footer">
-        <a href="#/privacidad">Privacidad</a> · Gratis, sin anuncios y sin registro
+        <div className="lang-switch" role="group" aria-label="Idioma / Language">
+          <button className={lang() === 'es' ? 'on' : ''} onClick={() => setLang('es')}>
+            Español
+          </button>
+          <button className={lang() === 'en' ? 'on' : ''} onClick={() => setLang('en')}>
+            English
+          </button>
+        </div>
+        <a href="#/privacidad">{t('Privacidad')}</a> · {t('Gratis, sin anuncios y sin registro')}
         <br />
-        Reglas basadas en «Paulo (juego de naipes)» de Wikipedia (CC BY-SA 4.0) · Cartas «Naipes Libres» de Basquetteur, Wikimedia Commons (
+        {t('Reglas basadas en «Paulo (juego de naipes)» de Wikipedia (CC BY-SA 4.0) · Cartas «Naipes Libres» de Basquetteur, Wikimedia Commons (')}
         <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.es" target="_blank" rel="noreferrer">
           CC BY-SA 3.0
         </a>

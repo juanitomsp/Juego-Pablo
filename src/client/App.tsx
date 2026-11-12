@@ -10,6 +10,9 @@ import { StatsScreen } from './screens/StatsScreen';
 import { PublicRooms } from './screens/PublicRooms';
 import reglas from '../../docs/REGLAS.md?raw';
 import privacidad from '../../docs/PRIVACIDAD.md?raw';
+import rulesEn from '../../docs/RULES.en.md?raw';
+import privacyEn from '../../docs/PRIVACY.en.md?raw';
+import { isEn, t } from './i18n';
 
 /** Router mínimo por hash: #/ , #/sala/CODIGO , #/ver/CODIGO (mirar) , #/publicas , #/practica , #/vivo , #/reglas , #/estadisticas , #/privacidad */
 function useHashRoute(): string[] {
@@ -41,9 +44,9 @@ export function App() {
     case 'vivo':
       return <LiveScore />;
     case 'reglas':
-      return <DocPage title="Reglas del Pablo" source={reglas} />;
+      return <DocPage title={t('Reglas del Pablo')} source={isEn() ? rulesEn : reglas} />;
     case 'privacidad':
-      return <DocPage title="Privacidad" source={privacidad} />;
+      return <DocPage title={t('Privacidad')} source={isEn() ? privacyEn : privacidad} />;
     case 'tutorial':
       return <TutorialScreen />;
     case 'baraja':

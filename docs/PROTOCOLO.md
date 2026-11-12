@@ -11,6 +11,9 @@ Todos los mensajes del cliente que esperan respuesta usan *ack*: `{ ok: true, ..
 | `room:create` | `{ name, playerId, config, isPublic? }` | cualquiera | Crea sala (privada por defecto) y entra como anfitrión. Ack: `{ code }` |
 | `room:join` | `{ code, name, playerId, watch? }` | cualquiera | Entra (o vuelve) a una sala. Se sienta en el primer hueco si la partida no ha empezado (salvo con `watch: true`); si ya empezó y no tenía asiento, entra como espectador |
 | `room:visibility` | `{ isPublic }` | anfitrión | Hace la sala pública (sale en la lista) o privada (solo con código) |
+| `room:quick` | `{ name, playerId }` | cualquiera | Partida rápida: entra en la mesa pública en espera con sitio y más gente (prefiere 2 contra 2) o crea una pública. Ack: `{ code }` |
+| `room:mine` | `{ code, playerId }` | cualquiera | ¿Sigue teniendo asiento en una partida en curso? Para «Volver a tu partida». Ack: `{ active }` |
+| `room:report` | `{ seat }` | jugador | Reporta a otra persona de la mesa. Si la reporta la mitad (redondeando hacia arriba) del resto de personas sentadas, se la expulsa y juega un bot. Ack: `{ message }` |
 | `room:leave` | — | miembro | Sale de la sala (libera el asiento si no ha empezado) |
 | `room:sit` | `{ seat }` | miembro | Cambia de asiento (antes de empezar) |
 | `room:addBot` | `{ seat }` | anfitrión | Pone un bot en un hueco |
@@ -34,6 +37,7 @@ Todos los mensajes del cliente que esperan respuesta usan *ack*: `{ ok: true, ..
 ## Espectadores y partidas públicas
 
 - Un **espectador** es un miembro de la sala sin asiento. Recibe la vista con `you: null`: ve la mesa, las bazas y el marcador, pero **ninguna carta en mano** de nadie. No puede jugar ni escribir en el chat (sí lo lee).
+- **Mesas públicas en espera:** si en `autoFillMs` (60 s por defecto) no se sienta nadie más, los huecos se rellenan con bots y la partida empieza sola. `RoomInfo.autoStartAt` dice cuándo (para la cuenta atrás); el reloj se reinicia cada vez que alguien se sienta o se va. Las salas privadas no empiezan solas.
 - `RoomInfo.spectators` es el número de espectadores conectados (el ojo 👁 de la mesa) y `RoomInfo.isPublic` indica si la sala es pública.
 - `GET /api/salas` devuelve `{ rooms: PublicRoom[] }`: las salas públicas con alguien conectado y sin terminar (código, 4/6 jugadores, asientos ocupados, empezada, espectadores y marcador). **No incluye apodos.** Limitado por IP.
 - Rutas del cliente: `#/publicas` (lista), `#/sala/CÓDIGO` (jugar) y `#/ver/CÓDIGO` (entrar solo a mirar).

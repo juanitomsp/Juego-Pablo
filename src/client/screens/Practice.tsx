@@ -3,6 +3,9 @@ import { go } from '../App';
 import { Table } from '../components/Table';
 import { LocalController } from '../services/controller';
 import type { BotLevel } from '../../shared/engine';
+import { challengeProgress } from '../services/challenges';
+import { Icon } from '../components/Icon';
+import { t } from '../i18n';
 
 export function Practice() {
   const [players, setPlayers] = useState<4 | 6>(4);
@@ -21,14 +24,14 @@ export function Practice() {
     <main className="page narrow">
       <nav className="topnav">
         <button className="link" onClick={() => go('/')}>
-          ← Inicio
+          ← {t('Inicio')}
         </button>
-        <span>Práctica contra bots</span>
+        <span>{t('Práctica contra bots')}</span>
       </nav>
       <section className="panel">
-        <p>Juegas en el asiento de abajo; tu compañero y los rivales son bots. No necesita conexión.</p>
+        <p>{t('Juegas en el asiento de abajo; tu compañero y los rivales son bots. No necesita conexión.')}</p>
         <div className="field">
-          <span>Jugadores</span>
+          <span>{t('Jugadores')}</span>
           <div className="segmented">
             <button className={players === 4 ? 'on' : ''} onClick={() => setPlayers(4)}>
               4
@@ -39,7 +42,7 @@ export function Practice() {
           </div>
         </div>
         <div className="field">
-          <span>Nivel de los bots</span>
+          <span>{t('Nivel de los bots')}</span>
           <div className="segmented">
             {(
               [
@@ -56,13 +59,13 @@ export function Practice() {
                   localStorage.setItem('pablo.botLevel', id);
                 }}
               >
-                {label}
+                {t(label)}
               </button>
             ))}
           </div>
         </div>
         <div className="field">
-          <span>Pablos para ganar</span>
+          <span>{t('Pablos para ganar')}</span>
           <div className="segmented">
             {[1, 2].map((p) => (
               <button key={p} className={pablos === p ? 'on' : ''} onClick={() => setPablos(p)}>
@@ -71,12 +74,36 @@ export function Practice() {
             ))}
           </div>
         </div>
+        <DailyChallenges />
         <div className="row">
-          <button className="primary" onClick={() => setCtrl(new LocalController({ players, pablosToWin: pablos, teamNames: ['Tu equipo', 'Bots rivales'] }, level))}>
-            Empezar
+          <button className="primary" onClick={() => setCtrl(new LocalController({ players, pablosToWin: pablos, teamNames: [t('Tu equipo'), t('Bots rivales')] }, level))}>
+            {t('Empezar')}
           </button>
         </div>
       </section>
     </main>
+  );
+}
+
+function DailyChallenges() {
+  const { list, streak } = challengeProgress();
+  const done = list.filter((c) => c.done).length;
+  return (
+    <div className="daily">
+      <div className="daily-head">
+        <strong>
+          <Icon name="trophy" size={18} /> {t('Retos de hoy')} ({done}/{list.length})
+        </strong>
+        {streak > 0 && <span className="streak">🔥 {streak === 1 ? t('1 día seguido') : t('{n} días seguidos').replace('{n}', String(streak))}</span>}
+      </div>
+      <ul>
+        {list.map((c) => (
+          <li key={c.id} className={c.done ? 'done' : ''}>
+            <span className="tick">{c.done ? '✓' : '○'}</span> {t(c.title)}
+          </li>
+        ))}
+      </ul>
+      <p className="muted small">{t('Se comprueban solos mientras juegas. Cada día hay retos nuevos.')}</p>
+    </div>
   );
 }

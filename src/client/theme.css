@@ -330,3 +330,92 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 .center {
   text-align: center;
 }
+
+/* ---------------------------------------------------------------- Partida rápida, volver, reportar */
+.quick-card {
+  border-color: rgba(212, 175, 55, 0.7) !important;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25), var(--shadow-1);
+}
+.resume-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-color: rgba(200, 140, 27, 0.6);
+}
+.autostart {
+  margin: 6px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(200, 140, 27, 0.12);
+}
+.report-row {
+  justify-content: space-between;
+  align-items: center;
+  margin: 4px 0;
+}
+button.danger {
+  background: #a33a2c;
+  color: #fff;
+  border-color: #8a2f23;
+}
+button.danger:disabled {
+  opacity: 0.55;
+}
+
+/* ---------------------------------------------------------------- Retos diarios */
+.daily {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--panel-border);
+}
+.daily-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.daily-head strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.daily ul {
+  list-style: none;
+  margin: 8px 0 4px;
+  padding: 0;
+}
+.daily li {
+  padding: 3px 0;
+}
+.daily li.done {
+  color: #2f7a46;
+  text-decoration: line-through;
+}
+.daily .tick {
+  display: inline-block;
+  width: 1.2em;
+  font-weight: 700;
+}
+.streak {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- Idioma */
+.lang-switch {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.lang-switch button {
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  border-radius: 999px;
+}
+.lang-switch button.on {
+  background: var(--gold-grad);
+  color: #1c2420;
+}

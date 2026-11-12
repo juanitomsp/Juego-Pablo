@@ -1,3 +1,5 @@
+import { ChallengeTracker } from './challenges';
+import { t } from '../i18n';
 /**
  * Un "controlador" de partida abstrae si se juega online (Socket.IO) o en local (práctica con bots).
  * La mesa (components/Table.tsx) solo habla con esta interfaz.
@@ -33,6 +35,8 @@ export interface Controller {
   /** Envía un mensaje al chat. Devuelve un aviso si no se ha enviado (insultos, demasiado rápido…). */
   chat(text: string): Promise<string | null>;
   rematch(): Promise<string | null>;
+  /** Reportar a un jugador (solo online). Devuelve el mensaje para mostrar. */
+  report?(seat: number): Promise<string>;
   dispose(): void;
 }
 
@@ -159,6 +163,9 @@ export class OnlineController extends Base implements Controller {
   start() {
     return this.emitAck('room:start');
   }
+  report(seat: number): Promise<string> {
+    return new Promise((resolve) => this.socket.emit('room:report', { seat }, (r) => resolve(r.ok ? r.message : r.error)));
+  }
   setPublic(isPublic: boolean) {
     return this.emitAck('room:visibility', { isPublic });
   }
@@ -173,13 +180,11 @@ export class OnlineController extends Base implements Controller {
   }
 }
 
-export function createRoom(config: Partial<GameConfig>, isPublic = false): Promise<{ code?: string; error?: string }> {
+/** Ejecuta `send` en cuanto haya conexión (o devuelve un error a los 6 s). */
+function whenConnected(send: (done: (r: { code?: string; error?: string }) => void) => void): Promise<{ code?: string; error?: string }> {
   const socket = getSocket();
   return new Promise((resolve) => {
-    const go = () =>
-      socket.emit('room:create', { name: getName() || 'Jugador', playerId: getPlayerId(), config, isPublic }, (r) =>
-        resolve(r.ok ? { code: r.code } : { error: r.error }),
-      );
+    const go = () => send(resolve);
     if (socket.connected) go();
     else {
       const t = setTimeout(() => resolve({ error: 'No se puede conectar con el servidor.' }), 6000);
@@ -189,6 +194,23 @@ export function createRoom(config: Partial<GameConfig>, isPublic = false): Promi
       });
     }
   });
+}
+
+export function createRoom(config: Partial<GameConfig>, isPublic = false) {
+  return whenConnected((done) =>
+    getSocket().emit('room:create', { name: getName() || 'Jugador', playerId: getPlayerId(), config, isPublic }, (r) =>
+      done(r.ok ? { code: r.code } : { error: r.error }),
+    ),
+  );
+}
+
+/** Partida rápida: te sienta en una mesa pública con sitio (o crea una). */
+export function quickMatch() {
+  return whenConnected((done) =>
+    getSocket().emit('room:quick', { name: getName() || 'Jugador', playerId: getPlayerId() }, (r) =>
+      done(r.ok ? { code: r.code } : { error: r.error }),
+    ),
+  );
 }
 
 const SERVER = ((import.meta.env.VITE_SERVER_URL as string | undefined) || '').replace(/\/$/, '');
@@ -206,6 +228,11 @@ export async function fetchPublicRooms(): Promise<PublicRoom[] | null> {
 }
 
 // ---------------------------------------------------------------- Práctica local
+
+/** Aviso flotante en la mesa (lo recoge el componente Table). */
+export function announce(text: string) {
+  window.dispatchEvent(new CustomEvent('pablo:toast', { detail: text }));
+}
 
 const BOT_NAMES = ['Bot Paco', 'Bot Lola', 'Bot Manolo', 'Bot Carmen', 'Bot Antonio', 'Bot Rocío'];
 
@@ -230,6 +257,7 @@ export class LocalController extends Base implements Controller {
     let hands = 0;
     let finished = false;
     pingPractice('start');
+    const tracker = new ChallengeTracker(this.botLevel, (c) => announce(t("🏅 ¡Reto conseguido! {title}", { title: t(c.title) })));
     this.table = new GameTable(
       this.config,
       dealer,
@@ -246,6 +274,7 @@ export class LocalController extends Base implements Controller {
           finished = true;
           pingPractice('end');
         }
+        tracker.update(m);
         this.emitState();
       },
       },
@@ -278,6 +307,7 @@ export class LocalController extends Base implements Controller {
           kingDraw: null,
           spectators: 0,
           isPublic: false,
+          autoStartAt: null,
         },
         view: getView(this.table.match, 0),
       },

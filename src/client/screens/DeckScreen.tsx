@@ -3,6 +3,7 @@ import { SUITS, Suit, buildDeck, cardId } from '../../shared/engine';
 import { go } from '../App';
 import { CardView } from '../components/CardView';
 import { DECK_STYLES, setDeckStyle, useDeckStyle } from '../services/deckStyle';
+import { suitName, t } from '../i18n';
 
 /** Muestra la baraja completa (útil para aprender las cartas y revisar los dibujos). */
 export function DeckScreen() {
@@ -14,16 +15,16 @@ export function DeckScreen() {
     <main className="page">
       <nav className="topnav">
         <button className="link" onClick={() => go('/')}>
-          ← Inicio
+          ← {t('Inicio')}
         </button>
-        <span>La baraja</span>
+        <span>{t('La baraja')}</span>
       </nav>
       <section className="panel">
         <div className="row">
-          <div className="segmented" aria-label="Estilo de baraja">
+          <div className="segmented" aria-label={t('Estilo de baraja')}>
             {DECK_STYLES.map((d) => (
               <button key={d.id} className={style === d.id ? 'on' : ''} onClick={() => setDeckStyle(d.id)}>
-                {d.label}
+                {t(d.label)}
               </button>
             ))}
           </div>
@@ -32,14 +33,14 @@ export function DeckScreen() {
           <div className="segmented">
             {([4, 6] as const).map((n) => (
               <button key={n} className={players === n ? 'on' : ''} onClick={() => setPlayers(n)}>
-                {n} jugadores ({buildDeck(n).length} cartas)
+                {t('{n} jugadores ({c} cartas)', { n, c: buildDeck(n).length })}
               </button>
             ))}
           </div>
           <div className="segmented">
             {SUITS.map((s) => (
               <button key={s} className={trump === s ? 'on' : ''} onClick={() => setTrump(s)}>
-                Muestra: {s}
+                {t('Muestra')}: {suitName(s)}
               </button>
             ))}
           </div>
@@ -59,15 +60,15 @@ export function DeckScreen() {
       ))}
       {style === 'tradicional' && (
         <p className="site-footer">
-          Ilustraciones: «Baraja española completa» (Naipes Libres), de Basquetteur en{' '}
+          {t('Ilustraciones: «Baraja española completa» (Naipes Libres), de Basquetteur en')}{' '}
           <a href="https://commons.wikimedia.org/wiki/File:Baraja_espa%C3%B1ola_completa.png" target="_blank" rel="noreferrer">
             Wikimedia Commons
           </a>
-          , con licencia{' '}
+          , {t('con licencia')}{' '}
           <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.es" target="_blank" rel="noreferrer">
             CC BY-SA 3.0
           </a>
-          . Recortadas en cartas sueltas para el juego.
+          . {t('Recortadas en cartas sueltas para el juego.')}
         </p>
       )}
     </main>

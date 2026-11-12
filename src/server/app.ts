@@ -42,6 +42,8 @@ export interface ServerOptions {
   badJoinsPerIp?: { burst: number; perMinute: number };
   /** Mensajes por segundo por conexión. */
   eventsPerSecond?: { burst: number; perSecond: number };
+  /** Espera de una mesa pública antes de rellenarla con bots y empezar (ms). */
+  autoFillMs?: number;
 }
 
 export interface GameServer {
@@ -91,11 +93,12 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
   const usage = new Usage(opts.usageFile);
   const manager = new RoomManager({
     usage,
+    autoFillMs: opts.autoFillMs,
     broadcast: (room) => broadcast(room),
     sendQuick: (room, from, text) => io.to(room.code).emit('quick', { from, text, at: Date.now() }),
-    onKicked: (room, socketIds) => {
+    onKicked: (room, socketIds, reason) => {
       for (const sid of socketIds) {
-        io.to(sid).emit('kicked', 'Has sido expulsado de la partida por insultar.');
+        io.to(sid).emit('kicked', reason);
         io.in(sid).socketsLeave(room.code);
       }
     },
@@ -174,7 +177,7 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
       if (manager.rooms.size >= maxRooms) return ack({ ok: false, error: 'El servidor está lleno. Inténtalo más tarde.' });
       if (!roomLimiter.take(ip)) return ack({ ok: false, error: 'Has creado demasiadas salas. Espera unos minutos.' });
       const room = manager.create(body.playerId, parseConfigPatch(body.config));
-      room.isPublic = body.isPublic === true;
+      room.makePublic(body.isPublic === true);
       enter(room, body.playerId, sanitizeName(body.name));
       ack({ ok: true, code: room.code });
     });
@@ -191,6 +194,39 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
       }
       enter(room, body.playerId, sanitizeName(body.name), body.watch === true);
       ack({ ok: true, code: room.code });
+    });
+
+    on('room:quick', (p, a) => {
+      const ack = ackOf(a);
+      const body = (p ?? {}) as { name?: unknown; playerId?: unknown };
+      if (!validPlayerId(body.playerId)) return ack({ ok: false, error: 'Identificador no válido.' });
+      let room = manager.findQuick(body.playerId);
+      if (!room) {
+        if (manager.rooms.size >= maxRooms) return ack({ ok: false, error: 'El servidor está lleno. Inténtalo más tarde.' });
+        if (!roomLimiter.take(ip)) return ack({ ok: false, error: 'Has creado demasiadas salas. Espera unos minutos.' });
+        room = manager.create(body.playerId, { players: 4 });
+        room.makePublic(true);
+      }
+      enter(room, body.playerId, sanitizeName(body.name));
+      ack({ ok: true, code: room.code });
+    });
+
+    on('room:mine', (p, a) => {
+      const ack = ackOf(a);
+      const body = (p ?? {}) as { code?: unknown; playerId?: unknown };
+      if (!validPlayerId(body.playerId) || !validCode(body.code)) return ack({ ok: true, active: false });
+      const room = manager.get(body.code);
+      const active = !!room?.table && room.table.match.phase !== 'finished' && room.seatOf(body.playerId) !== null;
+      ack({ ok: true, active });
+    });
+
+    on('room:report', (p, a) => {
+      const ack = ackOf(a);
+      const room = currentRoom();
+      if (!room || !data.playerId) return ack({ ok: false, error: 'No estás en ninguna sala.' });
+      const message = room.report(data.playerId, seatOf(p));
+      ack({ ok: true, message });
+      broadcast(room);
     });
 
     on('room:leave', () => {

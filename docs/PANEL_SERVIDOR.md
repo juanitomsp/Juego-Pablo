@@ -20,11 +20,13 @@ Arriba del panel verás cuánta gente juega de verdad. Sirve para decidir si mer
 | Jugadores este mes | Jugadores distintos que han entrado en alguna sala (aproximado) |
 | Partidas este mes | Partidas online empezadas, y cuántas se terminaron |
 | Manos este mes | Manos repartidas |
+| Partidas contra bots este mes | Partidas de práctica empezadas (las avisa el juego de forma anónima si hay conexión), terminadas y manos |
 | Entradas en salas | Veces que alguien entra en una sala (incluye reconexiones) |
+| Reportes este mes | Veces que un jugador ha reportado a otro, y expulsiones (por insultos o por reportes) |
 
 Debajo, gráficas de jugadores por mes y por día (últimos 30 días) y una tabla por meses.
 
-**Es anónimo:** en el servidor solo se guardan totales, en `data/uso.json` (sin nombres, identificadores ni IP). Para contar jugadores distintos se usa en memoria una huella cifrada con una clave al azar que nunca se guarda; al reiniciar el servidor se olvida. Por eso, si se reinicia a mitad de mes, alguien puede contarse dos veces. Las partidas de práctica sin conexión no se cuentan.
+**Es anónimo:** en el servidor solo se guardan totales, en `data/uso.json` (sin nombres, identificadores ni IP). Para contar jugadores distintos se usa en memoria una huella cifrada con una clave al azar que nunca se guarda; al reiniciar el servidor se olvida. Por eso, si se reinicia a mitad de mes, alguien puede contarse dos veces. Las partidas de práctica jugadas sin conexión no se cuentan. De los reportes solo se guarda el total: nunca quién reportó a quién.
 
 ## Carga del servidor
 

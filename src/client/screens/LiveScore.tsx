@@ -3,10 +3,11 @@
  * quién es mano, aviso de "al quiero" y referencia del orden de triunfos.
  */
 import { useEffect, useState } from 'react';
-import { SUITS, Suit, cardName, cardId, trumpRanking } from '../../shared/engine';
+import { SUITS, Suit, cardId, trumpRanking } from '../../shared/engine';
 import { go } from '../App';
 import { SuitIcon } from '../components/CardView';
 import { recordMatch } from '../services/stats';
+import { cardLabel, suitName, t } from '../i18n';
 
 interface LiveState {
   players: 4 | 6;
@@ -36,7 +37,7 @@ const fresh = (prev?: Partial<LiveState>): LiveState => ({
   pointsPerCuerno: prev?.pointsPerCuerno ?? 8,
   cuernosPerPablo: prev?.cuernosPerPablo ?? 2,
   pablosToWin: prev?.pablosToWin ?? 1,
-  teamNames: prev?.teamNames ?? ['Nosotros', 'Ellos'],
+  teamNames: prev?.teamNames ?? [t('Nosotros'), t('Ellos')],
   myTeam: prev?.myTeam ?? 0,
   dealer: 0,
   score: [0, 0],
@@ -73,32 +74,32 @@ export function LiveScore() {
   };
 
   const quiero = s.pointsPerCuerno - HAND;
-  const alQuiero = (t: 0 | 1) => s.score[t] >= quiero;
+  const alQuiero = (tm: 0 | 1) => s.score[tm] >= quiero;
   const forced = alQuiero(0) && alQuiero(1);
 
-  const win = (t: 0 | 1, points: number, why: string) => {
+  const win = (tm: 0 | 1, points: number, why: string) => {
     const n: LiveState = structuredClone(s);
     n.hands++;
-    n.score[t] += points;
-    n.log = [`Mano ${n.hands}: ${s.teamNames[t]} +${points} (${why})`, ...n.log].slice(0, 100);
-    if (n.score[t] >= n.pointsPerCuerno) {
-      n.cuernos[t]++;
+    n.score[tm] += points;
+    n.log = [`${t('Mano')} ${n.hands}: ${s.teamNames[tm]} +${points} (${t(why)})`, ...n.log].slice(0, 100);
+    if (n.score[tm] >= n.pointsPerCuerno) {
+      n.cuernos[tm]++;
       n.score = [0, 0];
-      n.log.unshift(`🐂 Cuerno para ${s.teamNames[t]}`);
-      if (n.cuernos[t] >= n.cuernosPerPablo) {
-        n.pablos[t]++;
+      n.log.unshift(`🐂 ${t('¡Cuerno para {team}!', { team: s.teamNames[tm] })}`);
+      if (n.cuernos[tm] >= n.cuernosPerPablo) {
+        n.pablos[tm]++;
         n.cuernos = [0, 0];
-        n.log.unshift(`🏆 Pablo para ${s.teamNames[t]}`);
-        if (n.pablos[t] >= n.pablosToWin) {
-          n.winner = t;
-          n.log.unshift(`🎉 ${s.teamNames[t]} gana la partida`);
+        n.log.unshift(`🏆 ${t('¡Pablo para {team}!', { team: s.teamNames[tm] })}`);
+        if (n.pablos[tm] >= n.pablosToWin) {
+          n.winner = tm;
+          n.log.unshift(`🎉 ${t('¡{team} gana la partida!', { team: s.teamNames[tm] })}`);
           if (n.myTeam !== null)
             void recordMatch({
               id: `vivo-${n.started}`,
               date: new Date().toISOString(),
               mode: 'vivo',
               players: n.players,
-              won: n.myTeam === t,
+              won: n.myTeam === tm,
               pablos: [n.pablos[n.myTeam], n.pablos[1 - n.myTeam]],
               hands: n.hands,
               handsWon: 0,
@@ -121,11 +122,11 @@ export function LiveScore() {
     <main className="page live">
       <nav className="topnav">
         <button className="link" onClick={() => go('/')}>
-          ← Inicio
+          ← {t('Inicio')}
         </button>
-        <span>Marcador en vivo</span>
+        <span>{t('Marcador en vivo')}</span>
         <button className="link" onClick={() => setSetup(!setup)}>
-          ⚙️ Ajustes
+          ⚙️ {t('Ajustes')}
         </button>
       </nav>
 
@@ -133,7 +134,7 @@ export function LiveScore() {
         <section className="panel">
           <div className="options">
             <div className="field">
-              <span>Jugadores</span>
+              <span>{t('Jugadores')}</span>
               <div className="segmented">
                 {([4, 6] as const).map((n) => (
                   <button key={n} className={s.players === n ? 'on' : ''} onClick={() => setS({ ...s, players: n, dealer: s.dealer % n })}>
@@ -144,59 +145,59 @@ export function LiveScore() {
             </div>
             {(['pointsPerCuerno', 'cuernosPerPablo', 'pablosToWin'] as const).map((k) => (
               <label className="field" key={k}>
-                <span>{k === 'pointsPerCuerno' ? 'Puntos por cuerno' : k === 'cuernosPerPablo' ? 'Cuernos por Pablo' : 'Pablos para ganar'}</span>
+                <span>{t(k === 'pointsPerCuerno' ? 'Puntos por cuerno' : k === 'cuernosPerPablo' ? 'Cuernos por Pablo' : 'Pablos para ganar')}</span>
                 <input type="number" min={1} max={60} value={s[k]} onChange={(e) => setS({ ...s, [k]: Math.max(1, Number(e.target.value) || 1) })} />
               </label>
             ))}
-            {[0, 1].map((t) => (
-              <label className="field" key={t}>
-                <span>Equipo {t + 1}</span>
+            {[0, 1].map((tm) => (
+              <label className="field" key={tm}>
+                <span>{t('Equipo {n}', { n: tm + 1 })}</span>
                 <input
-                  value={s.teamNames[t]}
+                  value={s.teamNames[tm]}
                   maxLength={20}
                   onChange={(e) => {
                     const names = [...s.teamNames] as [string, string];
-                    names[t] = e.target.value;
+                    names[tm] = e.target.value;
                     setS({ ...s, teamNames: names });
                   }}
                 />
               </label>
             ))}
             <label className="field">
-              <span>Mi equipo (para estadísticas)</span>
+              <span>{t('Mi equipo (para estadísticas)')}</span>
               <select value={s.myTeam ?? ''} onChange={(e) => setS({ ...s, myTeam: e.target.value === '' ? null : (Number(e.target.value) as 0 | 1) })}>
                 <option value="0">{s.teamNames[0]}</option>
                 <option value="1">{s.teamNames[1]}</option>
-                <option value="">No guardar</option>
+                <option value="">{t('No guardar')}</option>
               </select>
             </label>
           </div>
           <div className="row">
-            <button className="danger" onClick={() => confirm('¿Empezar una partida nueva?') && commit(fresh(s))}>
-              Nueva partida
+            <button className="danger" onClick={() => confirm(t('¿Empezar una partida nueva?')) && commit(fresh(s))}>
+              {t('Nueva partida')}
             </button>
           </div>
         </section>
       )}
 
       <section className="live-board">
-        {([0, 1] as const).map((t) => (
-          <div key={t} className={`live-team team-${t}`}>
-            <h2>{s.teamNames[t]}</h2>
+        {([0, 1] as const).map((tm) => (
+          <div key={tm} className={`live-team team-${tm}`}>
+            <h2>{s.teamNames[tm]}</h2>
             <div className="live-points">
-              {s.score[t]}
+              {s.score[tm]}
               <small>/{s.pointsPerCuerno}</small>
             </div>
             <div>
-              Cuernos {s.cuernos[t]}/{s.cuernosPerPablo} · Pablos {s.pablos[t]}/{s.pablosToWin}
+              {t('Cuernos')} {s.cuernos[tm]}/{s.cuernosPerPablo} · Pablos {s.pablos[tm]}/{s.pablosToWin}
             </div>
-            {alQuiero(t) && <span className="tag quiero">al quiero</span>}
-            <button className="primary big" disabled={s.winner !== null} onClick={() => win(t, s.stake, 'gana la mano')}>
-              Gana la mano (+{s.stake})
+            {alQuiero(tm) && <span className="tag quiero">{t('al quiero')}</span>}
+            <button className="primary big" disabled={s.winner !== null} onClick={() => win(tm, s.stake, 'gana la mano')}>
+              {t('Gana la mano')} (+{s.stake})
             </button>
-            {alQuiero(t) && !forced && (
-              <button disabled={s.winner !== null} onClick={() => win(t === 0 ? 1 : 0, HAND, 'el equipo al quiero se va')}>
-                Al quiero: se van (+{HAND} al rival)
+            {alQuiero(tm) && !forced && (
+              <button disabled={s.winner !== null} onClick={() => win(tm === 0 ? 1 : 0, HAND, 'el equipo al quiero se va')}>
+                {t('Al quiero: se van (+{n} al rival)', { n: HAND })}
               </button>
             )}
           </div>
@@ -205,55 +206,55 @@ export function LiveScore() {
 
       <section className="panel live-hand">
         <div>
-          Mano (reparte): <strong>Jugador {s.dealer + 1}</strong>{' '}
+          {t('Mano (reparte):')} <strong>{t('Jugador {n}', { n: s.dealer + 1 })}</strong>{' '}
           <button className="link" onClick={() => setS({ ...s, dealer: (s.dealer + 1) % s.players })}>
-            cambiar
+            {t('cambiar')}
           </button>
         </div>
         <div>
-          Esta mano vale <strong>{s.stake}</strong> puntos.{' '}
+          {t('Esta mano vale')} <strong>{s.stake}</strong> {t('puntos.')}{' '}
           {forced ? (
-            <em>Quiero forzoso: sin apuestas.</em>
+            <em>{t('Quiero forzoso: sin apuestas.')}</em>
           ) : (
             <>
-              <button onClick={bet}>Apuesta aceptada → {s.stake + 1}</button>{' '}
+              <button onClick={bet}>{t('Apuesta aceptada')} → {s.stake + 1}</button>{' '}
               {s.betCount > 0 && (
                 <button className="link" onClick={() => setS({ ...s, stake: HAND, betCount: 0 })}>
-                  reiniciar
+                  {t('reiniciar')}
                 </button>
               )}
             </>
           )}
         </div>
         <p className="muted small">
-          Si un equipo no acepta una apuesta, pulsa «Gana la mano» del equipo que apostó con el valor que tenía la mano antes de apostar.
+          {t('Si un equipo no acepta una apuesta, pulsa «Gana la mano» del equipo que apostó con el valor que tenía la mano antes de apostar.')}
         </p>
         <div className="row">
           <button disabled={undo.length === 0} onClick={() => (setS(undo[undo.length - 1]), setUndo(undo.slice(0, -1)))}>
-            ↶ Deshacer
+            ↶ {t('Deshacer')}
           </button>
         </div>
       </section>
 
       <section className="panel">
-        <h3>Orden de triunfos</h3>
+        <h3>{t('Orden de triunfos')}</h3>
         <div className="segmented">
           {SUITS.map((x) => (
             <button key={x} className={suit === x ? 'on' : ''} onClick={() => setSuit(x)}>
-              <SuitIcon suit={x} size={16} /> {x}
+              <SuitIcon suit={x} size={16} /> {suitName(x)}
             </button>
           ))}
         </div>
         <ol className="ranking">
           {trumpRanking(suit, s.players).map((c) => (
-            <li key={cardId(c)}>{cardName(c)}</li>
+            <li key={cardId(c)}>{cardLabel(c)}</li>
           ))}
         </ol>
       </section>
 
       {s.log.length > 0 && (
         <section className="panel">
-          <h3>Historial</h3>
+          <h3>{t('Historial')}</h3>
           <ul className="log">
             {s.log.map((l, i) => (
               <li key={i}>{l}</li>

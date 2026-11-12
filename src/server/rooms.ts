@@ -28,15 +28,21 @@ export interface RoomHooks {
   broadcast: (room: Room) => void;
   sendQuick: (room: Room, from: number, text: string) => void;
   /** Se ha expulsado a alguien: hay que avisar a sus conexiones y sacarlas de la sala. */
-  onKicked?: (room: Room, socketIds: Set<string>) => void;
+  onKicked?: (room: Room, socketIds: Set<string>, reason: string) => void;
   /** Estadísticas de uso anónimas (opcional). */
   usage?: {
     player: (playerId: string) => void;
     matchStarted: () => void;
     matchFinished: () => void;
     handPlayed: () => void;
+    reported?: () => void;
+    kicked?: () => void;
   };
+  /** Espera en una mesa pública antes de rellenar con bots y empezar (por defecto, 60 s). */
+  autoFillMs?: number;
 }
+
+export const AUTO_FILL_MS = 60_000;
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 /** Máximo de personas en una sala (jugadores + mirones). */
@@ -82,6 +88,11 @@ export class Room {
   lastActivity = Date.now();
   /** Sala pública: sale en la lista y puede entrar cualquiera. Por defecto, privada (solo con el código). */
   isPublic = false;
+  /** Reportes recibidos: jugador reportado → quién lo ha reportado. */
+  private reports = new Map<string, Set<string>>();
+  /** Mesa pública: cuándo empezará sola con bots si no entra nadie más. */
+  autoStartAt: number | null = null;
+  private autoTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     public code: string,
@@ -128,7 +139,10 @@ export class Room {
     // Al entrar, se sienta automáticamente en el primer hueco libre (si no ha empezado).
     else if (!this.table && !watch) {
       const free = this.seats.findIndex((s) => !s.playerId && !s.bot);
-      if (free >= 0) this.seats[free] = { playerId, name, bot: false };
+      if (free >= 0) {
+        this.seats[free] = { playerId, name, bot: false };
+        this.scheduleAutoStart();
+      }
     }
     this.touch();
   }
@@ -140,7 +154,10 @@ export class Room {
   leave(playerId: string) {
     this.members.delete(playerId);
     const seat = this.seatOf(playerId);
-    if (seat !== null && !this.table) this.seats[seat] = { playerId: null, name: null, bot: false };
+    if (seat !== null && !this.table) {
+      this.seats[seat] = { playerId: null, name: null, bot: false };
+      this.scheduleAutoStart();
+    }
     if (this.hostId === playerId) {
       const next = [...this.members.keys()][0];
       if (next) this.hostId = next;
@@ -156,7 +173,47 @@ export class Room {
 
   setVisibility(playerId: string, isPublic: boolean) {
     this.requireHost(playerId);
+    this.makePublic(isPublic);
+  }
+
+  makePublic(isPublic: boolean) {
     this.isPublic = !!isPublic;
+    this.scheduleAutoStart();
+  }
+
+  /** ¿Puede entrar este jugador? (no expulsado) */
+  canJoin(playerId: string) {
+    return !this.banned.has(playerId);
+  }
+
+  /**
+   * Mesa pública en espera: si en un rato no entra nadie más, se rellenan los huecos con bots y empieza.
+   * El reloj vuelve a empezar cada vez que alguien se sienta o se va.
+   */
+  private scheduleAutoStart() {
+    if (this.autoTimer) clearTimeout(this.autoTimer);
+    this.autoTimer = null;
+    this.autoStartAt = null;
+    if (!this.isPublic || this.table) return;
+    if (!this.seats.some((s) => s.playerId)) return;
+    const ms = this.hooks.autoFillMs ?? AUTO_FILL_MS;
+    this.autoStartAt = Date.now() + ms;
+    this.autoTimer = setTimeout(() => this.autoStart(), ms);
+    this.autoTimer.unref?.();
+  }
+
+  private autoStart() {
+    this.autoTimer = null;
+    this.autoStartAt = null;
+    if (!this.isPublic || this.table) return;
+    // Los que se sentaron y ya no están conectados dejan su sitio a un bot.
+    this.seats = this.seats.map((s) => (s.playerId && !this.isConnected(s.playerId) ? { playerId: null, name: null, bot: false } : s));
+    if (!this.seats.some((s) => s.playerId)) return;
+    this.seats.forEach((s, i) => {
+      if (!s.playerId && !s.bot) this.seats[i] = { playerId: null, name: BOT_NAMES[i % BOT_NAMES.length], bot: true };
+    });
+    this.startTable(this.kingDraw ? 0 : randomInt(this.seats.length));
+    this.hooks.broadcast(this);
   }
 
   /** Resumen para la lista de partidas públicas (sin apodos). */
@@ -195,6 +252,7 @@ export class Room {
     if (current !== null) this.seats[current] = { playerId: null, name: null, bot: false };
     this.seats[seat] = { playerId, name: this.members.get(playerId)?.name ?? 'Jugador', bot: false };
     this.kingDraw = null;
+    if (current === null) this.scheduleAutoStart();
   }
 
   addBot(playerId: string, seat: number) {
@@ -250,6 +308,9 @@ export class Room {
   }
 
   private startTable(dealer: number) {
+    if (this.autoTimer) clearTimeout(this.autoTimer);
+    this.autoTimer = null;
+    this.autoStartAt = null;
     this.table?.dispose();
     const bots = this.seats.flatMap((s, i) => (s.bot ? [i] : []));
     this.hooks.usage?.matchStarted();
@@ -313,7 +374,7 @@ export class Room {
       const n = (this.strikes.get(playerId) ?? 0) + 1;
       this.strikes.set(playerId, n);
       const kicked = n >= INSULT_STRIKES_TO_KICK;
-      if (kicked) this.kick(playerId);
+      if (kicked) this.kick(playerId, 'Has sido expulsado de la partida por insultar.');
       return { warning: insultWarning(n), kicked };
     }
     const now = Date.now();
@@ -325,8 +386,38 @@ export class Room {
     return null;
   }
 
+  /**
+   * Reportar a otro jugador de la mesa (solo pueden hacerlo los que están sentados, a otra persona).
+   * Si lo reporta la mitad o más del resto de personas de la mesa, se le expulsa (juega un bot por él).
+   * No se guarda nada: el recuento vive en la sala y desaparece con ella.
+   */
+  report(playerId: string, seat: number): string {
+    this.requireSeat(seat);
+    if (this.seatOf(playerId) === null) throw new RuleError('Solo pueden reportar los jugadores de la mesa.');
+    const target = this.seats[seat];
+    if (!target.playerId || target.bot) throw new RuleError('A los bots no se les puede reportar.');
+    if (target.playerId === playerId) throw new RuleError('No puedes reportarte a ti mismo.');
+    const set = this.reports.get(target.playerId) ?? new Set<string>();
+    if (set.has(playerId)) return 'Ya lo habías reportado. Lo hemos silenciado para ti.';
+    set.add(playerId);
+    this.reports.set(target.playerId, set);
+    this.hooks.usage?.reported?.();
+    const others = this.seats.filter((s) => s.playerId && s.playerId !== target.playerId).length;
+    const needed = Math.max(1, Math.ceil(others / 2));
+    if (set.size >= needed) {
+      const name = target.name ?? 'Jugador';
+      this.kick(target.playerId, 'Has sido expulsado de la mesa porque otros jugadores te han reportado.');
+      return `${name} ha sido expulsado de la mesa.`;
+    }
+    const left = needed - set.size;
+    return left > 1
+      ? `Reporte enviado. Si lo reportan ${left} jugadores más, será expulsado. Mientras, lo hemos silenciado para ti.`
+      : 'Reporte enviado. Si lo reporta 1 jugador más, será expulsado. Mientras, lo hemos silenciado para ti.';
+  }
+
   /** Expulsa a un jugador: deja la sala y no puede volver. Si la partida ha empezado, juega un bot por él. */
-  kick(playerId: string) {
+  kick(playerId: string, reason = 'Has sido expulsado de la partida.') {
+    this.hooks.usage?.kicked?.();
     this.banned.add(playerId);
     const seat = this.seatOf(playerId);
     const member = this.members.get(playerId);
@@ -344,7 +435,8 @@ export class Room {
       const next = [...this.members.keys()][0];
       if (next) this.hostId = next;
     }
-    this.hooks.onKicked?.(this, member?.socketIds ?? new Set());
+    this.scheduleAutoStart();
+    this.hooks.onKicked?.(this, member?.socketIds ?? new Set(), reason);
   }
 
   quick(playerId: string, index: number) {
@@ -375,12 +467,14 @@ export class Room {
         kingDraw: this.kingDraw,
         spectators: this.spectatorCount,
         isPublic: this.isPublic,
+        autoStartAt: this.autoStartAt,
       },
       view: this.table ? getView(this.table.match, yourSeat) : null,
     };
   }
 
   dispose() {
+    if (this.autoTimer) clearTimeout(this.autoTimer);
     this.table?.dispose();
   }
 }
@@ -411,6 +505,23 @@ export class RoomManager {
     }
     const free = (x: PublicRoom) => (!x.started && x.seated < x.players ? 0 : 1);
     return list.sort((a, b) => free(a) - free(b) || b.seated - a.seated).slice(0, limit);
+  }
+
+  /** Partida rápida: la mesa pública en espera con sitio y más gente (prefiere 2 contra 2). */
+  findQuick(playerId: string): Room | undefined {
+    let best: Room | undefined;
+    let bestScore = -1;
+    for (const r of this.rooms.values()) {
+      if (!r.isPublic || r.table || r.empty || !r.canJoin(playerId)) continue;
+      const seated = r.seats.filter((s) => s.playerId || s.bot).length;
+      if (seated >= r.seats.length) continue;
+      const score = (r.config.players === 4 ? 100 : 0) + seated;
+      if (score > bestScore) {
+        best = r;
+        bestScore = score;
+      }
+    }
+    return best;
   }
 
   get(code: string): Room | undefined {

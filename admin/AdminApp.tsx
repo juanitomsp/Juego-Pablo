@@ -37,6 +37,8 @@ interface UsageCounts {
   practice?: number;
   practiceFinished?: number;
   practiceHands?: number;
+  reports?: number;
+  kicks?: number;
 }
 
 interface UsageReport {
@@ -338,6 +340,7 @@ function UsageSection({ usage }: { usage: UsageReport }) {
         <Tile label="Partidas online este mes" value={m.matches} sub={`${m.finished} terminadas · ${m.hands} manos`} />
         <Tile label="Partidas contra bots este mes" value={m.practice ?? 0} sub={`${m.practiceFinished ?? 0} terminadas · ${m.practiceHands ?? 0} manos`} />
         <Tile label="Entradas en salas" value={m.visits} sub="este mes (incluye reconexiones)" />
+        <Tile label="Reportes este mes" value={m.reports ?? 0} sub={`${m.kicks ?? 0} expulsiones (insultos o reportes)`} />
       </section>
       <BarChart
         title="Jugadores distintos por mes"

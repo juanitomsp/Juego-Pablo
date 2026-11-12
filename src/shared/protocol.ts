@@ -27,6 +27,8 @@ export interface RoomInfo {
   spectators: number;
   /** Sala pública: aparece en la lista de partidas públicas y puede entrar cualquiera. */
   isPublic: boolean;
+  /** Mesa pública esperando: si no entra nadie más, empieza sola con bots en este momento (ms epoch). */
+  autoStartAt: number | null;
 }
 
 /** Entrada de la lista de partidas públicas (GET /api/salas). Sin nombres: solo lo necesario para elegir. */
@@ -61,6 +63,12 @@ export interface ClientToServer {
   ) => void;
   /** watch: entrar solo a mirar (no se sienta aunque haya sitio). */
   'room:join': (p: { code: string; name: string; playerId: string; watch?: boolean }, ack: Ack<{ code: string }>) => void;
+  /** Partida rápida: te sienta en la primera mesa pública con sitio o crea una. */
+  'room:quick': (p: { name: string; playerId: string }, ack: Ack<{ code: string }>) => void;
+  /** ¿Sigo teniendo asiento en una partida en curso? (para «Volver a tu partida»). */
+  'room:mine': (p: { code: string; playerId: string }, ack: Ack<{ active: boolean }>) => void;
+  /** Reportar a un jugador de la mesa por mal comportamiento. */
+  'room:report': (p: { seat: number }, ack: Ack<{ message: string }>) => void;
   /** El anfitrión hace la sala pública o privada. */
   'room:visibility': (p: { isPublic: boolean }, ack: Ack) => void;
   'room:leave': () => void;

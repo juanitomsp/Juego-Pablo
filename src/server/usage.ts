@@ -29,6 +29,10 @@ export interface UsageCounts {
   practiceFinished: number;
   /** Manos jugadas contra bots. */
   practiceHands: number;
+  /** Reportes de jugadores (por mal comportamiento). */
+  reports: number;
+  /** Expulsiones de una mesa (por insultos o por reportes). */
+  kicks: number;
 }
 
 interface UsageFile {
@@ -37,7 +41,7 @@ interface UsageFile {
   months: Record<string, UsageCounts>;
 }
 
-const empty = (): UsageCounts => ({ players: 0, matches: 0, finished: 0, hands: 0, visits: 0, practice: 0, practiceFinished: 0, practiceHands: 0 });
+const empty = (): UsageCounts => ({ players: 0, matches: 0, finished: 0, hands: 0, visits: 0, practice: 0, practiceFinished: 0, practiceHands: 0, reports: 0, kicks: 0 });
 const KEEP_DAYS = 400;
 
 /** Fecha local del servidor en formato AAAA-MM-DD y AAAA-MM. */
@@ -135,6 +139,12 @@ export class Usage {
   }
   handPlayed() {
     this.bump('hands');
+  }
+  reported() {
+    this.bump('reports');
+  }
+  kicked() {
+    this.bump('kicks');
   }
 
   /** Guarda los totales (escritura atómica) y borra días de hace más de ~13 meses. */
