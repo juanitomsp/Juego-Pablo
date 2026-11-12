@@ -70,4 +70,4 @@ Si tienes imágenes con licencia (o las dibujas tú):
    ```
 4. Reinicia `npm run dev` (o vuelve a compilar con `npm run build`).
 
-Proporción recomendada: 2:3 (por ejemplo, 200×300 px). Las etiquetas de ayuda (Pablo, Tuerto, Andorra, Malilla) se siguen mostrando encima.
+Proporción recomendada: 2:3 (por ejemplo, 200×300 px). Las etiquetas de ayuda (Pablo, Tuerto, Andorra, Melilla) se siguen mostrando encima.

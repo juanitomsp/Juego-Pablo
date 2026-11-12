@@ -197,7 +197,7 @@ interface CardProps {
   card?: Card;
   faceDown?: boolean;
   trump?: Suit;
-  /** Mostrar etiqueta de Pablo/Tuerto/Andorra/Malilla. */
+  /** Mostrar etiqueta de Pablo/Tuerto/Andorra/Melilla. */
   hints?: boolean;
   playable?: boolean;
   dimmed?: boolean;

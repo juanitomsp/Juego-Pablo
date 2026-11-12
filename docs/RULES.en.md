@@ -4,7 +4,7 @@
 
 This document describes **the rules as this game applies them**. Where oral tradition leaves something open, it is marked with «📌 Decision».
 
-The game's own terms (Pablo, Tuerto, Andorra, Malilla, muestra, cuerno, al quiero, arrastre, renuncio…) are kept in Spanish, as they are used at the table.
+The game's own terms (Pablo, Tuerto, Andorra, Melilla, muestra, cuerno, al quiero, arrastre, renuncio…) are kept in Spanish, as they are used at the table.
 
 ---
 
@@ -39,7 +39,7 @@ Order of trumps, from highest to lowest:
 | 1 | Four of clubs | **Pablo** |
 | 2 | Three of trumps | **Andorra** |
 | 3 | Knight of coins | **Tuerto** |
-| 4 | Two of trumps | **Malilla** |
+| 4 | Two of trumps | **Melilla** |
 | 5 | King of trumps | |
 | 6 | Knight of trumps (if trumps are not coins) | |
 | 7 | Jack of trumps | |
@@ -153,7 +153,7 @@ A team is **al quiero** when winning one hand is enough to win the cuerno (with 
 - **Renuncio:** not playing a trump in an arrastre while holding one; the team loses the hand.
 - **Cuerno (or partida):** won when reaching 8 points.
 - **Dormido:** a trump left in the deck that does not play.
-- **Malilla:** the two of trumps.
+- **Melilla:** the two of trumps.
 - **Mano:** the dealer; also, each complete deal of the game.
 - **Muestra:** the turn-up card that sets the trump suit.
 - **Pablo:** the four of clubs; two cuernos; and the game itself.

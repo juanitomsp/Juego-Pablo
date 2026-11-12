@@ -72,7 +72,7 @@ const PLAIN: Record<number, number> = { 12: 10, 11: 9, 10: 8, 1: 7, 7: 6, 6: 5, 
 
 /**
  * Fuerza de un triunfo (mayor = mejor):
- * Pablo > Andorra (3) > Tuerto > Malilla (2) > Rey > Caballo > Sota > As > 7 > 6 > 5 > 4
+ * Pablo > Andorra (3) > Tuerto > Melilla (2) > Rey > Caballo > Sota > As > 7 > 6 > 5 > 4
  */
 export function trumpPower(c: Card, trump: Suit): number {
   if (isPablo(c)) return 100;
@@ -143,13 +143,13 @@ export function cardName(c: Card): string {
   return `${RANK_NAMES[c.rank] ?? c.rank} de ${c.suit}`;
 }
 
-/** Nombre propio de la carta dentro del juego, si lo tiene (Pablo, Tuerto, Andorra, Malilla...). */
+/** Nombre propio de la carta dentro del juego, si lo tiene (Pablo, Tuerto, Andorra, Melilla...). */
 export function trumpRole(c: Card, trump: Suit): string | null {
   if (isPablo(c)) return 'Pablo';
   if (isTuerto(c)) return 'Tuerto';
   if (c.suit !== trump) return null;
   if (c.rank === 3) return 'Andorra';
-  if (c.rank === 2) return 'Malilla';
+  if (c.rank === 2) return 'Melilla';
   return 'Vira';
 }
 

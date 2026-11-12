@@ -29,7 +29,7 @@ El juego es **gratis, sin anuncios, sin compras y sin cuentas**, y no recoge dat
 
 > **El Pablo** (o Paulo) es el juego de cartas tradicional de Níjar y Mairena del Alcor, ahora en tu móvil. Gratis, sin anuncios y sin registrarte.
 >
-> Juega por parejas, 2 contra 2 (o 3 contra 3), con la baraja española de toda la vida: el Pablo, el Tuerto, la Andorra y la Malilla mandan en cada mano.
+> Juega por parejas, 2 contra 2 (o 3 contra 3), con la baraja española de toda la vida: el Pablo, el Tuerto, la Andorra y la Melilla mandan en cada mano.
 >
 > • **Online con tus amigos:** crea una sala, comparte el enlace y jugad desde donde estéis.
 > • **Contra bots:** practica cuando quieras, también sin conexión.

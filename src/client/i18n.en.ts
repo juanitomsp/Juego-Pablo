@@ -1,6 +1,6 @@
 /**
  * Traducción al inglés. La clave es el texto en español tal cual aparece en el código (ver i18n.ts).
- * Los nombres propios del juego (Pablo, Tuerto, Andorra, Malilla, cuerno, al quiero, arrastre…) se mantienen.
+ * Los nombres propios del juego (Pablo, Tuerto, Andorra, Melilla, cuerno, al quiero, arrastre…) se mantienen.
  */
 export const EN: Record<string, string> = {
   // ---------------- Portada
@@ -242,7 +242,7 @@ export const EN: Record<string, string> = {
   '🏅 ¡Reto conseguido! {title}': '🏅 Challenge completed! {title}',
   'Gana una baza con el Pablo': 'Win a trick with the Pablo',
   'Gana una baza con el Tuerto': 'Win a trick with the Tuerto',
-  'Gana una baza con la Malilla (el 2 de triunfo)': 'Win a trick with the Malilla (the 2 of trumps)',
+  'Gana una baza con la Melilla (el 2 de triunfo)': 'Win a trick with the Melilla (the 2 of trumps)',
   'Gana una baza con el Andorra (el 3 de triunfo)': 'Win a trick with the Andorra (the 3 of trumps)',
   'Gana una baza con un as que no sea de triunfo': 'Win a trick with a non-trump ace',
   'Gana una mano sin perder ninguna baza': 'Win a hand without losing a trick',

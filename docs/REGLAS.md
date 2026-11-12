@@ -37,7 +37,7 @@ Orden de los triunfos, de mayor a menor:
 | 1 | Cuatro de bastos | **Pablo** |
 | 2 | Tres del triunfo | **Andorra** |
 | 3 | Caballo de oros | **Tuerto** |
-| 4 | Dos del triunfo | **Malilla** |
+| 4 | Dos del triunfo | **Melilla** |
 | 5 | Rey del triunfo | |
 | 6 | Caballo del triunfo (si el triunfo no es oros) | |
 | 7 | Sota del triunfo | |
@@ -154,7 +154,7 @@ También se usa la expresión **estar al canuto** cuando a un equipo le faltan d
 - **Cuerno (o partida):** se gana al llegar a 8 puntos.
 - **Dormido:** triunfo que se queda en el mazo y no juega.
 - **Ir ciego:** no llevar triunfos. **Ir cerrado:** llevar muchos.
-- **Malilla:** el dos del triunfo.
+- **Melilla:** el dos del triunfo.
 - **Mano:** el jugador que reparte; también, cada reparto completo de la partida.
 - **Muestra:** carta que marca el palo del triunfo.
 - **Pablo:** el cuatro de bastos; dos cuernos; y el propio juego.

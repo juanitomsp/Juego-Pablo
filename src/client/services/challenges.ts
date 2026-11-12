@@ -27,7 +27,7 @@ export interface Challenge {
 export const CHALLENGES: Challenge[] = [
   { id: 'baza-pablo', title: 'Gana una baza con el Pablo', trick: (c) => isPablo(c) },
   { id: 'baza-tuerto', title: 'Gana una baza con el Tuerto', trick: (c) => isTuerto(c) },
-  { id: 'baza-malilla', title: 'Gana una baza con la Malilla (el 2 de triunfo)', trick: (c, t) => c.suit === t && c.rank === 2 && !isPablo(c) },
+  { id: 'baza-malilla', title: 'Gana una baza con la Melilla (el 2 de triunfo)', trick: (c, t) => c.suit === t && c.rank === 2 && !isPablo(c) },
   { id: 'baza-andorra', title: 'Gana una baza con el Andorra (el 3 de triunfo)', trick: (c, t) => c.suit === t && c.rank === 3 },
   { id: 'baza-as', title: 'Gana una baza con un as que no sea de triunfo', trick: (c, t) => c.rank === 1 && c.suit !== t },
   { id: 'mano-limpia', title: 'Gana una mano sin perder ninguna baza', hand: (r) => r.result.winner === MY_TEAM && r.wins[MY_TEAM] >= 3 && r.wins[1 - MY_TEAM] === 0 },

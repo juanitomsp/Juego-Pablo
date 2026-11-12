@@ -42,7 +42,7 @@ describe('baraja', () => {
 });
 
 describe('valores', () => {
-  it('orden de triunfos: Pablo > Andorra > Tuerto > Malilla > Rey > Caballo > Sota > As > 7 > 6 > 5 > 4', () => {
+  it('orden de triunfos: Pablo > Andorra > Tuerto > Melilla > Rey > Caballo > Sota > As > 7 > 6 > 5 > 4', () => {
     const t = 'copas';
     const order = [c(4, 'bastos'), c(3, t), c(11, 'oros'), c(2, t), c(12, t), c(11, t), c(10, t), c(1, t), c(7, t), c(6, t), c(5, t), c(4, t)];
     for (let i = 1; i < order.length; i++) expect(trumpPower(order[i - 1], t)).toBeGreaterThan(trumpPower(order[i], t));
@@ -156,7 +156,7 @@ describe('cierre anticipado de la mano', () => {
   });
 
   it('no se cierra si alguna carta que no se ha visto podría superarla', () => {
-    // El Rey de copas lo superan el Pablo, la Andorra, el Tuerto y la Malilla, que nadie ha visto.
+    // El Rey de copas lo superan el Pablo, la Andorra, el Tuerto y la Melilla, que nadie ha visto.
     const h = setup([2, 2], [[c(1, 'oros')], [c(12, 'copas')], [c(10, 'espadas')], [c(3, 'copas')]]);
     playCard(h, 1, c(12, 'copas'));
     expect(h.phase).toBe('playing');
@@ -173,7 +173,7 @@ describe('cierre anticipado de la mano', () => {
 describe('chat', () => {
   it('deja hablar de cartas y solo limpia el texto', () => {
     expect(cleanChat('tengo el 3 de basto')).toBe('tengo el 3 de basto');
-    expect(cleanChat('  Llevo el PABLO   y la Malilla\n')).toBe('Llevo el PABLO y la Malilla');
+    expect(cleanChat('  Llevo el PABLO   y la Melilla\n')).toBe('Llevo el PABLO y la Melilla');
     expect(cleanChat('<b>hola</b>')).toBe('bhola/b');
     expect(cleanChat('x'.repeat(500))).toHaveLength(140);
   });

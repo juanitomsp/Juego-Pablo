@@ -143,7 +143,7 @@ function buildLessons(): Lesson[] {
               <strong>Tuerto</strong> (11 de oros)
             </li>
             <li>
-              <strong>Malilla</strong> (el 2 del triunfo)
+              <strong>Melilla</strong> (el 2 del triunfo)
             </li>
             <li>Rey, Caballo, Sota, As… y después 7, 6, 5 y 4 del triunfo.</li>
           </ol>
@@ -162,7 +162,7 @@ function buildLessons(): Lesson[] {
               <strong>Tuerto</strong> (Knight of coins)
             </li>
             <li>
-              <strong>Malilla</strong> (the 2 of trumps)
+              <strong>Melilla</strong> (the 2 of trumps)
             </li>
             <li>King, Knight, Jack, Ace… then 7, 6, 5 and 4 of trumps.</li>
           </ol>
