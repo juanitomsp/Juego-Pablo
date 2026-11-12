@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
+import { Icon } from '../components/Icon';
+import { SpectatorCount } from '../components/SpectatorCount';
 import { teamOf } from '../../shared/engine';
 import { go } from '../App';
 import { Table, useSnapshot } from '../components/Table';
 import { OnlineController } from '../services/controller';
 import { getName, setName } from '../services/identity';
 
-export function RoomScreen({ code }: { code: string }) {
+export function RoomScreen({ code, watch = false }: { code: string; watch?: boolean }) {
   const [needName, setNeedName] = useState(!getName());
   const [ctrl, setCtrl] = useState<OnlineController | null>(null);
 
   useEffect(() => {
     if (needName) return;
-    const c = new OnlineController(code);
+    const c = new OnlineController(code, watch);
     setCtrl(c);
     return () => c.dispose();
-  }, [code, needName]);
+  }, [code, needName, watch]);
 
   if (needName) return <AskName onDone={() => setNeedName(false)} />;
   if (!ctrl) return <div className="center-msg">Conectando…</div>;
@@ -95,13 +97,33 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
           ← Salir
         </button>
         <span>Sala {room.code}</span>
+        <SpectatorCount n={room.spectators} />
       </nav>
+      {room.yourSeat === null && (
+        <p className="watch-banner">
+          <Icon name="eye" size={18} /> Estás mirando. Si queda un asiento libre, puedes sentarte a jugar.
+        </p>
+      )}
 
       <section className="panel">
         <h2>
           Código de la sala: <span className="code">{room.code}</span>
         </h2>
-        <p className="muted">Comparte el código o el enlace con tus amigos.</p>
+        <p className="muted">
+          {room.isPublic
+            ? 'Sala pública: aparece en «Partidas públicas» y puede entrar cualquiera.'
+            : 'Sala privada: solo entra quien tenga el código o el enlace.'}
+        </p>
+        {host && (
+          <div className="segmented visibility" role="group" aria-label="Tipo de sala">
+            <button className={!room.isPublic ? 'on' : ''} onClick={() => run(ctrl.setPublic(false))}>
+              Privada
+            </button>
+            <button className={room.isPublic ? 'on' : ''} onClick={() => run(ctrl.setPublic(true))}>
+              Pública
+            </button>
+          </div>
+        )}
         <div className="row">
           <input readOnly value={link} onFocus={(e) => e.target.select()} />
           <button

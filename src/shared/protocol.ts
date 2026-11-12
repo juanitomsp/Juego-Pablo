@@ -23,6 +23,22 @@ export interface RoomInfo {
   yourSeat: number | null;
   /** Resultado del último sorteo por reyes (nombres en orden de salida del rey). */
   kingDraw: string[] | null;
+  /** Personas mirando la partida sin jugar (conectadas). */
+  spectators: number;
+  /** Sala pública: aparece en la lista de partidas públicas y puede entrar cualquiera. */
+  isPublic: boolean;
+}
+
+/** Entrada de la lista de partidas públicas (GET /api/salas). Sin nombres: solo lo necesario para elegir. */
+export interface PublicRoom {
+  code: string;
+  players: 4 | 6;
+  /** Asientos ocupados (personas o bots). */
+  seated: number;
+  started: boolean;
+  spectators: number;
+  /** Marcador de la partida en curso: puntos de cada equipo. */
+  score: [number, number] | null;
 }
 
 export interface RoomState {
@@ -39,8 +55,14 @@ export interface QuickMessage {
 export type Ack<T = object> = (res: ({ ok: true } & T) | { ok: false; error: string }) => void;
 
 export interface ClientToServer {
-  'room:create': (p: { name: string; playerId: string; config: Partial<GameConfig> }, ack: Ack<{ code: string }>) => void;
-  'room:join': (p: { code: string; name: string; playerId: string }, ack: Ack<{ code: string }>) => void;
+  'room:create': (
+    p: { name: string; playerId: string; config: Partial<GameConfig>; isPublic?: boolean },
+    ack: Ack<{ code: string }>,
+  ) => void;
+  /** watch: entrar solo a mirar (no se sienta aunque haya sitio). */
+  'room:join': (p: { code: string; name: string; playerId: string; watch?: boolean }, ack: Ack<{ code: string }>) => void;
+  /** El anfitrión hace la sala pública o privada. */
+  'room:visibility': (p: { isPublic: boolean }, ack: Ack) => void;
   'room:leave': () => void;
   'room:sit': (p: { seat: number }, ack: Ack) => void;
   'room:addBot': (p: { seat: number }, ack: Ack) => void;

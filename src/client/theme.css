@@ -238,3 +238,95 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------------------------------------------------------------- Espectadores y partidas públicas */
+.spectators {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #f3e7c4;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.spectators.none {
+  opacity: 0.55;
+}
+.topnav .spectators {
+  margin-left: auto;
+}
+.toolbar .spectators {
+  margin-right: auto;
+}
+.watch-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px auto;
+  padding: 8px 14px;
+  max-width: 640px;
+  border-radius: 10px;
+  background: rgba(20, 30, 25, 0.75);
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  color: #f3e7c4;
+  font-size: 0.92rem;
+}
+.segmented.visibility {
+  margin: 4px 0 10px;
+}
+.public-rooms h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.room-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.room-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--panel-border);
+}
+.room-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.room-item button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.seat-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+.seat-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(140, 110, 50, 0.5);
+}
+.seat-dots span.full {
+  background: #c88c1b;
+  border-color: #c88c1b;
+}
+.panel .spectators {
+  background: rgba(140, 110, 50, 0.12);
+  color: var(--ink);
+}
+.center {
+  text-align: center;
+}

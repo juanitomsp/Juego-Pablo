@@ -12,7 +12,7 @@ import {
   RuleError,
   getView,
 } from '../../shared/engine';
-import type { ClientToServer, QuickMessage, RoomState, ServerToClient } from '../../shared/protocol';
+import type { ClientToServer, PublicRoom, QuickMessage, RoomState, ServerToClient } from '../../shared/protocol';
 import { GameTable } from '../../shared/table';
 import { censorChat, containsInsult } from '../../shared/chat';
 import { getName, getPlayerId } from './identity';
@@ -78,7 +78,11 @@ export class OnlineController extends Base implements Controller {
   private code: string;
   private handlers: Array<[string, (...a: never[]) => void]> = [];
 
-  constructor(code: string) {
+  constructor(
+    code: string,
+    /** Entrar solo a mirar (espectador). */
+    private watch = false,
+  ) {
     super();
     this.code = code.toUpperCase();
     const on = <E extends keyof ServerToClient>(ev: E, fn: ServerToClient[E]) => {
@@ -109,7 +113,7 @@ export class OnlineController extends Base implements Controller {
   /** Motivo si el servidor nos ha expulsado de la sala. */
   kickedReason: string | null = null;
   private join() {
-    this.socket.emit('room:join', { code: this.code, name: getName() || 'Jugador', playerId: getPlayerId() }, (r) => {
+    this.socket.emit('room:join', { code: this.code, name: getName() || 'Jugador', playerId: getPlayerId(), watch: this.watch }, (r) => {
       if (!r.ok) {
         this.joinError = r.error;
         this.update({});
@@ -155,6 +159,9 @@ export class OnlineController extends Base implements Controller {
   start() {
     return this.emitAck('room:start');
   }
+  setPublic(isPublic: boolean) {
+    return this.emitAck('room:visibility', { isPublic });
+  }
   replaceWithBot(seat: number) {
     return this.emitAck('room:replaceWithBot', { seat });
   }
@@ -166,11 +173,11 @@ export class OnlineController extends Base implements Controller {
   }
 }
 
-export function createRoom(config: Partial<GameConfig>): Promise<{ code?: string; error?: string }> {
+export function createRoom(config: Partial<GameConfig>, isPublic = false): Promise<{ code?: string; error?: string }> {
   const socket = getSocket();
   return new Promise((resolve) => {
     const go = () =>
-      socket.emit('room:create', { name: getName() || 'Jugador', playerId: getPlayerId(), config }, (r) =>
+      socket.emit('room:create', { name: getName() || 'Jugador', playerId: getPlayerId(), config, isPublic }, (r) =>
         resolve(r.ok ? { code: r.code } : { error: r.error }),
       );
     if (socket.connected) go();
@@ -182,6 +189,20 @@ export function createRoom(config: Partial<GameConfig>): Promise<{ code?: string
       });
     }
   });
+}
+
+const SERVER = ((import.meta.env.VITE_SERVER_URL as string | undefined) || '').replace(/\/$/, '');
+
+/** Lista de partidas públicas del servidor. */
+export async function fetchPublicRooms(): Promise<PublicRoom[] | null> {
+  try {
+    const r = await fetch(`${SERVER}/api/salas`, { cache: 'no-store' });
+    if (!r.ok) return null;
+    const data = (await r.json()) as { rooms?: PublicRoom[] };
+    return Array.isArray(data.rooms) ? data.rooms : null;
+  } catch {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------- Práctica local
@@ -255,6 +276,8 @@ export class LocalController extends Base implements Controller {
           youAreHost: true,
           yourSeat: 0,
           kingDraw: null,
+          spectators: 0,
+          isPublic: false,
         },
         view: getView(this.table.match, 0),
       },

@@ -7,10 +7,11 @@ import { DeckScreen } from './screens/DeckScreen';
 import { TutorialScreen } from './screens/TutorialScreen';
 import { RoomScreen } from './screens/RoomScreen';
 import { StatsScreen } from './screens/StatsScreen';
+import { PublicRooms } from './screens/PublicRooms';
 import reglas from '../../docs/REGLAS.md?raw';
 import privacidad from '../../docs/PRIVACIDAD.md?raw';
 
-/** Router mínimo por hash: #/ , #/sala/CODIGO , #/practica , #/vivo , #/reglas , #/estadisticas , #/privacidad */
+/** Router mínimo por hash: #/ , #/sala/CODIGO , #/ver/CODIGO (mirar) , #/publicas , #/practica , #/vivo , #/reglas , #/estadisticas , #/privacidad */
 function useHashRoute(): string[] {
   const parse = () => window.location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   const [route, setRoute] = useState(parse);
@@ -31,6 +32,10 @@ export function App() {
   switch (page) {
     case 'sala':
       return <RoomScreen key={arg} code={arg ?? ''} />;
+    case 'ver':
+      return <RoomScreen key={`ver-${arg}`} code={arg ?? ''} watch />;
+    case 'publicas':
+      return <PublicRooms />;
     case 'practica':
       return <Practice />;
     case 'vivo':

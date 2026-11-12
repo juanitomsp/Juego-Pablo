@@ -158,9 +158,9 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
       data.code = undefined;
     };
 
-    const enter = (room: Room, playerId: string, name: string) => {
+    const enter = (room: Room, playerId: string, name: string, watch = false) => {
       if (data.code && data.code !== room.code) leaveCurrent();
-      room.join(playerId, name, socket.id); // lanza RuleError si la sala está llena
+      room.join(playerId, name, socket.id, watch); // lanza RuleError si la sala está llena
       data.playerId = playerId;
       data.code = room.code;
       socket.join(room.code);
@@ -169,18 +169,19 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
 
     on('room:create', (p, a) => {
       const ack = ackOf(a);
-      const body = (p ?? {}) as { name?: unknown; playerId?: unknown; config?: unknown };
+      const body = (p ?? {}) as { name?: unknown; playerId?: unknown; config?: unknown; isPublic?: unknown };
       if (!validPlayerId(body.playerId)) return ack({ ok: false, error: 'Identificador no válido.' });
       if (manager.rooms.size >= maxRooms) return ack({ ok: false, error: 'El servidor está lleno. Inténtalo más tarde.' });
       if (!roomLimiter.take(ip)) return ack({ ok: false, error: 'Has creado demasiadas salas. Espera unos minutos.' });
       const room = manager.create(body.playerId, parseConfigPatch(body.config));
+      room.isPublic = body.isPublic === true;
       enter(room, body.playerId, sanitizeName(body.name));
       ack({ ok: true, code: room.code });
     });
 
     on('room:join', (p, a) => {
       const ack = ackOf(a);
-      const body = (p ?? {}) as { code?: unknown; name?: unknown; playerId?: unknown };
+      const body = (p ?? {}) as { code?: unknown; name?: unknown; playerId?: unknown; watch?: unknown };
       if (!validPlayerId(body.playerId)) return ack({ ok: false, error: 'Identificador no válido.' });
       const room = validCode(body.code) ? manager.get(body.code) : undefined;
       if (!room) {
@@ -188,7 +189,7 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
         if (!badJoinLimiter.take(ip)) return ack({ ok: false, error: 'Demasiados intentos. Espera un poco.' });
         return ack({ ok: false, error: 'No existe ninguna sala con ese código.' });
       }
-      enter(room, body.playerId, sanitizeName(body.name));
+      enter(room, body.playerId, sanitizeName(body.name), body.watch === true);
       ack({ ok: true, code: room.code });
     });
 
@@ -203,6 +204,7 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
     });
 
     const seatOf = (p: unknown) => toSeat((p as { seat?: unknown } | null)?.seat);
+    on('room:visibility', (p, a) => roomOp((r, id) => r.setVisibility(id, (p as { isPublic?: unknown } | null)?.isPublic === true))(a));
     on('room:sit', (p, a) => roomOp((r, id) => r.sit(id, seatOf(p)))(a));
     on('room:addBot', (p, a) => roomOp((r, id) => r.addBot(id, seatOf(p)))(a));
     on('room:clearSeat', (p, a) => roomOp((r, id) => r.clearSeat(id, seatOf(p)))(a));
@@ -253,10 +255,21 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
     manager.sweep();
     roomLimiter.sweep();
     badJoinLimiter.sweep();
+    listLimiter.sweep();
   }, 60_000);
   sweeper.unref();
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+  // Lista de partidas públicas (sin apodos ni datos de nadie). Petición GET simple: sin CORS previo.
+  const listLimiter = new KeyedLimiter(30, 1);
+  app.get('/api/salas', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const origin = req.headers.origin;
+    if (origin && originAllowed(origin, req.headers.host, allowed)) res.setHeader('Access-Control-Allow-Origin', origin);
+    if (!listLimiter.take(clientIp(req, trustProxy))) return res.sendStatus(429);
+    res.json({ rooms: manager.listPublic() });
+  });
 
   // Avisos anónimos de las partidas contra bots (se juegan en el móvil, sin pasar por el servidor).
   // Cuerpo en texto plano (JSON) para que el navegador no necesite una petición previa de CORS.

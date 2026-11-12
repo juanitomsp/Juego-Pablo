@@ -19,6 +19,9 @@ const PATHS: Record<string, string> = {
   check: 'M4 12l5 5L20 6',
   live: 'M3 12h4l3-8 4 16 3-8h4',
   crown: 'M3 8l4 4 5-7 5 7 4-4-2 11H5L3 8Z',
+  eye: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+  globe: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM2 12h20M12 2c2.5 2.7 4 6.2 4 10s-1.5 7.3-4 10c-2.5-2.7-4-6.2-4-10s1.5-7.3 4-10Z',
+  lock: 'M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4',
 };
 
 export type IconName = keyof typeof PATHS;

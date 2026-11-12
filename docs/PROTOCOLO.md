@@ -8,8 +8,9 @@ Todos los mensajes del cliente que esperan respuesta usan *ack*: `{ ok: true, ..
 
 | Evento | Datos | Quién | Efecto |
 |---|---|---|---|
-| `room:create` | `{ name, playerId, config }` | cualquiera | Crea sala y entra como anfitrión. Ack: `{ code }` |
-| `room:join` | `{ code, name, playerId }` | cualquiera | Entra (o vuelve) a una sala. Se sienta en el primer hueco si la partida no ha empezado; si ya empezó y no tenía asiento, mira |
+| `room:create` | `{ name, playerId, config, isPublic? }` | cualquiera | Crea sala (privada por defecto) y entra como anfitrión. Ack: `{ code }` |
+| `room:join` | `{ code, name, playerId, watch? }` | cualquiera | Entra (o vuelve) a una sala. Se sienta en el primer hueco si la partida no ha empezado (salvo con `watch: true`); si ya empezó y no tenía asiento, entra como espectador |
+| `room:visibility` | `{ isPublic }` | anfitrión | Hace la sala pública (sale en la lista) o privada (solo con código) |
 | `room:leave` | — | miembro | Sale de la sala (libera el asiento si no ha empezado) |
 | `room:sit` | `{ seat }` | miembro | Cambia de asiento (antes de empezar) |
 | `room:addBot` | `{ seat }` | anfitrión | Pone un bot en un hueco |
@@ -20,7 +21,7 @@ Todos los mensajes del cliente que esperan respuesta usan *ack*: `{ ok: true, ..
 | `room:replaceWithBot` | `{ seat }` | anfitrión | Sustituye a un jugador desconectado por un bot |
 | `game:action` | `Action` | jugador | `deal`, `play {card}`, `bet`, `accept`, `reject`, `quiero {play}` |
 | `game:quick` | `{ index }` | jugador | Frase rápida predefinida |
-| `game:chat` | `{ text }` | jugador | Mensaje libre para toda la mesa (máx. 140 caracteres, 1 por segundo). El servidor tacha las palabras que nombran cartas (`src/shared/chat.ts`) y lo reenvía como `quick` |
+| `game:chat` | `{ text }` | jugador (los espectadores no pueden escribir) | Mensaje libre para toda la mesa (máx. 140 caracteres, 1 por segundo). El servidor tacha las palabras que nombran cartas (`src/shared/chat.ts`) y lo reenvía como `quick` |
 | `game:rematch` | — | jugador | Nueva partida con la misma mesa al terminar |
 
 ## Servidor → cliente
@@ -29,6 +30,13 @@ Todos los mensajes del cliente que esperan respuesta usan *ack*: `{ ok: true, ..
 |---|---|---|
 | `state` | `{ room: RoomInfo, view: PlayerView \| null }` | Tras cualquier cambio. Cada jugador recibe **su** vista |
 | `quick` | `{ from, text, at }` | A toda la sala (frases rápidas y chat ya censurado) |
+
+## Espectadores y partidas públicas
+
+- Un **espectador** es un miembro de la sala sin asiento. Recibe la vista con `you: null`: ve la mesa, las bazas y el marcador, pero **ninguna carta en mano** de nadie. No puede jugar ni escribir en el chat (sí lo lee).
+- `RoomInfo.spectators` es el número de espectadores conectados (el ojo 👁 de la mesa) y `RoomInfo.isPublic` indica si la sala es pública.
+- `GET /api/salas` devuelve `{ rooms: PublicRoom[] }`: las salas públicas con alguien conectado y sin terminar (código, 4/6 jugadores, asientos ocupados, empezada, espectadores y marcador). **No incluye apodos.** Limitado por IP.
+- Rutas del cliente: `#/publicas` (lista), `#/sala/CÓDIGO` (jugar) y `#/ver/CÓDIGO` (entrar solo a mirar).
 
 ## Seguridad
 

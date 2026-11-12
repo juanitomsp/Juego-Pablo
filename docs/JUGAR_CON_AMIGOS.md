@@ -53,6 +53,12 @@ En el plan gratuito, el servidor «se duerme» tras 15 minutos sin uso: el prime
 
 Más detalles y otras plataformas en [DESPLIEGUE.md](DESPLIEGUE.md).
 
+## Mirar una partida y partidas públicas
+
+- **Mirar:** entra con el código de una partida que ya ha empezado y te quedas como espectador (o usa el enlace `#/ver/CÓDIGO` para mirar aunque haya sitio). No ves las cartas de nadie. En la mesa, el ojo 👁 dice cuántas personas están mirando.
+- **Salas privadas:** son las de siempre, solo entra quien tenga el código.
+- **Partidas públicas:** desde la portada, «Partidas públicas». Ahí ves las mesas que buscan jugadores y las que se están jugando para mirarlas. El anfitrión puede cambiar su sala entre privada y pública en la sala de espera.
+
 ## Instalarlo como app en el móvil
 
 Con la página abierta:

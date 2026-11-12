@@ -156,6 +156,65 @@ describe('servidor', () => {
     expect(wStates.every((s) => !s.view?.hand || s.view.hand.myCards.length === 0)).toBe(true);
   });
 
+  it('espectadores: entran a mirar con el código, se cuentan y no pueden escribir', async () => {
+    const url = await start();
+    const host = await client(url);
+    const hStates: RoomState[] = [];
+    host.on('state', (st: RoomState) => hStates.push(st));
+    const { code } = await call<{ code: string }>(host, 'room:create', { name: 'Ana', playerId: id(1), config: { players: 4 } });
+
+    // En la sala de espera, con watch no se sienta aunque haya sitio.
+    const w1 = await client(url);
+    await call(w1, 'room:join', { code, name: 'Mirón', playerId: id(8), watch: true });
+    await sleep(50);
+    let last = hStates[hStates.length - 1];
+    expect(last.room.spectators).toBe(1);
+    expect(last.room.seats.filter((s) => s.name).length).toBe(1);
+
+    for (const seat of [1, 2, 3]) await call(host, 'room:addBot', { seat });
+    await call(host, 'room:start');
+    // Con la partida empezada, entrar con el código también es mirar.
+    const w2 = await client(url);
+    await call(w2, 'room:join', { code, name: 'Otro', playerId: id(9) });
+    await sleep(50);
+    last = hStates[hStates.length - 1];
+    expect(last.room.spectators).toBe(2);
+    const chat = await call<{ ok: boolean; error?: string }>(w2, 'game:chat', { text: 'hola' });
+    expect(chat.ok).toBe(false);
+
+    w2.disconnect();
+    await sleep(100);
+    expect(hStates[hStates.length - 1].room.spectators).toBe(1);
+  });
+
+  it('partidas públicas: solo salen las públicas, sin apodos, y el anfitrión decide', async () => {
+    const url = await start();
+    const a = await client(url);
+    const b = await client(url);
+    const pub = await call<{ code: string }>(a, 'room:create', { name: 'Ana', playerId: id(1), config: { players: 4 }, isPublic: true });
+    const priv = await call<{ code: string }>(b, 'room:create', { name: 'Bea', playerId: id(2), config: { players: 6 } });
+    let list = (await (await fetch(`${url}/api/salas`)).json()) as { rooms: { code: string; seated: number; players: number }[] };
+    expect(list.rooms.map((r) => r.code)).toEqual([pub.code]);
+    expect(list.rooms[0]).toMatchObject({ players: 4, seated: 1, started: false });
+    expect(JSON.stringify(list)).not.toContain('Ana');
+
+    // Solo el anfitrión cambia la visibilidad.
+    const c = await client(url);
+    await call(c, 'room:join', { code: priv.code, name: 'Carla', playerId: id(3) });
+    expect((await call<{ ok: boolean }>(c, 'room:visibility', { isPublic: true })).ok).toBe(false);
+    expect((await call<{ ok: boolean }>(b, 'room:visibility', { isPublic: true })).ok).toBe(true);
+    list = await (await fetch(`${url}/api/salas`)).json();
+    expect(list.rooms.length).toBe(2);
+    // La que tiene más gente esperando sale primero.
+    expect(list.rooms[0].code).toBe(priv.code);
+
+    // Si se van todos, deja de aparecer.
+    a.disconnect();
+    await sleep(100);
+    list = await (await fetch(`${url}/api/salas`)).json();
+    expect(list.rooms.map((r) => r.code)).toEqual([priv.code]);
+  });
+
   it('el servidor del juego no expone el panel; el panel aparte sí da los datos', async () => {
     const url = await start();
     expect((await fetch(`${url}/api/admin/metrics`)).status).toBe(404);

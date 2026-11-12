@@ -81,7 +81,7 @@ export function Home() {
           </span>
           <span className="action-text">
             <strong>Jugar con amigos</strong>
-            <span>Crea una sala o únete con un código</span>
+            <span>Sala privada: crea una o únete con un código</span>
           </span>
         </button>
 
@@ -115,6 +115,7 @@ export function Home() {
           </div>
         )}
 
+        <ActionCard icon="globe" title="Partidas públicas" sub="Juega con gente de todas partes o mira partidas" onClick={() => go('/publicas')} />
         <ActionCard icon="bot" title="Jugar contra bots" sub="Fácil, normal o difícil. También sin conexión" onClick={() => go('/practica')} />
         <ActionCard icon="learn" title="Aprender a jugar" sub="Tutorial corto con ejercicios" onClick={() => go('/tutorial')} />
         {error && <p className="error">{error}</p>}

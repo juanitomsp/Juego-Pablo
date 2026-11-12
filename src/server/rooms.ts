@@ -3,7 +3,7 @@
  * No se guarda ningún dato personal: solo el apodo que elige el jugador mientras dure la sala.
  */
 import { DEFAULT_CONFIG, GameConfig, QUICK_MESSAGES, RuleError, drawTeamsByKings, getView } from '../shared/engine';
-import type { RoomState, SeatInfo } from '../shared/protocol';
+import type { PublicRoom, RoomState, SeatInfo } from '../shared/protocol';
 import { GameTable } from '../shared/table';
 import { INSULT_STRIKES_TO_KICK, censorChat, containsInsult, insultWarning } from '../shared/chat';
 import { randomInt, webcrypto } from 'node:crypto';
@@ -80,6 +80,8 @@ export class Room {
   table: GameTable | null = null;
   kingDraw: string[] | null = null;
   lastActivity = Date.now();
+  /** Sala pública: sale en la lista y puede entrar cualquiera. Por defecto, privada (solo con el código). */
+  isPublic = false;
 
   constructor(
     public code: string,
@@ -108,7 +110,7 @@ export class Room {
     return !!playerId && (this.members.get(playerId)?.socketIds.size ?? 0) > 0;
   }
 
-  join(playerId: string, name: string, socketId: string) {
+  join(playerId: string, name: string, socketId: string, watch = false) {
     if (this.banned.has(playerId)) throw new RuleError('Has sido expulsado de esta sala por insultar.');
     this.hooks.usage?.player(playerId);
     if (!this.members.has(playerId) && this.members.size >= MAX_MEMBERS) {
@@ -124,7 +126,7 @@ export class Room {
     const seat = this.seatOf(playerId);
     if (seat !== null) this.seats[seat].name = name;
     // Al entrar, se sienta automáticamente en el primer hueco libre (si no ha empezado).
-    else if (!this.table) {
+    else if (!this.table && !watch) {
       const free = this.seats.findIndex((s) => !s.playerId && !s.bot);
       if (free >= 0) this.seats[free] = { playerId, name, bot: false };
     }
@@ -143,6 +145,31 @@ export class Room {
       const next = [...this.members.keys()][0];
       if (next) this.hostId = next;
     }
+  }
+
+  /** Personas conectadas que miran sin jugar. */
+  get spectatorCount() {
+    let n = 0;
+    for (const m of this.members.values()) if (m.socketIds.size > 0 && this.seatOf(m.playerId) === null) n++;
+    return n;
+  }
+
+  setVisibility(playerId: string, isPublic: boolean) {
+    this.requireHost(playerId);
+    this.isPublic = !!isPublic;
+  }
+
+  /** Resumen para la lista de partidas públicas (sin apodos). */
+  publicInfo(): PublicRoom {
+    const m = this.table?.match;
+    return {
+      code: this.code,
+      players: this.config.players === 6 ? 6 : 4,
+      seated: this.seats.filter((s) => s.playerId || s.bot).length,
+      started: !!this.table,
+      spectators: this.spectatorCount,
+      score: m ? [m.score[0], m.score[1]] : null,
+    };
   }
 
   get empty() {
@@ -280,7 +307,8 @@ export class Room {
    */
   chat(playerId: string, raw: unknown): { warning: string; kicked: boolean } | null {
     const seat = this.seatOf(playerId);
-    if (seat === null || typeof raw !== 'string') return null;
+    if (typeof raw !== 'string') return null;
+    if (seat === null) return { warning: 'Mientras miras no puedes escribir: el chat es de los jugadores.', kicked: false };
     if (containsInsult(raw)) {
       const n = (this.strikes.get(playerId) ?? 0) + 1;
       this.strikes.set(playerId, n);
@@ -345,6 +373,8 @@ export class Room {
         youAreHost: playerId === this.hostId,
         yourSeat,
         kingDraw: this.kingDraw,
+        spectators: this.spectatorCount,
+        isPublic: this.isPublic,
       },
       view: this.table ? getView(this.table.match, yourSeat) : null,
     };
@@ -367,6 +397,20 @@ export class RoomManager {
     const room = new Room(code, hostId, config, this.hooks);
     this.rooms.set(code, room);
     return room;
+  }
+
+  /**
+   * Partidas públicas activas (con alguien conectado y sin terminar): primero las que esperan jugadores,
+   * después las que se están jugando (para mirarlas).
+   */
+  listPublic(limit = 40): PublicRoom[] {
+    const list: PublicRoom[] = [];
+    for (const r of this.rooms.values()) {
+      if (!r.isPublic || r.empty || r.table?.match.phase === 'finished') continue;
+      list.push(r.publicInfo());
+    }
+    const free = (x: PublicRoom) => (!x.started && x.seated < x.players ? 0 : 1);
+    return list.sort((a, b) => free(a) - free(b) || b.seated - a.seated).slice(0, limit);
   }
 
   get(code: string): Room | undefined {

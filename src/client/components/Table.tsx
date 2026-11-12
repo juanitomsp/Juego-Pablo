@@ -16,6 +16,7 @@ import type { RoomInfo } from '../../shared/protocol';
 import { Controller } from '../services/controller';
 import { recordMatch, summarize } from '../services/stats';
 import { Icon } from './Icon';
+import { SpectatorCount } from './SpectatorCount';
 import { play as playSound, setSoundOn, soundOn } from '../services/sounds';
 import { CHAT_MAX_LENGTH } from '../../shared/chat';
 import { CardView, SuitIcon } from './CardView';
@@ -336,6 +337,11 @@ function TableInner(p: InnerProps) {
         )}
       </header>
 
+      {p.controller.mode === 'online' && view.you === null && (
+        <div className="watch-banner">
+          <Icon name="eye" size={18} /> Estás mirando esta partida. No ves las cartas de nadie.
+        </div>
+      )}
       {!p.connected && <div className="banner warn">Sin conexión con el servidor. Reintentando…</div>}
       {disconnected.length > 0 && view.phase !== 'finished' && (
         <div className="banner warn">
@@ -506,6 +512,7 @@ function TableInner(p: InnerProps) {
       </div>
 
       <footer className="toolbar">
+        {p.controller.mode === 'online' && <SpectatorCount n={room.spectators} />}
         <button className={p.panel === 'chat' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'chat' ? 'none' : 'chat')}>
           <Icon name="chat" size={18} />
           <span className="tb-label"> Chat</span>
