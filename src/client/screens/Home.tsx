@@ -72,7 +72,7 @@ export function Home() {
           <CardView card={{ suit: 'copas', rank: 3 }} trump="copas" />
         </div>
         <h1 className="wordmark">El Pablo</h1>
-        <p className="tagline">{t('El juego de cartas de Níjar y Mairena del Alcor')}</p>
+        <p className="tagline">by Juan María Sánchez Madroñal</p>
       </header>
 
       <section className="panel name-panel">

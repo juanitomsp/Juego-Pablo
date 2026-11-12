@@ -4,7 +4,6 @@
  */
 export const EN: Record<string, string> = {
   // ---------------- Portada
-  'El juego de cartas de Níjar y Mairena del Alcor': 'The card game from Níjar and Mairena del Alcor (Spain)',
   'Tu apodo': 'Your nickname',
   '¿Cómo te llamamos?': 'What should we call you?',
   'Sin registro. Solo lo ven los jugadores de tu mesa.': 'No sign-up. Only the players at your table can see it.',
