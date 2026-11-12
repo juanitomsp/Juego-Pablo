@@ -15,6 +15,8 @@ import {
 import type { RoomInfo } from '../../shared/protocol';
 import { Controller } from '../services/controller';
 import { recordMatch, summarize } from '../services/stats';
+import { Icon } from './Icon';
+import { play as playSound, setSoundOn, soundOn } from '../services/sounds';
 import { CHAT_MAX_LENGTH } from '../../shared/chat';
 import { CardView, SuitIcon } from './CardView';
 
@@ -188,6 +190,7 @@ function useWakeLock() {
 function TableInner(p: InnerProps) {
   const { room, view, now, hints, act } = p;
   const [selected, setSelected] = useState<string | null>(null);
+  const [sound, setSound] = useState(soundOn);
   // Jugadores silenciados (solo en este dispositivo): no se ven sus mensajes ni sus burbujas.
   const [muted, setMuted] = useState<Set<number>>(() => new Set());
   const toggleMute = (seat: number) =>
@@ -205,6 +208,7 @@ function TableInner(p: InnerProps) {
   const myTeam: Team | null = you === null ? null : teamOf(you);
   const name = (s: number) => (s === you ? 'Tú' : room.seats[s]?.name ?? `Jugador ${s + 1}`);
   const teamName = (t: Team) => room.config.teamNames[t];
+  const toasts = useEventToasts(view, room.config.teamNames, you, name);
   const rel = (s: number) => (s - base + n) % n;
   const pos = (s: number) => (n === 4 ? POS4 : POS6)[rel(s)];
 
@@ -286,6 +290,13 @@ function TableInner(p: InnerProps) {
 
   return (
     <div className="game">
+      <div className="toasts" aria-live="polite">
+        {toasts.map((t) => (
+          <div key={t.id} className={`toast ${t.big ? 'big' : ''}`}>
+            {t.text}
+          </div>
+        ))}
+      </div>
       <header className="scorebar">
         {([0, 1] as Team[]).map((t) => (
           <div key={t} className={`team-score team-${t} ${myTeam === t ? 'mine' : ''}`}>
@@ -351,6 +362,9 @@ function TableInner(p: InnerProps) {
               style={{ left: `${x}%`, top: `${y}%` }}
             >
               <div className="seat-name">
+                <span className="avatar" aria-hidden="true">
+                  {(s.seat === you ? 'Tú' : s.name ?? '?').replace(/^Bot\s*\(?/, '').charAt(0).toUpperCase()}
+                </span>
                 {s.seat === you ? 'Tú' : s.name ?? '—'}
                 {s.bot && <span className="tag">bot</span>}
                 {!s.connected && <span className="tag off">desconectado</span>}
@@ -383,7 +397,16 @@ function TableInner(p: InnerProps) {
             // Separadas del centro para no tapar la muestra.
             const ty = 50 + (y - 50) * 0.62;
             return (
-              <div key={cardId(pl.card)} className="trick-card" style={{ left: `${tx}%`, top: `${ty}%` }}>
+              <div
+                key={cardId(pl.card)}
+                className="trick-card"
+                style={{
+                  left: `${tx}%`,
+                  top: `${ty}%`,
+                  ['--from-x' as string]: `${(x - tx) * 4}px`,
+                  ['--from-y' as string]: `${(y - ty) * 4}px`,
+                }}
+              >
                 <CardView card={pl.card} small trump={h!.trump} hints={hints} highlight={(trickDone || partnerWinning) && pl.seat === trickWinner} />
               </div>
             );
@@ -484,13 +507,27 @@ function TableInner(p: InnerProps) {
 
       <footer className="toolbar">
         <button className={p.panel === 'chat' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'chat' ? 'none' : 'chat')}>
-          💬<span className="tb-label"> Chat</span>
+          <Icon name="chat" size={18} />
+          <span className="tb-label"> Chat</span>
         </button>
         <button className={p.panel === 'log' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'log' ? 'none' : 'log')}>
-          📜<span className="tb-label"> Historial</span>
+          <Icon name="history" size={18} />
+          <span className="tb-label"> Historial</span>
         </button>
         <button className={p.panel === 'orden' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'orden' ? 'none' : 'orden')}>
-          🃏<span className="tb-label"> Orden</span>
+          <Icon name="ranking" size={18} />
+          <span className="tb-label"> Orden</span>
+        </button>
+        <button
+          className={sound ? 'on' : ''}
+          aria-label={sound ? 'Quitar el sonido' : 'Poner el sonido'}
+          title={sound ? 'Sonido activado' : 'Sonido desactivado'}
+          onClick={() => {
+            setSoundOn(!sound);
+            setSound(!sound);
+          }}
+        >
+          <Icon name={sound ? 'sound' : 'mute'} size={18} />
         </button>
         <label className="toggle">
           <input type="checkbox" checked={hints} onChange={(e) => p.setHints(e.target.checked)} /> Ayudas
@@ -619,4 +656,79 @@ function ChatPanel({
       )}
     </>
   );
+}
+
+/**
+ * Avisos flotantes y sonidos a partir de los eventos de la partida (apuestas, bazas, cuernos…).
+ * Solo se avisa de los eventos nuevos (no de los que ya estaban al entrar en la mesa).
+ */
+function useEventToasts(view: PlayerView, teamNames: [string, string], you: number | null, name: (s: number) => string) {
+  const [toasts, setToasts] = useState<{ id: number; text: string; big?: boolean }[]>([]);
+  const lastSeen = useRef<number | null>(null);
+  const lastHand = useRef<number>(view.handNumber);
+  const lastTurn = useRef<string>('');
+
+  useEffect(() => {
+    const events = view.events;
+    const newest = events.length ? events[events.length - 1].id : 0;
+    if (lastSeen.current === null) {
+      lastSeen.current = newest;
+      return;
+    }
+    const fresh = events.filter((e) => e.id > lastSeen.current!);
+    lastSeen.current = newest;
+    const myTeam = you === null ? null : teamOf(you);
+    const add: { id: number; text: string; big?: boolean }[] = [];
+    for (const e of fresh) {
+      switch (e.kind) {
+        case 'trick':
+          playSound('trick');
+          break;
+        case 'bet':
+          playSound('bet');
+          add.push({ id: e.id, text: e.seat === you ? `Apuestas: la mano valdría ${e.value}` : `${name(e.seat)} apuesta: la mano valdría ${e.value}` });
+          break;
+        case 'accept':
+          add.push({ id: e.id, text: `${e.seat === you ? 'Quieres' : `${name(e.seat)} quiere`}. La mano vale ${e.value}` });
+          break;
+        case 'reject':
+          add.push({ id: e.id, text: e.seat === you ? 'No quieres' : `${name(e.seat)} no quiere` });
+          break;
+        case 'cuerno':
+          playSound(e.team === myTeam ? 'win' : 'lose');
+          add.push({ id: e.id, text: `🐂 ¡Cuerno para ${teamNames[e.team]}!`, big: true });
+          break;
+        case 'matchEnd':
+          playSound(e.team === myTeam ? 'win' : 'lose');
+          add.push({ id: e.id, text: `🏆 ¡${teamNames[e.team]} gana la partida!`, big: true });
+          break;
+        case 'deal':
+          playSound('deal');
+          break;
+      }
+    }
+    if (add.length) {
+      setToasts((t) => [...t, ...add].slice(-3));
+      const ids = add.map((a) => a.id);
+      setTimeout(() => setToasts((t) => t.filter((x) => !ids.includes(x.id))), 3200);
+    }
+  }, [view.events, teamNames, you, name]);
+
+  // Sonido al echar carta y cuando te toca.
+  const h = view.hand;
+  const trickLen = h ? h.trick.length + h.tricks.length * 10 : 0;
+  useEffect(() => {
+    if (view.handNumber !== lastHand.current) {
+      lastHand.current = view.handNumber;
+      return;
+    }
+    if (trickLen > 0) playSound('card');
+  }, [trickLen, view.handNumber]);
+  const turnKey = h && h.phase === 'playing' && h.turn === you ? `${view.handNumber}-${h.trickIndex}-${h.trick.length}` : '';
+  useEffect(() => {
+    if (turnKey && turnKey !== lastTurn.current) playSound('turn');
+    lastTurn.current = turnKey;
+  }, [turnKey]);
+
+  return toasts;
 }

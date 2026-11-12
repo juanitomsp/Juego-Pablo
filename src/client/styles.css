@@ -321,3 +321,26 @@ button, .card { touch-action: manipulation; -webkit-tap-highlight-color: transpa
 .mute-list summary { cursor: pointer; font-weight: 600; }
 
 .muted-light { color: #cfe3d8; }
+
+/* ---------- Tutorial ---------- */
+.tut-progress { height: 6px; background: rgba(255,255,255,0.15); border-radius: 999px; overflow: hidden; margin-bottom: 0.8rem; }
+.tut-progress > div { height: 100%; background: var(--accent); transition: width 0.3s ease; }
+.tut-card { animation: tut-in 0.25s ease-out; }
+@keyframes tut-in { from { opacity: 0; transform: translateY(8px); } }
+.tut-card h2 { font-family: var(--font-display, Georgia, serif); }
+.tut-muestra { display: inline-flex; align-items: center; gap: 0.6rem; background: #0f5a3f; color: #fff; padding: 0.4rem 0.8rem; border-radius: 12px; margin: 0.3rem 0; text-transform: capitalize; }
+.tut-trick { background: #0f5a3f; color: #fff; padding: 0.5rem 0.8rem; border-radius: 12px; margin: 0.5rem 0; display: inline-flex; flex-direction: column; gap: 0.3rem; }
+.tut-trick .lbl { color: #cfe3d8; }
+.tut-play { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tut-quiz { margin-top: 1rem; border-top: 1px dashed #d8d0b8; padding-top: 0.8rem; }
+.tut-options { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; margin: 0.6rem 0; }
+.tut-option { border-radius: 10px; padding: 4px; transition: background 0.2s; }
+.tut-option.ok { background: #c8ecc8; }
+.tut-option.ko { background: #f6c9c5; animation: shake 0.3s; }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.tut-feedback { padding: 0.5rem 0.7rem; border-radius: 8px; font-weight: 600; }
+.tut-feedback.ok { background: #e3f5e3; }
+.tut-feedback.ko { background: #fde8e6; }
+.tut-order { line-height: 1.7; }
+.tut-nav { justify-content: flex-end; }
+.tut-banner { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; border-left: 6px solid var(--accent); }
