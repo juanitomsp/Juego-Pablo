@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { AddressInfo } from 'node:net';
 import { io as connect, Socket } from 'socket.io-client';
 import { GameServer, ServerOptions, createGameServer } from '../src/server/app';
+import { createAdminServer } from '../src/server/admin';
 import { parseAction, parseConfigPatch, originAllowed } from '../src/server/security';
 import { MAX_MEMBERS } from '../src/server/rooms';
 import type { RoomState } from '../src/shared/protocol';
@@ -155,24 +156,21 @@ describe('servidor', () => {
     expect(wStates.every((s) => !s.view?.hand || s.view.hand.myCards.length === 0)).toBe(true);
   });
 
-  it('panel de control: desactivado sin contraseña, protegido y con datos útiles', async () => {
-    let url = await start();
+  it('el servidor del juego no expone el panel; el panel aparte sí da los datos', async () => {
+    const url = await start();
     expect((await fetch(`${url}/api/admin/metrics`)).status).toBe(404);
-    await server!.close();
-    url = await start({ adminToken: 'secreto-de-prueba-123' });
-    expect((await fetch(`${url}/api/admin/metrics`)).status).toBe(401);
-    expect((await fetch(`${url}/api/admin/metrics`, { headers: { Authorization: 'Bearer otro' } })).status).toBe(401);
-    const ok = await fetch(`${url}/api/admin/metrics`, { headers: { Authorization: 'Bearer secreto-de-prueba-123' } });
-    expect(ok.status).toBe(200);
-    const r = await ok.json();
-    expect(r.now.memPct).toBeGreaterThan(0);
-    expect(['good', 'warning', 'critical']).toContain(r.advice.level);
-    expect(r.capacity.estimatedMaxPlayers).toBeGreaterThanOrEqual(0);
-    // Las apps pueden consultarlo (CORS solo para orígenes permitidos).
-    const app = await fetch(`${url}/api/admin/metrics`, { method: 'OPTIONS', headers: { Origin: 'capacitor://localhost' } });
-    const evil = await fetch(`${url}/api/admin/metrics`, { method: 'OPTIONS', headers: { Origin: 'https://malo.com' } });
-    expect(evil.headers.get('access-control-allow-origin')).toBeNull();
-    expect(app.status).toBe(204);
+    expect((await fetch(`${url}/api/metrics`)).status).toBe(404);
+
+    const admin = createAdminServer({ metrics: server!.metrics, usage: server!.usage });
+    await new Promise<void>((r) => admin.listen(0, '127.0.0.1', () => r()));
+    const port = (admin.address() as AddressInfo).port;
+    const r = await fetch(`http://127.0.0.1:${port}/api/metrics`);
+    expect(r.status).toBe(200);
+    const body = await r.json();
+    expect(body.now.memPct).toBeGreaterThan(0);
+    expect(['good', 'warning', 'critical']).toContain(body.advice.level);
+    expect(body.usage.thisMonth).toMatchObject({ players: 0, matches: 0 });
+    await new Promise<void>((res) => admin.close(() => res()));
   });
 
   it('chat: llega a la mesa con las cartas tachadas; los insultos no se envían y a la tercera se expulsa', async () => {

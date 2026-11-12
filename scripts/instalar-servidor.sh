@@ -27,6 +27,7 @@ DOMINIO="${DOMINIO:-}"
 REPO="${REPO:-https://github.com/juanitomsp/Juego-Pablo.git}"
 RAMA="${RAMA:-juego-pablo}"
 PUERTO="${PUERTO:-3001}"
+PANEL_PUERTO=3010
 CORS_ORIGIN="${CORS_ORIGIN:-}"
 USUARIO="pablo"
 DIR="/home/$USUARIO/app"
@@ -114,16 +115,6 @@ cd "$DIR"
 sudo -u "$USUARIO" npm ci --no-audit --no-fund
 sudo -u "$USUARIO" npm run build
 
-# ----------------------------------------------------------------- Contraseña del panel de control
-# Se genera una vez y se guarda solo para root. El panel está en https://TU-DIRECCIÓN/#/admin
-install -d -m 700 /etc/pablo
-if [ ! -s /etc/pablo/admin-token ]; then
-  head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n' > /etc/pablo/admin-token
-  chmod 600 /etc/pablo/admin-token
-fi
-printf 'ADMIN_TOKEN=%s\n' "$(cat /etc/pablo/admin-token)" > /etc/pablo/pablo.env
-chmod 600 /etc/pablo/pablo.env
-
 # ----------------------------------------------------------------- Servicio
 verde "Configurando el servicio para que arranque solo"
 cat > /etc/systemd/system/pablo.service <<EOF
@@ -137,8 +128,8 @@ WorkingDirectory=$DIR
 Environment=NODE_ENV=production
 Environment=PORT=$PUERTO
 Environment=TRUST_PROXY=1
-# Contraseña del panel de control (ADMIN_TOKEN)
-EnvironmentFile=/etc/pablo/pablo.env
+# Panel del servidor: solo en esta máquina (127.0.0.1:3010). Se ve desde tu Tailscale (abajo).
+Environment=ADMIN_PORT=3010
 # Solo accesible a través del proxy (Caddy o Tailscale), nunca directamente desde fuera.
 Environment=HOST=127.0.0.1
 $( [ -n "$CORS_ORIGIN" ] && echo "Environment=CORS_ORIGIN=$CORS_ORIGIN" || true )
@@ -196,6 +187,19 @@ else
   tailscale funnel status || true
 fi
 
+# ----------------------------------------------------------------- Panel del servidor (solo para ti)
+PANEL_URL=""
+if command -v tailscale >/dev/null && tailscale status >/dev/null 2>&1; then
+  verde "Publicando el panel del servidor solo en tu red de Tailscale"
+  # «serve» (no «funnel»): solo lo ven los dispositivos de tu Tailscale. Desde internet no existe.
+  if tailscale serve --bg --https=8443 "http://127.0.0.1:$PANEL_PUERTO"; then
+    TS_NOMBRE="$(tailscale status --json | python3 -c 'import sys, json; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')"
+    PANEL_URL="https://$TS_NOMBRE:8443"
+  else
+    aviso "No se pudo publicar el panel en Tailscale. Puedes verlo con un túnel SSH (ver docs/PANEL_SERVIDOR.md)."
+  fi
+fi
+
 # ----------------------------------------------------------------- Firewall
 if [ "$FIREWALL" = "si" ]; then
   verde "Configurando el firewall"
@@ -212,6 +216,10 @@ if [ "$FIREWALL" = "si" ]; then
   ufw status
 fi
 
+# Restos de la versión anterior del panel (con contraseña), ya no se usan.
+rm -f /etc/pablo/admin-token /etc/pablo/pablo.env
+rmdir /etc/pablo 2>/dev/null || true
+
 # ----------------------------------------------------------------- Comprobación
 verde "Comprobando que el juego responde"
 for i in $(seq 1 15); do
@@ -225,7 +233,11 @@ echo "  Abre:        $URL"
 echo "  Estado:      sudo systemctl status pablo"
 echo "  Registro:    sudo journalctl -u pablo -f"
 echo "  Actualizar:  sudo bash $DIR/scripts/actualizar-servidor.sh"
-echo "  Panel:       $URL/#/admin   (contraseña: sudo cat /etc/pablo/admin-token)"
+if [ -n "$PANEL_URL" ]; then
+  echo "  Panel:       $PANEL_URL   (solo desde tus dispositivos con Tailscale)"
+else
+  echo "  Panel:       túnel SSH desde tu ordenador: ssh -L 3010:127.0.0.1:3010 TU_SERVIDOR  y abre http://localhost:3010"
+fi
 if [ "$MODO" = caddy ]; then
   echo
   echo "  Si tu proveedor (Hetzner, OVH, AWS, Oracle...) tiene un firewall en su panel web,"

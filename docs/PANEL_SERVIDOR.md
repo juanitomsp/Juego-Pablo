@@ -1,16 +1,15 @@
 # Panel del servidor
 
-Página para saber si el servidor va holgado o hay que pasarse a uno más grande: **`https://TU-SERVIDOR/#/admin`** (también funciona dentro de las apps).
+Web **aparte del juego** para ver la carga del servidor y cuánta gente juega. **Solo puedes entrar tú.**
 
-## Acceso
+## Cómo entrar
 
-- Pide la **contraseña del panel** (`ADMIN_TOKEN`). El script de instalación la genera sola. Para verla, en el servidor:
-  ```bash
-  sudo cat /etc/pablo/admin-token
-  ```
-- La contraseña se guarda solo en el dispositivo desde el que entras. Botón «Salir» para olvidarla.
-- Si el servidor no tiene `ADMIN_TOKEN`, el panel está desactivado. Los intentos con contraseña incorrecta se limitan a 10 seguidos por dirección IP (después, 1 por minuto).
-- **Servidor ya instalado antes de esta versión:** vuelve a ejecutar el script de instalación (`sudo bash instalar.sh`, como la primera vez) para que cree la contraseña. Con el de actualizar no basta.
+- El servidor la abre **solo en la propia máquina** (`127.0.0.1:3010`): desde internet no se puede llegar.
+- El script de instalación la publica **solo en tu red de Tailscale** (`tailscale serve`, nunca con Funnel). Ábrela desde un dispositivo tuyo con Tailscale:
+  **`https://servidor.taile44b8a.ts.net:8443`**
+- No necesita contraseña: para cualquiera que no esté en tu Tailscale, esa dirección no existe.
+- Sin Tailscale (servidor con dominio), usa un túnel SSH desde tu ordenador: `ssh -L 3010:127.0.0.1:3010 TU_SERVIDOR` y abre `http://localhost:3010`.
+- Para dejar de publicarla: `sudo tailscale serve --https=8443 off`.
 
 ## Uso del juego (beta)
 
@@ -62,4 +61,4 @@ Con 1 GB de RAM, el sistema operativo y Tailscale ya ocupan una parte. El juego 
 ## Para programadores
 
 - Métricas: `src/server/metrics.ts`. Ruta protegida `GET /api/admin/metrics?range=24h|7d` con `Authorization: Bearer <ADMIN_TOKEN>`.
-- Pantalla: `src/client/screens/AdminScreen.tsx`.
+- Web del panel: carpeta `admin/` (se compila a `dist/admin`; en desarrollo, `npm run dev:admin`).

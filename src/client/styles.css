@@ -319,3 +319,5 @@ button, .card { touch-action: manipulation; -webkit-tap-highlight-color: transpa
 .chat-warning { background: #fff0c2; border-left: 4px solid #fab219; padding: 0.4rem 0.6rem; border-radius: 6px; margin: 0.5rem 0; font-weight: 600; }
 .mute-list { margin-top: 0.6rem; }
 .mute-list summary { cursor: pointer; font-weight: 600; }
+
+.muted-light { color: #cfe3d8; }

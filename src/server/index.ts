@@ -7,7 +7,7 @@
  *                 Las apps de iPhone y Android (capacitor://localhost y https://localhost) se permiten siempre.
  *   TRUST_PROXY   1 si el servidor está detrás de un proxy (nginx, Caddy, Render...) para leer la IP real.
  *   MAX_ROOMS     Máximo de salas simultáneas (por defecto 500).
- *   ADMIN_TOKEN   Contraseña del panel de control (#/admin). Sin ella, el panel está desactivado.
+ *   ADMIN_PORT    Puerto LOCAL del panel del servidor (por defecto 3010; solo escucha en 127.0.0.1).
  *   USAGE_FILE    Fichero de estadísticas de uso anónimas (por defecto data/uso.json).
  *   HOST          Interfaz de escucha. 127.0.0.1 = solo accesible a través del proxy (Caddy, Tailscale).
  *                 Por defecto, todas (necesario para jugar en la WiFi de casa con `npm run jugar`).
@@ -17,6 +17,7 @@ import { existsSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createGameServer } from './app';
+import { createAdminServer } from './admin';
 
 const portArg = process.argv.indexOf('--port');
 const PORT = Number(portArg > 0 ? process.argv[portArg + 1] : (process.env.PORT ?? 3001));
@@ -38,7 +39,6 @@ const server = createGameServer({
   ],
   trustProxy: process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true',
   maxRooms: process.env.MAX_ROOMS ? Number(process.env.MAX_ROOMS) : undefined,
-  adminToken: process.env.ADMIN_TOKEN || undefined,
   usageFile: process.env.USAGE_FILE || join(process.cwd(), 'data', 'uso.json'),
 });
 
@@ -54,8 +54,16 @@ server.http.listen(PORT, HOST, () => {
   if (clientDir && lan.length && !HOST) console.log(`Desde los móviles en la misma WiFi: ${lan.join('  o  ')}`);
 });
 
+// Panel del servidor: web aparte, solo en esta máquina (127.0.0.1). Ver docs/PANEL_SERVIDOR.md.
+const ADMIN_PORT = Number(process.env.ADMIN_PORT ?? 3010);
+const adminDir = [join(here, '../admin'), join(process.cwd(), 'dist/admin')].find((d) => existsSync(join(d, 'index.html')));
+const admin = createAdminServer({ metrics: server.metrics, usage: server.usage, adminDir });
+admin.on('error', (e) => console.error('No se pudo abrir el panel del servidor:', e.message));
+admin.listen(ADMIN_PORT, '127.0.0.1', () => console.log(`Panel del servidor (solo local): http://127.0.0.1:${ADMIN_PORT}`));
+
 const shutdown = () => {
   console.log('Cerrando servidor…');
+  admin.close();
   void server.close().finally(() => process.exit(0));
 };
 process.on('SIGTERM', shutdown);

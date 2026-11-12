@@ -1,10 +1,9 @@
 /**
- * Panel de control del servidor (#/admin): ¿va holgado o hay que ampliarlo?
- * Pide la contraseña del panel (ADMIN_TOKEN del servidor), que se guarda solo en este dispositivo.
- * Ver docs/PANEL_SERVIDOR.md.
+ * Panel del servidor: ¿va holgado o hay que ampliarlo? ¿Cuánta gente juega?
+ * Es una web aparte del juego que sirve el propio servidor SOLO en la máquina (127.0.0.1) y que se
+ * publica únicamente en tu red de Tailscale. Ver docs/PANEL_SERVIDOR.md.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { go } from '../App';
 
 interface Sample {
   t: number;
@@ -48,8 +47,6 @@ const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', '
 const monthLabel = (m: string) => `${MONTHS[Number(m.slice(5, 7)) - 1]} ${m.slice(2, 4)}`;
 const dayLabel = (d: string) => `${Number(d.slice(8, 10))}/${Number(d.slice(5, 7))}`;
 
-const TOKEN_KEY = 'pablo.adminToken';
-const SERVER = ((import.meta.env.VITE_SERVER_URL as string | undefined) || '').replace(/\/$/, '');
 const REFRESH_MS = 30_000;
 
 // Colores (paleta de referencia de visualización): una serie = un tono; estados reservados, siempre con icono y texto.
@@ -65,34 +62,26 @@ const fmtTime = (t: number, range: string) =>
 
 const levelFor = (v: number, warn: number, crit: number): keyof typeof STATUS => (v >= crit ? 'critical' : v >= warn ? 'warning' : 'good');
 
-export function AdminScreen() {
-  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY) ?? '');
-  const [input, setInput] = useState('');
+export function AdminApp() {
   const [range, setRange] = useState<'24h' | '7d'>('24h');
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
-    if (!token) return;
     try {
-      const r = await fetch(`${SERVER}/api/admin/metrics?range=${range}`, { headers: { Authorization: `Bearer ${token}` } });
-      const body = await r.json().catch(() => ({}));
+      const r = await fetch(`api/metrics?range=${range}`);
       if (!r.ok) {
-        setError(body.error ?? `Error ${r.status}`);
-        if (r.status === 401) {
-          localStorage.removeItem(TOKEN_KEY);
-          setToken('');
-        }
+        setError(`Error ${r.status}`);
         return;
       }
-      setReport(body as Report);
+      setReport((await r.json()) as Report);
       setError(null);
       setUpdatedAt(Date.now());
     } catch {
       setError('No se puede conectar con el servidor.');
     }
-  }, [token, range]);
+  }, [range]);
 
   useEffect(() => {
     void load();
@@ -100,60 +89,14 @@ export function AdminScreen() {
     return () => clearInterval(t);
   }, [load]);
 
-  if (!token) {
-    return (
-      <main className="page narrow">
-        <nav className="topnav">
-          <button className="link" onClick={() => go('/')}>
-            ← Inicio
-          </button>
-          <span>Panel del servidor</span>
-        </nav>
-        <section className="panel">
-          <h3>Contraseña del panel</h3>
-          <p className="muted small">
-            Es el <code>ADMIN_TOKEN</code> del servidor. En tu servidor la ves con <code>sudo cat /etc/pablo/admin-token</code>. Se guarda solo
-            en este dispositivo.
-          </p>
-          <input type="password" value={input} autoComplete="off" onChange={(e) => setInput(e.target.value)} placeholder="Contraseña" />
-          <div className="row">
-            <button
-              className="primary"
-              disabled={!input.trim()}
-              onClick={() => {
-                localStorage.setItem(TOKEN_KEY, input.trim());
-                setToken(input.trim());
-                setInput('');
-              }}
-            >
-              Entrar
-            </button>
-          </div>
-          {error && <p className="error">{error}</p>}
-        </section>
-      </main>
-    );
-  }
-
   const th = report?.thresholds;
   const st = report ? STATUS[report.advice.level] : null;
 
   return (
     <main className="page admin">
       <nav className="topnav">
-        <button className="link" onClick={() => go('/')}>
-          ← Inicio
-        </button>
-        <span>Panel del servidor</span>
-        <button
-          className="link"
-          onClick={() => {
-            localStorage.removeItem(TOKEN_KEY);
-            setToken('');
-          }}
-        >
-          Salir
-        </button>
+        <span>🃏 El Pablo · Panel del servidor</span>
+        <span className="muted-light small">Solo accesible desde tu Tailscale</span>
       </nav>
 
       {error && <p className="banner warn">{error}</p>}

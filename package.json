@@ -11,7 +11,7 @@
     "dev": "concurrently -k -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "node --watch --import tsx src/server/index.ts --port 3001",
     "dev:client": "vite",
-    "build": "vite build && npm run build:server",
+    "build": "vite build && vite build --config vite.admin.config.ts && npm run build:server",
     "build:server": "esbuild src/server/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/server/index.js",
     "start": "node dist/server/index.js",
     "jugar": "npm run build && npm start",
@@ -19,7 +19,8 @@
     "typecheck": "tsc --noEmit",
     "build:app": "vite build --mode app && npx cap sync && python scripts/native/configurar-nativo.py",
     "app:android": "npm run build:app && npx cap open android",
-    "app:ios": "npm run build:app && npx cap open ios"
+    "app:ios": "npm run build:app && npx cap open ios",
+    "dev:admin": "vite --config vite.admin.config.ts"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.10",

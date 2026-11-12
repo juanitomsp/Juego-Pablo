@@ -6,7 +6,6 @@ import express from 'express';
 import { createServer, Server as HttpServer } from 'node:http';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { createHash, timingSafeEqual } from 'node:crypto';
 import { Server, Socket } from 'socket.io';
 import { RuleError } from '../shared/engine';
 import type { ClientToServer, ServerToClient } from '../shared/protocol';
@@ -34,8 +33,6 @@ export interface ServerOptions {
   /** Fiarse de X-Forwarded-For / X-Forwarded-Proto (detrás de un proxy). */
   trustProxy?: boolean;
   maxRooms?: number;
-  /** Contraseña del panel de control (#/admin). Sin ella, el panel está desactivado. */
-  adminToken?: string;
   /** Fichero de las estadísticas de uso anónimas. Sin él, solo se cuentan en memoria. */
   usageFile?: string;
   maxConnectionsPerIp?: number;
@@ -261,7 +258,7 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
-  // ---------------------------------------------------------------- Panel de control (#/admin)
+  // ---------------------------------------------------------------- Métricas para el panel (servidor aparte: src/server/admin.ts)
   const metrics = new Metrics(() => {
     let playing = 0;
     for (const r of manager.rooms.values()) {
@@ -269,35 +266,6 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
     }
     return { connections: io.engine.clientsCount, rooms: manager.rooms.size, playing };
   });
-  const adminAttempts = new KeyedLimiter(10, 1 / 60);
-  const digest = (v: string) => createHash('sha256').update(v).digest();
-  const tokenOk = (given: string | undefined) =>
-    !!opts.adminToken && !!given && timingSafeEqual(digest(given), digest(opts.adminToken));
-
-  // El panel se puede abrir desde la web del juego o desde las apps: CORS solo para los orígenes permitidos.
-  app.use('/api/admin', (req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin && originAllowed(origin, req.headers.host, allowed)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Vary', 'Origin');
-      res.setHeader('Access-Control-Allow-Headers', 'Authorization');
-      res.setHeader('Access-Control-Allow-Methods', 'GET');
-    }
-    res.setHeader('Cache-Control', 'no-store');
-    if (req.method === 'OPTIONS') return res.sendStatus(204);
-    next();
-  });
-  app.get('/api/admin/metrics', (req, res) => {
-    if (!opts.adminToken) return res.status(404).json({ error: 'El panel no está activado en este servidor (falta ADMIN_TOKEN).' });
-    const ip = clientIp(req, trustProxy);
-    const given = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1];
-    if (!tokenOk(given)) {
-      if (!adminAttempts.take(ip)) return res.status(429).json({ error: 'Demasiados intentos. Espera unos minutos.' });
-      return res.status(401).json({ error: 'Contraseña del panel incorrecta.' });
-    }
-    res.json({ ...metrics.report(req.query.range === '7d' ? '7d' : '24h'), usage: usage.report() });
-  });
-
   const clientDir = opts.clientDir;
   if (clientDir && existsSync(join(clientDir, 'index.html'))) {
     app.use(express.static(clientDir, { maxAge: '1h', index: false, dotfiles: 'ignore' }));
