@@ -13,7 +13,7 @@ import {
 } from '../../shared/engine';
 import type { ClientToServer, QuickMessage, RoomState, ServerToClient } from '../../shared/protocol';
 import { GameTable } from '../../shared/table';
-import { censorChat } from '../../shared/chat';
+import { censorChat, containsInsult } from '../../shared/chat';
 import { getName, getPlayerId } from './identity';
 
 export interface ControllerSnapshot {
@@ -28,7 +28,8 @@ export interface Controller {
   subscribe(cb: () => void): () => void;
   act(a: Action): Promise<string | null>;
   quick(i: number): void;
-  chat(text: string): void;
+  /** Envía un mensaje al chat. Devuelve un aviso si no se ha enviado (insultos, demasiado rápido…). */
+  chat(text: string): Promise<string | null>;
   rematch(): Promise<string | null>;
   dispose(): void;
 }
@@ -86,6 +87,10 @@ export class OnlineController extends Base implements Controller {
       if (s.room.code === this.code) this.update({ state: s });
     });
     on('quick', (m) => this.pushQuick(m));
+    on('kicked', (reason) => {
+      this.kickedReason = reason;
+      this.update({});
+    });
     const onConnect = () => {
       this.update({ connected: true });
       this.join();
@@ -99,6 +104,8 @@ export class OnlineController extends Base implements Controller {
   }
 
   joinError: string | null = null;
+  /** Motivo si el servidor nos ha expulsado de la sala. */
+  kickedReason: string | null = null;
   private join() {
     this.socket.emit('room:join', { code: this.code, name: getName() || 'Jugador', playerId: getPlayerId() }, (r) => {
       if (!r.ok) {
@@ -123,7 +130,7 @@ export class OnlineController extends Base implements Controller {
     this.socket.emit('game:quick', { index: i });
   }
   chat(text: string) {
-    this.socket.emit('game:chat', { text });
+    return this.emitAck('game:chat', { text });
   }
   rematch() {
     return this.emitAck('game:rematch');
@@ -238,9 +245,11 @@ export class LocalController extends Base implements Controller {
     const text = QUICK_MESSAGES[i];
     if (text) this.pushQuick({ from: 0, text, at: Date.now() });
   }
-  chat(text: string) {
+  async chat(text: string) {
+    if (containsInsult(text)) return 'No se puede insultar: tu mensaje no se ha enviado.';
     const clean = censorChat(text);
     if (clean) this.pushQuick({ from: 0, text: clean, at: Date.now() });
+    return null;
   }
   async rematch() {
     this.newTable((this.table.match.dealer + 1) % this.config.players);

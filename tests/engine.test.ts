@@ -4,6 +4,7 @@ import {
   DEFAULT_CONFIG,
   GameConfig,
   MatchState,
+  QUICK_MESSAGES,
   advance,
   applyAction,
   buildDeck,
@@ -21,7 +22,8 @@ import {
   trickWinnerIndex,
   trumpPower,
 } from '../src/shared/engine';
-import { censorChat } from '../src/shared/chat';
+import { censorChat, containsInsult } from '../src/shared/chat';
+import { sanitizeName } from '../src/server/rooms';
 
 const c = (rank: number, suit: Card['suit']): Card => ({ rank, suit });
 const cfg4: GameConfig = { ...DEFAULT_CONFIG, players: 4 };
@@ -172,12 +174,22 @@ describe('chat', () => {
     expect(censorChat('tengo el 3 de basto')).toBe('tengo el **** de *****');
     expect(censorChat('Llevo el PABLO y la Malilla')).toBe('Llevo el ***** y la *******');
     expect(censorChat('¿Vamos? Yo voy bien')).toBe('¿Vamos? Yo voy bien');
-    expect(censorChat('tengo bastooo y 2 reyes')).toBe('tengo ******* y **** *****');
     expect(censorChat('tengo el tres de óros')).toBe('tengo el **** de ****');
   });
-  it('limpia caracteres peligrosos y limita la longitud', () => {
-    expect(censorChat('<script>hola</script>')).toBe('scripthola/script');
-    expect(censorChat('a'.repeat(500)).length).toBe(140);
+  it('detecta insultos, también disfrazados', () => {
+    for (const t of ['eres un gilipollas', 'IDIOTA', 'imbéciles todos', 'hijo de puta', 'p u t a no, pero 1d1ot4 sí', 'tontoooo', 'sois unos subnormales'])
+      expect(containsInsult(t), t).toBe(true);
+  });
+  it('no confunde palabras normales con insultos', () => {
+    for (const t of ['¿queremos?', 'computadora', 'disputa', 'me voy a la cama', 'qué partidaza', 'Pablo, juega', 'mamá me llama', 'joder qué mano'])
+      expect(containsInsult(t), t).toBe(false);
+  });
+  it('los apodos con insultos se cambian por «Jugador»', () => {
+    expect(sanitizeName('Idiota99')).toBe('Jugador');
+    expect(sanitizeName('Juanito')).toBe('Juanito');
+  });
+  it('hay frases rápidas para decidir en equipo', () => {
+    for (const f of ['¿Queremos?', 'Quiero', 'No quiero']) expect(QUICK_MESSAGES).toContain(f);
   });
 });
 

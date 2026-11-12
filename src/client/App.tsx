@@ -5,7 +5,6 @@ import { Practice } from './screens/Practice';
 import { DocPage } from './screens/DocPage';
 import { DeckScreen } from './screens/DeckScreen';
 import { AdminScreen } from './screens/AdminScreen';
-import { DeleteAccountScreen } from './screens/DeleteAccountScreen';
 import { RoomScreen } from './screens/RoomScreen';
 import { StatsScreen } from './screens/StatsScreen';
 import reglas from '../../docs/REGLAS.md?raw';
@@ -40,8 +39,6 @@ export function App() {
       return <DocPage title="Reglas del Pablo" source={reglas} />;
     case 'privacidad':
       return <DocPage title="Privacidad" source={privacidad} />;
-    case 'borrar-cuenta':
-      return <DeleteAccountScreen />;
     case 'admin':
       return <AdminScreen />;
     case 'baraja':

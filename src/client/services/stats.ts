@@ -1,9 +1,7 @@
 /**
- * Estadísticas del jugador. Siempre se guardan en el navegador; si hay sesión iniciada con Google,
- * también en Firestore (services/firebase.ts).
+ * Estadísticas del jugador. Se guardan solo en este dispositivo (localStorage): no salen de él.
  */
 import { PlayerView, Team, teamOf } from '../../shared/engine';
-import { AccountUser, firebaseEnabled, loadRemoteMatches, saveRemoteMatch } from './firebase';
 
 export interface MatchSummary {
   id: string;
@@ -34,37 +32,13 @@ function saveLocal(list: MatchSummary[]) {
   localStorage.setItem(KEY, JSON.stringify(list.slice(0, 500)));
 }
 
-let currentUser: AccountUser | null = null;
-export const setStatsUser = (u: AccountUser | null) => (currentUser = u);
-
 export async function recordMatch(m: MatchSummary): Promise<void> {
   const list = loadLocalMatches();
   if (list.some((x) => x.id === m.id)) return;
   saveLocal([m, ...list]);
-  if (firebaseEnabled && currentUser) {
-    try {
-      await saveRemoteMatch(currentUser.uid, m);
-    } catch (e) {
-      console.warn('No se pudo guardar la partida en la nube', e);
-    }
-  }
-}
-
-/** Sube a la cuenta las partidas guardadas en este navegador. */
-export async function uploadLocalMatches(uid: string): Promise<number> {
-  const list = loadLocalMatches();
-  for (const m of list) await saveRemoteMatch(uid, m);
-  return list.length;
 }
 
 export async function loadMatches(): Promise<MatchSummary[]> {
-  if (firebaseEnabled && currentUser) {
-    try {
-      return await loadRemoteMatches(currentUser.uid);
-    } catch (e) {
-      console.warn('No se pudieron leer las partidas de la nube', e);
-    }
-  }
   return loadLocalMatches();
 }
 

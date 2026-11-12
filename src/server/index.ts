@@ -8,6 +8,7 @@
  *   TRUST_PROXY   1 si el servidor está detrás de un proxy (nginx, Caddy, Render...) para leer la IP real.
  *   MAX_ROOMS     Máximo de salas simultáneas (por defecto 500).
  *   ADMIN_TOKEN   Contraseña del panel de control (#/admin). Sin ella, el panel está desactivado.
+ *   USAGE_FILE    Fichero de estadísticas de uso anónimas (por defecto data/uso.json).
  *   HOST          Interfaz de escucha. 127.0.0.1 = solo accesible a través del proxy (Caddy, Tailscale).
  *                 Por defecto, todas (necesario para jugar en la WiFi de casa con `npm run jugar`).
  */
@@ -38,6 +39,7 @@ const server = createGameServer({
   trustProxy: process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true',
   maxRooms: process.env.MAX_ROOMS ? Number(process.env.MAX_ROOMS) : undefined,
   adminToken: process.env.ADMIN_TOKEN || undefined,
+  usageFile: process.env.USAGE_FILE || join(process.cwd(), 'data', 'uso.json'),
 });
 
 process.on('unhandledRejection', (e) => console.error('Promesa rechazada sin capturar:', e));

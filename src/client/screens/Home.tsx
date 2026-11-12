@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { go } from '../App';
-import { useAccount } from '../account';
 import { createRoom } from '../services/controller';
 import { getName, setName } from '../services/identity';
 import { CardView } from '../components/CardView';
@@ -11,7 +10,6 @@ export function Home() {
   const [players, setPlayers] = useState<4 | 6>(4);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { enabled, user } = useAccount();
 
   const saveName = (v: string) => {
     setNameState(v);
@@ -54,7 +52,6 @@ export function Home() {
         </label>
         <p className="muted small">
           No hace falta cuenta. El apodo solo lo ven los jugadores de tu mesa.
-          {enabled && !user && ' Si quieres guardar tus estadísticas en la nube, puedes entrar con Google en Estadísticas.'}
         </p>
       </section>
 
@@ -102,7 +99,7 @@ export function Home() {
         </button>
         <button className="menu-tile" onClick={() => go('/estadisticas')}>
           <strong>📊 Estadísticas</strong>
-          <span>{user ? 'Tus partidas guardadas en tu cuenta.' : 'Tus partidas en este dispositivo.'}</span>
+          <span>Tus partidas en este dispositivo.</span>
         </button>
       </section>
 

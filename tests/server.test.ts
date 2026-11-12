@@ -175,6 +175,34 @@ describe('servidor', () => {
     expect(app.status).toBe(204);
   });
 
+  it('chat: llega a la mesa con las cartas tachadas; los insultos no se envían y a la tercera se expulsa', async () => {
+    const url = await start();
+    const a = await client(url);
+    const b = await client(url);
+    const { code } = await call<{ code: string }>(a, 'room:create', { name: 'Ana', playerId: id(1), config: {} });
+    await call(b, 'room:join', { code, name: 'Beto', playerId: id(2) });
+    const received: string[] = [];
+    b.on('quick', (m: { text: string }) => received.push(m.text));
+
+    expect((await call<{ ok: boolean }>(a, 'game:chat', { text: 'tengo el 3 de basto, ¿vamos?' })).ok).toBe(true);
+    await sleep(100);
+    expect(received).toEqual(['tengo el **** de *****, ¿vamos?']);
+
+    const kicked: string[] = [];
+    a.on('kicked', (r: string) => kicked.push(r));
+    for (let i = 1; i <= 3; i++) {
+      await sleep(1100);
+      const r = await call<{ ok: boolean; error: string }>(a, 'game:chat', { text: 'eres un gilipollas' });
+      expect(r.ok).toBe(false);
+      expect(r.error).toMatch(i < 3 ? /No se puede insultar/ : /expulsado/);
+    }
+    await sleep(100);
+    expect(received).toHaveLength(1); // ningún insulto llegó
+    expect(kicked).toHaveLength(1);
+    // No puede volver a entrar en esa sala.
+    expect((await call<{ ok: boolean; error: string }>(a, 'room:join', { code, name: 'Ana', playerId: id(1) })).error).toMatch(/expulsado/);
+  });
+
   it('no deja entrar a más de MAX_MEMBERS personas en una sala', async () => {
     const url = await start();
     const s = await client(url);

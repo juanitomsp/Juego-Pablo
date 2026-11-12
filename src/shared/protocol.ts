@@ -51,8 +51,8 @@ export interface ClientToServer {
   'room:replaceWithBot': (p: { seat: number }, ack: Ack) => void;
   'game:action': (a: Action, ack: Ack) => void;
   'game:quick': (p: { index: number }) => void;
-  /** Mensaje libre para toda la mesa; el servidor tacha las referencias a cartas. */
-  'game:chat': (p: { text: string }) => void;
+  /** Mensaje libre para la mesa: se tachan las cartas; si hay insultos no se envía y se avisa (a la tercera, expulsión). */
+  'game:chat': (p: { text: string }, ack: Ack) => void;
   'game:rematch': (ack: Ack) => void;
 }
 

@@ -26,7 +26,27 @@ interface Report {
   thresholds: { memWarn: number; memCrit: number; cpuWarn: number; cpuCrit: number; lagWarn: number; lagCrit: number };
   range: '24h' | '7d';
   series: Sample[];
+  usage?: UsageReport;
 }
+
+interface UsageCounts {
+  players: number;
+  matches: number;
+  finished: number;
+  hands: number;
+  visits: number;
+}
+
+interface UsageReport {
+  today: UsageCounts;
+  thisMonth: UsageCounts;
+  months: (UsageCounts & { month: string })[];
+  days: (UsageCounts & { day: string })[];
+}
+
+const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const monthLabel = (m: string) => `${MONTHS[Number(m.slice(5, 7)) - 1]} ${m.slice(2, 4)}`;
+const dayLabel = (d: string) => `${Number(d.slice(8, 10))}/${Number(d.slice(5, 7))}`;
 
 const TOKEN_KEY = 'pablo.adminToken';
 const SERVER = ((import.meta.env.VITE_SERVER_URL as string | undefined) || '').replace(/\/$/, '');
@@ -177,6 +197,9 @@ export function AdminScreen() {
             />
           </section>
 
+          {report.usage && <UsageSection usage={report.usage} />}
+
+          <h3 className="section-title">Carga del servidor</h3>
           <div className="segmented range-switch" role="group" aria-label="Periodo">
             {(['24h', '7d'] as const).map((r) => (
               <button key={r} className={range === r ? 'on' : ''} onClick={() => setRange(r)}>
@@ -351,6 +374,133 @@ function LineChart({
               {unit}
             </strong>
             <span>{fmtTime(h.t, range)}</span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** Uso del juego para la beta: cuánta gente juega de verdad (datos anónimos, solo totales). */
+function UsageSection({ usage }: { usage: UsageReport }) {
+  const m = usage.thisMonth;
+  return (
+    <>
+      <h3 className="section-title">Uso del juego (beta)</h3>
+      <section className="tile-grid">
+        <Tile label="Jugadores este mes" value={m.players} sub={`Hoy: ${usage.today.players}`} />
+        <Tile label="Partidas este mes" value={m.matches} sub={`${m.finished} terminadas`} />
+        <Tile label="Manos este mes" value={m.hands} sub={`Hoy: ${usage.today.hands}`} />
+        <Tile label="Entradas en salas" value={m.visits} sub="este mes (incluye reconexiones)" />
+      </section>
+      <BarChart
+        title="Jugadores distintos por mes"
+        bars={usage.months.map((x) => ({ label: monthLabel(x.month), value: x.players, detail: `${x.matches} partidas · ${x.hands} manos` }))}
+      />
+      <BarChart
+        title="Jugadores distintos por día (últimos 30 días)"
+        bars={usage.days.map((x) => ({ label: dayLabel(x.day), value: x.players, detail: `${x.matches} partidas` }))}
+        sparseLabels
+      />
+      <details className="panel data-table">
+        <summary>Ver el uso por meses en tabla</summary>
+        <table className="matches">
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th>Jugadores</th>
+              <th>Partidas</th>
+              <th>Terminadas</th>
+              <th>Manos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {usage.months
+              .slice()
+              .reverse()
+              .map((x) => (
+                <tr key={x.month}>
+                  <td>{monthLabel(x.month)}</td>
+                  <td>{x.players}</td>
+                  <td>{x.matches}</td>
+                  <td>{x.finished}</td>
+                  <td>{x.hands}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </details>
+      <p className="muted small">
+        Datos anónimos: solo se guardan totales, sin nombres, identificadores ni direcciones IP. «Jugadores distintos» es aproximado (si el servidor se
+        reinicia a mitad de mes, alguien puede contarse dos veces). Las partidas de práctica sin conexión no se cuentan.
+      </p>
+    </>
+  );
+}
+
+/** Barras de una sola serie (el título la nombra), con la cifra al pasar por encima. */
+function BarChart({ title, bars, sparseLabels }: { title: string; bars: { label: string; value: number; detail?: string }[]; sparseLabels?: boolean }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const W = 640;
+  const H = 170;
+  const pad = { l: 36, r: 8, t: 10, b: 24 };
+  if (bars.length === 0 || bars.every((b) => b.value === 0)) {
+    return (
+      <section className="panel chart">
+        <h4>{title}</h4>
+        <p className="muted small">Aún no hay datos.</p>
+      </section>
+    );
+  }
+  const max = Math.max(1, ...bars.map((b) => b.value));
+  const yMax = Math.ceil(max * 1.15);
+  const slot = (W - pad.l - pad.r) / bars.length;
+  const bw = Math.max(2, slot - 2); // 2 px de separación entre barras
+  const y = (v: number) => pad.t + (1 - v / yMax) * (H - pad.t - pad.b);
+  const h = hover !== null ? bars[hover] : null;
+  return (
+    <section className="panel chart">
+      <h4>{title}</h4>
+      <div className="chart-wrap">
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: último valor ${bars[bars.length - 1].value}`} onPointerLeave={() => setHover(null)}>
+          {[0, Math.round(yMax / 2), yMax].map((v) => (
+            <g key={v}>
+              <line x1={pad.l} x2={W - pad.r} y1={y(v)} y2={y(v)} stroke="#e4e1d8" strokeWidth="1" />
+              <text x={pad.l - 6} y={y(v) + 4} textAnchor="end" className="axis-label">
+                {v}
+              </text>
+            </g>
+          ))}
+          {bars.map((b, i) => {
+            const x = pad.l + i * slot + 1;
+            const top = y(b.value);
+            const height = H - pad.b - top;
+            const r = Math.min(4, bw / 2, height);
+            return (
+              <g key={b.label + i} onPointerEnter={() => setHover(i)}>
+                {/* Zona sensible más grande que la barra */}
+                <rect x={x - 1} y={pad.t} width={slot} height={H - pad.t - pad.b} fill="transparent" />
+                {b.value > 0 && (
+                  <path
+                    d={`M${x},${H - pad.b} V${top + r} Q${x},${top} ${x + r},${top} H${x + bw - r} Q${x + bw},${top} ${x + bw},${top + r} V${H - pad.b} Z`}
+                    fill={SERIES_COLOR}
+                    opacity={hover === null || hover === i ? 1 : 0.55}
+                  />
+                )}
+                {(!sparseLabels || i % 5 === 0 || i === bars.length - 1) && (
+                  <text x={x + bw / 2} y={H - 6} textAnchor="middle" className="axis-label">
+                    {b.label}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+        {h && hover !== null && (
+          <div className="chart-tip" style={{ left: `${((pad.l + hover * slot + slot / 2) / W) * 100}%` }}>
+            <strong>{h.value}</strong>
+            <span>{h.label}</span>
+            {h.detail && <span>{h.detail}</span>}
           </div>
         )}
       </div>

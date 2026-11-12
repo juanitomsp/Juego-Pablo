@@ -9,8 +9,6 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode ((project.findProperty('versionCode') ?: '1') as Integer)
         versionName "1.0"
-        // ID de la app en AdMob (por defecto, el de prueba de Google)
-        manifestPlaceholders = [admobAppId: (System.getenv('ADMOB_APP_ID_ANDROID') ?: 'ca-app-pub-3940256099942544~3347511713')]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -45,8 +43,6 @@ repositories {
 }
 
 dependencies {
-    // Necesario para el anuncio de apertura (AppOpenAdPlugin.java)
-    implementation "com.google.android.gms:play-services-ads:$rootProject.ext.playServicesAdsVersion"
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"

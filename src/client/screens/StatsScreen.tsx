@@ -1,38 +1,20 @@
 import { useEffect, useState } from 'react';
 import { go } from '../App';
-import { useAccount } from '../account';
-import { availableProviders, deleteAccountAndData, signIn, signOutUser } from '../services/firebase';
-import { adsPrivacyOptionsRequired, isNativeApp, showAdsPrivacyOptions } from '../native/ads';
 import { clearLocalData } from '../services/identity';
-import { MatchSummary, aggregate, loadLocalMatches, loadMatches, uploadLocalMatches } from '../services/stats';
+import { MatchSummary, aggregate, loadMatches } from '../services/stats';
 
 const MODE: Record<string, string> = { online: 'Online', practica: 'Práctica', vivo: 'En vivo' };
 
 export function StatsScreen() {
-  const { enabled, user, ready } = useAccount();
   const [list, setList] = useState<MatchSummary[] | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [accepted, setAccepted] = useState(false);
 
   const reload = () => {
     setList(null);
     void loadMatches().then(setList);
   };
-  useEffect(() => {
-    if (ready) reload();
-  }, [ready, user?.uid]);
-
-  const safe = async (fn: () => Promise<unknown>, ok?: string) => {
-    try {
-      await fn();
-      if (ok) setMsg(ok);
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Algo ha fallado.');
-    }
-  };
+  useEffect(reload, []);
 
   const agg = aggregate(list ?? []);
-  const localCount = loadLocalMatches().length;
 
   const download = () => {
     const blob = new Blob([JSON.stringify(list ?? [], null, 2)], { type: 'application/json' });
@@ -53,54 +35,10 @@ export function StatsScreen() {
       </nav>
 
       <section className="panel">
-        <h3>Cuenta</h3>
-        {!enabled && (
-          <p className="muted">
-            Las cuentas aún no están activadas en este servidor. Tus partidas se guardan solo en este navegador. (Para activarlas, ver{' '}
-            <code>docs/CUENTAS_Y_DATOS.md</code>.)
-          </p>
-        )}
-        {enabled && !user && (
-          <>
-            <p>Entra con Google para guardar tus estadísticas y verlas en cualquier dispositivo. Es opcional: puedes jugar sin cuenta.</p>
-            <label className="toggle">
-              <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} /> He leído la{' '}
-              <a href="#/privacidad">política de privacidad</a>
-            </label>
-            <div className="row">
-              {availableProviders().map((p) => (
-                <button key={p} className="primary" disabled={!accepted} onClick={() => safe(() => signIn(p))}>
-                  {p === 'apple' ? ' Iniciar sesión con Apple' : 'Entrar con Google'}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-        {enabled && user && (
-          <>
-            <p>
-              Sesión iniciada{user.displayName ? ` como ${user.displayName}` : ''}. Tus partidas se guardan en tu cuenta.
-            </p>
-            <div className="row">
-              {localCount > 0 && (
-                <button onClick={() => safe(async () => setMsg(`Subidas ${await uploadLocalMatches(user.uid)} partidas.`)).then(reload)}>
-                  Subir partidas de este dispositivo ({localCount})
-                </button>
-              )}
-              <button onClick={() => safe(signOutUser)}>Cerrar sesión</button>
-              <button
-                className="danger"
-                onClick={() =>
-                  confirm('Se borrarán tu cuenta y todas tus partidas guardadas en la nube. No se puede deshacer. ¿Continuar?') &&
-                  safe(() => deleteAccountAndData(user.uid), 'Cuenta y datos borrados.')
-                }
-              >
-                Borrar mi cuenta y mis datos
-              </button>
-            </div>
-          </>
-        )}
-        {msg && <p className="muted">{msg}</p>}
+        <p className="muted small">
+          Tus partidas se guardan <strong>solo en este dispositivo</strong>: no se envían a ningún sitio. Si desinstalas la app o borras los datos del
+          navegador, se pierden.
+        </p>
       </section>
 
       <section className="panel">
@@ -170,9 +108,7 @@ export function StatsScreen() {
           >
             Borrar datos de este navegador
           </button>
-          {isNativeApp() && adsPrivacyOptionsRequired() && (
-            <button onClick={() => safe(showAdsPrivacyOptions)}>Privacidad de los anuncios</button>
-          )}
+
         </div>
       </section>
     </main>

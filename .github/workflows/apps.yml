@@ -13,11 +13,6 @@ concurrency:
   group: apps-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # IDs de la app en AdMob para los proyectos nativos (vacíos = IDs de prueba de Google).
-  ADMOB_APP_ID_ANDROID: ${{ vars.ADMOB_APP_ID_ANDROID }}
-  ADMOB_APP_ID_IOS: ${{ vars.ADMOB_APP_ID_IOS }}
-
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -36,24 +31,13 @@ jobs:
         env:
           # GitHub → Settings → Secrets and variables → Actions → Variables (no son secretos: acaban en la app).
           VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
-          VITE_ADMOB_APP_OPEN_ANDROID: ${{ vars.VITE_ADMOB_APP_OPEN_ANDROID }}
-          VITE_ADMOB_APP_OPEN_IOS: ${{ vars.VITE_ADMOB_APP_OPEN_IOS }}
-          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
         run: |
           : > .env.app.local
-          for v in VITE_SERVER_URL VITE_ADMOB_APP_OPEN_ANDROID VITE_ADMOB_APP_OPEN_IOS VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID; do
+          for v in VITE_SERVER_URL; do
             val="${!v}"
             if [ -n "$val" ]; then echo "$v=$val" >> .env.app.local; echo "$v definida en GitHub"; fi
           done
       - run: npm ci
-      - name: Fichero de Firebase para Android (opcional)
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-        if: env.GOOGLE_SERVICES_JSON != ''
-        run: echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
       - name: Compilar la web de la app y sincronizar
         run: npm run build:app
       - name: APK de prueba (instalable)
@@ -94,24 +78,13 @@ jobs:
         env:
           # GitHub → Settings → Secrets and variables → Actions → Variables (no son secretos: acaban en la app).
           VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
-          VITE_ADMOB_APP_OPEN_ANDROID: ${{ vars.VITE_ADMOB_APP_OPEN_ANDROID }}
-          VITE_ADMOB_APP_OPEN_IOS: ${{ vars.VITE_ADMOB_APP_OPEN_IOS }}
-          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
         run: |
           : > .env.app.local
-          for v in VITE_SERVER_URL VITE_ADMOB_APP_OPEN_ANDROID VITE_ADMOB_APP_OPEN_IOS VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID; do
+          for v in VITE_SERVER_URL; do
             val="${!v}"
             if [ -n "$val" ]; then echo "$v=$val" >> .env.app.local; echo "$v definida en GitHub"; fi
           done
       - run: npm ci
-      - name: Fichero de Firebase para iPhone (opcional)
-        env:
-          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
-        if: env.GOOGLE_SERVICE_INFO_PLIST != ''
-        run: echo "$GOOGLE_SERVICE_INFO_PLIST" > ios/App/App/GoogleService-Info.plist
       - name: Compilar la web de la app y sincronizar
         run: npm run build:app
       - name: Dependencias de iPhone (CocoaPods)

@@ -8,7 +8,7 @@
 │                     ├─ OnlineController ──────┼─ WS ──▶│ Socket.IO ─ RoomManager ─ Room │
 │                     └─ LocalController        │        │                       └ GameTable
 │                          └ GameTable (local)  │        │                            └ motor
-│ Servicios: identity, stats, firebase ─────────┼──▶ Firebase Auth + Firestore (opcional)
+│ Servicios: identity, stats (solo en el móvil)  │
 └───────────────────────────────────────────────┘        └────────────────────────────────┘
 ```
 
@@ -66,7 +66,8 @@ Envuelve un `MatchState` con:
 - `components/Table.tsx`: la mesa (marcador, asientos, baza, mano propia, acciones, chat, historial, orden de triunfos).
 - `components/CardView.tsx`: cartas y palos dibujados en SVG propio.
 - `screens/`: Inicio, Sala, Práctica, Marcador en vivo, Estadísticas, páginas de documentación.
-- `services/stats.ts` y `services/firebase.ts`: estadísticas (ver `CUENTAS_Y_DATOS.md`).
+- `services/stats.ts`: estadísticas del jugador, guardadas solo en su dispositivo.
+- `native/startup.ts`: arranque de las apps de iPhone y Android (pantalla de carga, botón atrás).
 - Las reglas y la privacidad dentro del juego se cargan de `docs/*.md` (`?raw` de Vite): **una sola fuente de verdad**.
 
 ## Bots

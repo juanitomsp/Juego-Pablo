@@ -12,6 +12,7 @@ import { RuleError } from '../shared/engine';
 import type { ClientToServer, ServerToClient } from '../shared/protocol';
 import { Room, RoomManager, sanitizeName } from './rooms';
 import { Metrics } from './metrics';
+import { Usage } from './usage';
 import {
   KeyedLimiter,
   TokenBucket,
@@ -35,6 +36,8 @@ export interface ServerOptions {
   maxRooms?: number;
   /** Contraseña del panel de control (#/admin). Sin ella, el panel está desactivado. */
   adminToken?: string;
+  /** Fichero de las estadísticas de uso anónimas. Sin él, solo se cuentan en memoria. */
+  usageFile?: string;
   maxConnectionsPerIp?: number;
   /** Salas que puede crear una IP: ráfaga y recarga por minuto. */
   roomsPerIp?: { burst: number; perMinute: number };
@@ -49,6 +52,7 @@ export interface GameServer {
   io: Server<ClientToServer, ServerToClient>;
   manager: RoomManager;
   metrics: Metrics;
+  usage: Usage;
   close: () => Promise<void>;
 }
 
@@ -87,9 +91,17 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
     },
   });
 
+  const usage = new Usage(opts.usageFile);
   const manager = new RoomManager({
+    usage,
     broadcast: (room) => broadcast(room),
     sendQuick: (room, from, text) => io.to(room.code).emit('quick', { from, text, at: Date.now() }),
+    onKicked: (room, socketIds) => {
+      for (const sid of socketIds) {
+        io.to(sid).emit('kicked', 'Has sido expulsado de la partida por insultar.');
+        io.in(sid).socketsLeave(room.code);
+      }
+    },
   });
 
   function broadcast(room: Room) {
@@ -207,6 +219,21 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
       if (!action) return ackOf(a)({ ok: false, error: 'Acción no válida.' });
       roomOp((r, id) => r.action(id, action))(a);
     });
+    on('game:chat', (p, a) => {
+      const ack = ackOf(a);
+      const room = currentRoom();
+      if (!room || !data.playerId) return ack({ ok: false, error: 'No estás en ninguna sala.' });
+      const result = room.chat(data.playerId, (p as { text?: unknown } | null)?.text);
+      if (result) {
+        ack({ ok: false, error: result.warning });
+        if (result.kicked) {
+          data.code = undefined;
+          broadcast(room);
+        }
+        return;
+      }
+      ack({ ok: true });
+    });
     on('game:quick', (p) => {
       const room = currentRoom();
       const index = (p as { index?: unknown } | null)?.index;
@@ -268,7 +295,7 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
       if (!adminAttempts.take(ip)) return res.status(429).json({ error: 'Demasiados intentos. Espera unos minutos.' });
       return res.status(401).json({ error: 'Contraseña del panel incorrecta.' });
     }
-    res.json(metrics.report(req.query.range === '7d' ? '7d' : '24h'));
+    res.json({ ...metrics.report(req.query.range === '7d' ? '7d' : '24h'), usage: usage.report() });
   });
 
   const clientDir = opts.clientDir;
@@ -282,9 +309,11 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
     io,
     manager,
     metrics,
+    usage,
     close: async () => {
       clearInterval(sweeper);
       metrics.stop();
+      usage.stop();
       for (const r of manager.rooms.values()) r.dispose();
       await new Promise<void>((resolve) => io.close(() => resolve()));
     },

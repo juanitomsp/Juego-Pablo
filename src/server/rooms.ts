@@ -5,7 +5,7 @@
 import { DEFAULT_CONFIG, GameConfig, QUICK_MESSAGES, RuleError, drawTeamsByKings, getView } from '../shared/engine';
 import type { RoomState, SeatInfo } from '../shared/protocol';
 import { GameTable } from '../shared/table';
-import { censorChat } from '../shared/chat';
+import { INSULT_STRIKES_TO_KICK, censorChat, containsInsult, insultWarning } from '../shared/chat';
 import { randomInt, webcrypto } from 'node:crypto';
 
 /** Azar criptográfico para barajar: el reparto no se puede predecir a partir de partidas anteriores. */
@@ -27,6 +27,15 @@ export interface RoomHooks {
   /** Envía el estado a todos los miembros conectados. */
   broadcast: (room: Room) => void;
   sendQuick: (room: Room, from: number, text: string) => void;
+  /** Se ha expulsado a alguien: hay que avisar a sus conexiones y sacarlas de la sala. */
+  onKicked?: (room: Room, socketIds: Set<string>) => void;
+  /** Estadísticas de uso anónimas (opcional). */
+  usage?: {
+    player: (playerId: string) => void;
+    matchStarted: () => void;
+    matchFinished: () => void;
+    handPlayed: () => void;
+  };
 }
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -41,7 +50,8 @@ export const sanitizeName = (raw: unknown): string => {
     .replace(/[\u0000-\u001f<>]/g, '')
     .trim()
     .slice(0, 20);
-  return s || 'Jugador';
+  // Un apodo con insultos se cambia por uno neutro.
+  return s && !containsInsult(s) ? s : 'Jugador';
 };
 
 export function sanitizeConfig(base: GameConfig, patch: Partial<GameConfig>): GameConfig {
@@ -63,6 +73,10 @@ export class Room {
   config: GameConfig;
   seats: Seat[];
   members = new Map<string, Member>();
+  /** Expulsados de esta sala por insultar: no pueden volver a entrar. */
+  private banned = new Set<string>();
+  private strikes = new Map<string, number>();
+  private lastChat = new Map<string, number>();
   table: GameTable | null = null;
   kingDraw: string[] | null = null;
   lastActivity = Date.now();
@@ -95,6 +109,8 @@ export class Room {
   }
 
   join(playerId: string, name: string, socketId: string) {
+    if (this.banned.has(playerId)) throw new RuleError('Has sido expulsado de esta sala por insultar.');
+    this.hooks.usage?.player(playerId);
     if (!this.members.has(playerId) && this.members.size >= MAX_MEMBERS) {
       // Hace sitio quitando a alguien desconectado que no tenga asiento; si no hay, la sala está llena.
       const gone = [...this.members.values()].find((x) => x.socketIds.size === 0 && this.seatOf(x.playerId) === null);
@@ -209,9 +225,24 @@ export class Room {
   private startTable(dealer: number) {
     this.table?.dispose();
     const bots = this.seats.flatMap((s, i) => (s.bot ? [i] : []));
+    this.hooks.usage?.matchStarted();
+    let handsCounted = 0;
+    let finishedCounted = false;
     this.table = new GameTable(this.config, dealer, bots, {
       onChange: () => {
         this.touch();
+        const m = this.table?.match;
+        if (m && this.hooks.usage) {
+          // Contadores anónimos: manos repartidas y partidas terminadas.
+          while (handsCounted < m.handNumber) {
+            handsCounted++;
+            this.hooks.usage.handPlayed();
+          }
+          if (m.phase === 'finished' && !finishedCounted) {
+            finishedCounted = true;
+            this.hooks.usage.matchFinished();
+          }
+        }
         this.hooks.broadcast(this);
       },
     }, secureRng);
@@ -242,18 +273,50 @@ export class Room {
     this.table.act(seat, action);
   }
 
-  private lastChat = new Map<string, number>();
-
-  /** Chat libre de la mesa (solo jugadores sentados), con las cartas tachadas y máximo un mensaje por segundo. */
-  chat(playerId: string, raw: unknown) {
+  /**
+   * Chat libre: se tachan las cartas. Si hay insultos, no se envía y se avisa al autor;
+   * a la tercera vez se le expulsa de la sala (su asiento pasa a un bot) y no puede volver.
+   * Devuelve un aviso para el autor, o null si se ha enviado (o no había nada que enviar).
+   */
+  chat(playerId: string, raw: unknown): { warning: string; kicked: boolean } | null {
     const seat = this.seatOf(playerId);
-    if (seat === null || typeof raw !== 'string') return;
+    if (seat === null || typeof raw !== 'string') return null;
+    if (containsInsult(raw)) {
+      const n = (this.strikes.get(playerId) ?? 0) + 1;
+      this.strikes.set(playerId, n);
+      const kicked = n >= INSULT_STRIKES_TO_KICK;
+      if (kicked) this.kick(playerId);
+      return { warning: insultWarning(n), kicked };
+    }
     const now = Date.now();
-    if (now - (this.lastChat.get(playerId) ?? 0) < 1000) return;
+    if (now - (this.lastChat.get(playerId) ?? 0) < 1000) return { warning: 'Espera un segundo entre mensajes.', kicked: false };
     const text = censorChat(raw);
-    if (!text) return;
+    if (!text) return null;
     this.lastChat.set(playerId, now);
     this.hooks.sendQuick(this, seat, text);
+    return null;
+  }
+
+  /** Expulsa a un jugador: deja la sala y no puede volver. Si la partida ha empezado, juega un bot por él. */
+  kick(playerId: string) {
+    this.banned.add(playerId);
+    const seat = this.seatOf(playerId);
+    const member = this.members.get(playerId);
+    this.members.delete(playerId);
+    if (seat !== null) {
+      const name = this.seats[seat].name ?? 'Jugador';
+      if (this.table) {
+        this.seats[seat] = { playerId: null, name: `Bot (${name})`, bot: true };
+        this.table.setBot(seat, true);
+      } else {
+        this.seats[seat] = { playerId: null, name: null, bot: false };
+      }
+    }
+    if (this.hostId === playerId) {
+      const next = [...this.members.keys()][0];
+      if (next) this.hostId = next;
+    }
+    this.hooks.onKicked?.(this, member?.socketIds ?? new Set());
   }
 
   quick(playerId: string, index: number) {

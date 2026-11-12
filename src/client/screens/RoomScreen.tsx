@@ -54,6 +54,16 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
     go('/');
   };
 
+  if (ctrl.kickedReason)
+    return (
+      <main className="page narrow">
+        <section className="panel">
+          <p className="error">⛔ {ctrl.kickedReason}</p>
+          <p className="muted">Recuerda que en el chat no se puede insultar.</p>
+          <button onClick={() => go('/')}>Volver al inicio</button>
+        </section>
+      </main>
+    );
   if (ctrl.joinError)
     return (
       <main className="page narrow">

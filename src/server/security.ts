@@ -133,11 +133,11 @@ export function securityHeaders(host: string | undefined, https: boolean): Recor
   const h = host ?? '';
   const csp = [
     "default-src 'self'",
-    "script-src 'self' https://apis.google.com https://www.gstatic.com",
+    "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://*.googleusercontent.com",
-    `connect-src 'self' wss://${h} ws://${h} https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com`,
-    'frame-src https://*.firebaseapp.com https://accounts.google.com',
+    "img-src 'self' data:",
+    `connect-src 'self' wss://${h} ws://${h}`,
+    "frame-src 'none'",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -150,8 +150,7 @@ export function securityHeaders(host: string | undefined, https: boolean): Recor
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
-    // El inicio de sesión de Google usa una ventana emergente.
-    'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    'Cross-Origin-Opener-Policy': 'same-origin',
   };
   if (https) headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
   return headers;

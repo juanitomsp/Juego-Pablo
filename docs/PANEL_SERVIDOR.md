@@ -12,7 +12,23 @@ Página para saber si el servidor va holgado o hay que pasarse a uno más grande
 - Si el servidor no tiene `ADMIN_TOKEN`, el panel está desactivado. Los intentos con contraseña incorrecta se limitan a 10 seguidos por dirección IP (después, 1 por minuto).
 - **Servidor ya instalado antes de esta versión:** vuelve a ejecutar el script de instalación (`sudo bash instalar.sh`, como la primera vez) para que cree la contraseña. Con el de actualizar no basta.
 
-## Qué muestra
+## Uso del juego (beta)
+
+Arriba del panel verás cuánta gente juega de verdad. Sirve para decidir si merece la pena publicar en las tiendas o dar más pasos.
+
+| Dato | Qué significa |
+|---|---|
+| Jugadores este mes | Jugadores distintos que han entrado en alguna sala (aproximado) |
+| Partidas este mes | Partidas online empezadas, y cuántas se terminaron |
+| Manos este mes | Manos repartidas |
+| Entradas en salas | Veces que alguien entra en una sala (incluye reconexiones) |
+
+Debajo, gráficas de jugadores por mes y por día (últimos 30 días) y una tabla por meses.
+
+**Es anónimo:** en el servidor solo se guardan totales, en `data/uso.json` (sin nombres, identificadores ni IP). Para contar jugadores distintos se usa en memoria una huella cifrada con una clave al azar que nunca se guarda; al reiniciar el servidor se olvida. Por eso, si se reinicia a mitad de mes, alguien puede contarse dos veces. Las partidas de práctica sin conexión no se cuentan.
+
+## Carga del servidor
+
 
 | Dato | Qué significa |
 |---|---|

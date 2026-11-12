@@ -188,6 +188,15 @@ function useWakeLock() {
 function TableInner(p: InnerProps) {
   const { room, view, now, hints, act } = p;
   const [selected, setSelected] = useState<string | null>(null);
+  // Jugadores silenciados (solo en este dispositivo): no se ven sus mensajes ni sus burbujas.
+  const [muted, setMuted] = useState<Set<number>>(() => new Set());
+  const toggleMute = (seat: number) =>
+    setMuted((m) => {
+      const n = new Set(m);
+      if (n.has(seat)) n.delete(seat);
+      else n.add(seat);
+      return n;
+    });
   useWakeLock();
   const n = room.config.players;
   const you = view.you;
@@ -333,7 +342,7 @@ function TableInner(p: InnerProps) {
         {room.seats.map((s) => {
           const [x, y] = pos(s.seat);
           const active = !h || h.seats.includes(s.seat);
-          const quick = recentQuick(s.seat);
+          const quick = muted.has(s.seat) ? undefined : recentQuick(s.seat);
           const isTurn = h && view.phase === 'hand' && h.turn === s.seat && h.phase === 'playing';
           return (
             <div
@@ -497,7 +506,7 @@ function TableInner(p: InnerProps) {
             ✕
           </button>
           {p.panel === 'chat' && (
-            <ChatPanel messages={p.snapQuicks} name={name} onSend={(t) => p.controller.chat(t)} onQuick={(i) => p.controller.quick(i)} />
+            <ChatPanel messages={p.snapQuicks} name={name} you={you} seats={room.seats.map((st) => st.seat)} muted={muted} onToggleMute={toggleMute} onSend={(t) => p.controller.chat(t)} onQuick={(i) => p.controller.quick(i)} />
           )}
           {p.panel === 'log' && (
             <ul className="log">
@@ -526,31 +535,46 @@ function TableInner(p: InnerProps) {
   );
 }
 
-/** Chat de la mesa: lo leen todos; las palabras que nombran cartas salen tachadas (lo hace el servidor). */
+/**
+ * Chat de la mesa: lo leen todos. Las palabras que nombran cartas salen tachadas y los insultos no se
+ * envían (el servidor avisa y, a la tercera, expulsa). Se puede silenciar a un jugador.
+ */
 function ChatPanel({
   messages,
   name,
+  you,
+  seats,
+  muted,
+  onToggleMute,
   onSend,
   onQuick,
 }: {
   messages: { from: number; text: string; at: number }[];
   name: (s: number) => string;
-  onSend: (t: string) => void;
+  you: number | null;
+  seats: number[];
+  muted: Set<number>;
+  onToggleMute: (seat: number) => void;
+  onSend: (t: string) => Promise<string | null>;
   onQuick: (i: number) => void;
 }) {
   const [text, setText] = useState('');
-  const send = () => {
+  const [warning, setWarning] = useState<string | null>(null);
+  const send = async () => {
     if (!text.trim()) return;
-    onSend(text);
-    setText('');
+    const w = await onSend(text);
+    setWarning(w);
+    if (!w || !/insultar/.test(w)) setText('');
   };
+  const others = seats.filter((s) => s !== you);
   return (
     <>
       <h4>Chat de la mesa</h4>
-      <p className="muted small">Lo leen todos. Las palabras que nombran cartas salen tachadas (****).</p>
+      <p className="muted small">Lo leen todos. Las palabras que nombran cartas salen tachadas (****). Insultar está prohibido.</p>
       <ul className="log chat-log">
-        {messages.length === 0 && <li className="muted">Aún no hay mensajes.</li>}
+        {messages.filter((m) => !muted.has(m.from)).length === 0 && <li className="muted">Aún no hay mensajes.</li>}
         {messages
+          .filter((m) => !muted.has(m.from))
           .slice(-30)
           .reverse()
           .map((m) => (
@@ -565,12 +589,17 @@ function ChatPanel({
           maxLength={CHAT_MAX_LENGTH}
           placeholder="Escribe a la mesa…"
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && send()}
+          onKeyDown={(e) => e.key === 'Enter' && void send()}
         />
-        <button className="primary" onClick={send}>
+        <button className="primary" onClick={() => void send()}>
           Enviar
         </button>
       </div>
+      {warning && (
+        <p className="chat-warning" role="alert">
+          ⚠️ {warning}
+        </p>
+      )}
       <div className="grid-buttons quick-row">
         {QUICK_MESSAGES.map((q, i) => (
           <button key={q} onClick={() => onQuick(i)}>
@@ -578,6 +607,16 @@ function ChatPanel({
           </button>
         ))}
       </div>
+      {others.length > 0 && (
+        <details className="mute-list">
+          <summary>Silenciar a un jugador</summary>
+          {others.map((s) => (
+            <label key={s} className="toggle">
+              <input type="checkbox" checked={muted.has(s)} onChange={() => onToggleMute(s)} /> {name(s)}
+            </label>
+          ))}
+        </details>
+      )}
     </>
   );
 }

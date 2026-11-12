@@ -15,8 +15,7 @@ Resumen de cómo está protegido el juego, qué se ha comprobado y qué queda po
 | **Webs ajenas conectándose al servidor** | Solo se aceptan conexiones del propio dominio o de `CORS_ORIGIN` | `originAllowed` |
 | **Inyección de código (XSS)** | React escapa todo el texto; los apodos se limitan a 20 caracteres sin `<>` ni caracteres de control; no hay chat libre; CSP estricta | `sanitizeName`, cabeceras |
 | **Clickjacking, sniffing, filtrado de URL** | Cabeceras `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS con https; se oculta `X-Powered-By` | `securityHeaders`, `vercel.json` |
-| **Datos de cuentas** | Reglas de Firestore: cada usuario solo lee y escribe sus partidas, con formato y tipos validados; todo lo demás cerrado | `firestore.rules` |
-| **Secretos en el repositorio** | `.env` está en `.gitignore`; la configuración web de Firebase no es secreta por diseño | `.gitignore` |
+| **Secretos en el repositorio** | `.env` está en `.gitignore` | `.gitignore` |
 
 ## Pruebas automáticas
 
@@ -32,17 +31,15 @@ Resumen de cómo está protegido el juego, qué se ha comprobado y qué queda po
 
 `npm audit` avisa de vulnerabilidades en:
 
-- **`@grpc/grpc-js`** (dentro de `firebase`): solo se usa cuando Firebase corre en Node. **No está en el código que descarga el navegador ni en el servidor** (comprobado en `dist/`), así que no es explotable aquí. Desaparecerá cuando Firebase actualice su dependencia.
 - **`vitest` / `tinypool`**: herramientas de **test**, no van a producción. La versión corregida (vitest 4) necesita Node ≥ 20.12; con Node 22 LTS se puede actualizar.
 
 Recomendación: instala **Node 22 LTS**, actualiza `vitest` y revisa `npm audit --omit=dev` antes de cada despliegue.
 
 ## Lo que NO cubre (todavía)
 
-- **Estadísticas falseables por su dueño:** cada jugador guarda sus estadísticas desde su navegador; podría inflar las suyas (no las de otros). Para rankings públicos, que las escriba el servidor (ver `PUBLICACION.md`).
 - **Ataques DDoS de red** (millones de peticiones desde muchas IP): eso se para antes de llegar a Node, con el proveedor (Cloudflare, el firewall del hosting…).
 - **Una sola instancia y en memoria:** reiniciar el servidor borra las salas en curso.
-- **Apodos ofensivos:** no hay filtro de palabras. Con el juego público, conviene añadirlo.
+- **Filtro de insultos:** es una lista de palabras; alguien con ingenio puede saltársela. Quien insulta tres veces es expulsado de la sala, y cada jugador puede silenciar a otro.
 - **Auditoría externa:** esto es una revisión del propio código, no una auditoría profesional.
 
 ## Lista para el despliegue
@@ -55,7 +52,6 @@ Recomendación: instala **Node 22 LTS**, actualiza `vitest` y revisa `npm audit 
 - [ ] Ejecutar Node con un usuario sin privilegios y reiniciarlo automáticamente (systemd, pm2 o Docker con `--restart unless-stopped`).
 - [ ] Actualizaciones del sistema operativo y de Node al día.
 - [ ] `npm audit --omit=dev` sin avisos nuevos.
-- [ ] Si activas cuentas: publicar `firestore.rules` y restringir la clave web de Firebase a tus dominios en Google Cloud Console (*APIs y servicios → Credenciales → Restricciones de aplicaciones → Referentes HTTP*).
 
 ## Si encuentras un fallo de seguridad
 

@@ -6,7 +6,7 @@ Versión digital del **Pablo (Paulo)**, juego de naipes tradicional de Andalucí
 - **Práctica contra bots:** funciona en el navegador, sin servidor.
 - **Marcador en vivo:** para jugar con baraja física y llevar en el móvil puntos, cuernos, Pablos, valor de la mano y quién es mano.
 - **Reglas y orden de triunfos** dentro del juego.
-- **Estadísticas:** en el navegador sin cuenta; opcionalmente en la nube con cuenta de Google (Firebase).
+- **Estadísticas:** solo en el dispositivo de cada jugador. Sin cuentas, sin anuncios y sin recoger datos personales.
 
 ## Puesta en marcha
 
@@ -38,13 +38,12 @@ Abre <http://localhost:5173>. Arranca a la vez el servidor de juego (puerto 3001
 | Documento | Contenido |
 |---|---|
 | [docs/JUGAR_CON_AMIGOS.md](docs/JUGAR_CON_AMIGOS.md) | **Cómo jugar con amigos desde el móvil** (misma WiFi o por internet) |
-| [docs/APPS_MOVILES.md](docs/APPS_MOVILES.md) | **Apps de iPhone y Android**: anuncios, cuentas, compilación y lo que hay que hacer para publicar |
+| [docs/APPS_MOVILES.md](docs/APPS_MOVILES.md) | **Apps de iPhone y Android**: compilación, beta y lo que hay que hacer para publicar |
 | [docs/TIENDAS.md](docs/TIENDAS.md) | Textos y cuestionarios de privacidad para Google Play y App Store |
 | [docs/PANEL_SERVIDOR.md](docs/PANEL_SERVIDOR.md) | Panel para vigilar la carga del servidor y saber cuándo ampliarlo |
 | [docs/REGLAS.md](docs/REGLAS.md) | Reglas tal como las aplica el juego y decisiones de interpretación (también se ve dentro del juego) |
 | [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Estructura del código, motor de reglas, servidor, cliente, bots |
 | [docs/PROTOCOLO.md](docs/PROTOCOLO.md) | Mensajes entre cliente y servidor (Socket.IO) |
-| [docs/CUENTAS_Y_DATOS.md](docs/CUENTAS_Y_DATOS.md) | Qué datos se guardan, dónde, y cómo activar las cuentas de Google |
 | [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md) | Cómo publicarlo (Render, Railway, Fly.io, Docker, Vercel) |
 | [docs/PUBLICACION.md](docs/PUBLICACION.md) | Lista de comprobación legal y de producto antes de publicar |
 | [docs/CARTAS.md](docs/CARTAS.md) | Dibujos de las cartas y cómo usar imágenes propias |

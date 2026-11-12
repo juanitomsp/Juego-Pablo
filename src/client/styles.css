@@ -313,3 +313,9 @@ button, .card { touch-action: manipulation; -webkit-tap-highlight-color: transpa
 .chart-tip { position: absolute; top: 4px; transform: translateX(-50%); background: #fff; border: 1px solid #d8d4c8; border-radius: 6px; padding: 0.2rem 0.5rem; font-size: 0.8rem; pointer-events: none; display: flex; flex-direction: column; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); white-space: nowrap; }
 .data-table summary { cursor: pointer; font-weight: 600; }
 .data-table table { margin-top: 0.5rem; }
+
+.admin .section-title { color: #fff; margin: 1.2rem 0 0.6rem; }
+
+.chat-warning { background: #fff0c2; border-left: 4px solid #fab219; padding: 0.4rem 0.6rem; border-radius: 6px; margin: 0.5rem 0; font-weight: 600; }
+.mute-list { margin-top: 0.6rem; }
+.mute-list summary { cursor: pointer; font-weight: 600; }

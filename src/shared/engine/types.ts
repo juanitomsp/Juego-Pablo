@@ -47,8 +47,21 @@ export type Action =
 
 export class RuleError extends Error {}
 
-/** Mensajes rápidos predefinidos (sin chat libre: no hay contenido de usuarios que moderar). */
+/**
+ * Frases rápidas para la mesa. No hay chat libre: así nadie puede insultar ni «cantar» sus cartas,
+ * y el juego no tiene contenido escrito por usuarios que moderar.
+ */
 export const QUICK_MESSAGES = [
+  // Para decidir en equipo
+  '¿Queremos?',
+  'Quiero',
+  'No quiero',
+  'Voy bien',
+  'Voy flojo',
+  'Tú decides',
+  '¡Apuesta!',
+  'Mejor no',
+  // Para la mesa
   '¡Hola!',
   '¡Buena suerte!',
   '¡Bien jugado!',

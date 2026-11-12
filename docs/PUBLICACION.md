@@ -6,9 +6,7 @@ Lista de comprobación para pasar de «funciona» a «publicado». No es asesora
 
 - [ ] Completar `docs/PRIVACIDAD.md` (responsable, email de contacto, fecha) y que lo revise alguien con conocimientos de RGPD/LOPDGDD.
 - [ ] Añadir un **aviso legal** (LSSI: titular, contacto) si el sitio tiene carácter comercial o publicidad.
-- [ ] Si activas cuentas: aceptar el *Data Processing Addendum* de Google Cloud/Firebase en la consola y elegir ubicación de Firestore en la UE.
-- [ ] Registro de actividades de tratamiento (sencillo: una tabla con la de `CUENTAS_Y_DATOS.md`).
-- [ ] Cookies: hoy solo se usa almacenamiento técnico necesario (localStorage, sesión de Firebase), que no requiere banner. **Si añades analítica o publicidad, necesitarás consentimiento previo.**
+- [ ] Cookies: solo se usa almacenamiento técnico necesario (localStorage), que no requiere banner. **Si algún día añades anuncios, analítica o cuentas, necesitarás consentimiento y más papeleo.**
 - [ ] Edad: la cuenta es para mayores de 14 años (ya indicado en la política).
 - [ ] Texto de las reglas: mantener la atribución CC BY-SA 4.0 a Wikipedia (ya está en `REGLAS.md`).
 - [ ] Elegir **licencia del código** (p. ej. MIT si quieres que sea abierto, o «todos los derechos reservados»).
@@ -24,7 +22,7 @@ Lista de comprobación para pasar de «funciona» a «publicado». No es asesora
 
 ## Hoja de ruta técnica
 
-1. **Estadísticas escritas por el servidor** (`firebase-admin` + verificación de ID token) → permite rankings fiables.
+1. **Rankings**: requerirían cuentas de usuario (y, con ellas, tratar datos personales). Por ahora, descartado.
 2. **Persistencia de salas** (Redis) para sobrevivir a reinicios y escalar a varias instancias (`@socket.io/redis-adapter`).
 3. **Temporizador de turno** opcional y expulsión por inactividad.
 4. Bots más listos (contar triunfos jugados, leer el chat).

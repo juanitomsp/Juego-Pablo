@@ -23,3 +23,6 @@ Thumbs.db
 # Configuración de Firebase de cada app (se añade a mano o desde los secretos de GitHub)
 android/app/google-services.json
 ios/App/App/GoogleService-Info.plist
+
+# Estadísticas de uso del servidor (solo totales)
+data/

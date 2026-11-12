@@ -1,8 +1,4 @@
 ext {
-    // Inicio de sesión con Google (plugin @capacitor-firebase/authentication)
-    rgcfaIncludeGoogle = true
-    // SDK de anuncios de Google, el mismo que usa @capacitor-community/admob
-    playServicesAdsVersion = '24.7.+'
     minSdkVersion = 23
     compileSdkVersion = 35
     targetSdkVersion = 35

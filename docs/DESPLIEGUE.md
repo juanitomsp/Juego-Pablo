@@ -37,7 +37,6 @@ Render es una plataforma como Vercel (conectas GitHub y despliega sola en cada `
 4. **Environment** → añade:
    - `TRUST_PROXY` = `1` (Render pone un proxy delante)
    - `NODE_VERSION` = `22`
-   - Si usas cuentas: las `VITE_FIREBASE_*`
 5. **Advanced → Health Check Path:** `/api/health`
 6. **Create Web Service.** En unos minutos tendrás `https://tu-juego.onrender.com`, ya con https.
 
@@ -274,12 +273,9 @@ Detalles de este modo:
 2. En Vercel → **Add New → Project** → importa el repositorio. El fichero `vercel.json` ya configura la compilación y las cabeceras de seguridad.
 3. **Environment Variables** en Vercel:
    - `VITE_SERVER_URL` = `https://api.tudominio.es`
-   - Las `VITE_FIREBASE_*`, si usas cuentas
 4. **Deploy.**
 
 **El servidor tiene que tener https.** Una página de Vercel (https) no puede conectarse a un servidor `http://` o `ws://`: el navegador lo bloquea.
-
-Si usas cuentas, añade el dominio de Vercel en Firebase → *Authentication → Settings → Authorized domains*.
 
 ## D. Docker
 
@@ -291,7 +287,7 @@ docker build -t pablo .
 docker run -d --restart unless-stopped -p 127.0.0.1:3001:3001 -e TRUST_PROXY=1 pablo
 ```
 
-Delante, un proxy con https (Caddy, como en la opción B). Con cuentas, las variables `VITE_*` se pasan al compilar: `docker build --build-arg VITE_FIREBASE_API_KEY=... -t pablo .`
+Delante, un proxy con https (Caddy, como en la opción B).
 
 ## Variables de entorno
 
@@ -302,7 +298,6 @@ Delante, un proxy con https (Caddy, como en la opción B). Con cuentas, las vari
 | `CORS_ORIGIN` | servidor | Dominios del cliente si está en otro sitio (Vercel) |
 | `MAX_ROOMS` | servidor | Salas simultáneas como máximo (500) |
 | `VITE_SERVER_URL` | compilación del cliente | URL del servidor si el cliente va aparte |
-| `VITE_FIREBASE_*` | compilación del cliente | Cuentas de Google (opcional) |
 | `VITE_CARD_IMAGES` | compilación del cliente | Imágenes propias de cartas (opcional) |
 
 Antes de publicar, revisa la lista de [SEGURIDAD.md](SEGURIDAD.md).
