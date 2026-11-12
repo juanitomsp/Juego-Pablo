@@ -16,7 +16,7 @@ import {
 } from '../../shared/engine';
 import type { ClientToServer, PublicRoom, QuickMessage, RoomState, ServerToClient } from '../../shared/protocol';
 import { GameTable } from '../../shared/table';
-import { censorChat, containsInsult } from '../../shared/chat';
+import { cleanChat, containsInsult } from '../../shared/chat';
 import { getName, getPlayerId } from './identity';
 import { pingPractice } from './usagePing';
 
@@ -328,7 +328,7 @@ export class LocalController extends Base implements Controller {
   }
   async chat(text: string) {
     if (containsInsult(text)) return 'No se puede insultar: tu mensaje no se ha enviado.';
-    const clean = censorChat(text);
+    const clean = cleanChat(text);
     if (clean) this.pushQuick({ from: 0, text: clean, at: Date.now() });
     return null;
   }

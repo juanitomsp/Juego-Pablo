@@ -174,8 +174,8 @@ export const EN: Record<string, string> = {
   'Triunfos de mayor a menor (muestra: {suit})': 'Trumps from highest to lowest (trumps: {suit})',
   'Fuera del triunfo: Rey, Caballo, Sota, As, 7, 6, 5, 4, 3, 2.': 'Outside trumps: King, Knight, Jack, Ace, 7, 6, 5, 4, 3, 2.',
   'Chat de la mesa': 'Table chat',
-  'Lo leen todos. Las palabras que nombran cartas salen tachadas (****). Insultar está prohibido.':
-    'Everyone reads it. Words that name cards are blanked out (****). Insults are not allowed.',
+  'Lo leen todos, también el otro equipo. Insultar está prohibido.':
+    'Everyone reads it, the other team too. Insults are not allowed.',
   'Aún no hay mensajes.': 'No messages yet.',
   'Escribe a la mesa…': 'Write to the table…',
   Enviar: 'Send',

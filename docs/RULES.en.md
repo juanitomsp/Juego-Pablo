@@ -119,7 +119,7 @@ If teams have not been decided, cards are dealt face up one by one; whoever gets
 
 ## 7. Talking at the table
 
-No signals are used. To decide as a team whether to accept a bet (or just to chat), there is a **💬 Chat** that **all players** read. So that nobody can «call» their cards, the server **blanks out words that name cards**: numbers, face cards, suits and names such as Pablo, Tuerto, Andorra, Malilla, triunfo or vira (in Spanish).
+No signals are used. To decide as a team whether to accept a bet (or just to chat), there is a **💬 Chat** that **all players** read, including the other team. As at a real table, you may talk about the cards you hold, but everyone hears it.
 
 ## 8. Special situations
 

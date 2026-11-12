@@ -34,7 +34,7 @@ El juego es **gratis, sin anuncios, sin compras y sin cuentas**, y no recoge dat
 > • **Online con tus amigos:** crea una sala, comparte el enlace y jugad desde donde estéis.
 > • **Contra bots:** practica cuando quieras, también sin conexión.
 > • **Marcador en vivo:** si jugáis con baraja de verdad, lleva los puntos en el móvil.
-> • **Apuestas y quiero:** sube la apuesta en tu turno y habla con tu compañero por el chat de la mesa (las cartas no se pueden «cantar»: salen tachadas).
+> • **Apuestas y quiero:** sube la apuesta en tu turno y habla con tu compañero por el chat de la mesa (¡ojo, que el otro equipo también lo lee!).
 > • **Arrastre y renuncio,** como en la mesa del bar.
 > • **Ayudas** para aprender: te avisa de qué cartas ganan la baza y de cuándo tu compañero ya la lleva.
 >

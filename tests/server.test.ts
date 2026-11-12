@@ -328,7 +328,7 @@ describe('servidor', () => {
     expect(m).toMatchObject({ players: 2, practice: 2, practiceHands: 1, practiceFinished: 1, matches: 0 });
   });
 
-  it('chat: llega a la mesa con las cartas tachadas; los insultos no se envían y a la tercera se expulsa', async () => {
+  it('chat: llega a la mesa tal cual (se puede hablar de cartas); los insultos no se envían y a la tercera se expulsa', async () => {
     const url = await start();
     const a = await client(url);
     const b = await client(url);
@@ -339,7 +339,7 @@ describe('servidor', () => {
 
     expect((await call<{ ok: boolean }>(a, 'game:chat', { text: 'tengo el 3 de basto, ¿vamos?' })).ok).toBe(true);
     await sleep(100);
-    expect(received).toEqual(['tengo el **** de *****, ¿vamos?']);
+    expect(received).toEqual(['tengo el 3 de basto, ¿vamos?']);
 
     const kicked: string[] = [];
     a.on('kicked', (r: string) => kicked.push(r));

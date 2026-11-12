@@ -5,7 +5,7 @@
 import { DEFAULT_CONFIG, GameConfig, QUICK_MESSAGES, RuleError, drawTeamsByKings, getView } from '../shared/engine';
 import type { PublicRoom, RoomState, SeatInfo } from '../shared/protocol';
 import { GameTable } from '../shared/table';
-import { INSULT_STRIKES_TO_KICK, censorChat, containsInsult, insultWarning } from '../shared/chat';
+import { INSULT_STRIKES_TO_KICK, cleanChat, containsInsult, insultWarning } from '../shared/chat';
 import { randomInt, webcrypto } from 'node:crypto';
 
 /** Azar criptográfico para barajar: el reparto no se puede predecir a partir de partidas anteriores. */
@@ -379,7 +379,7 @@ export class Room {
     }
     const now = Date.now();
     if (now - (this.lastChat.get(playerId) ?? 0) < 1000) return { warning: 'Espera un segundo entre mensajes.', kicked: false };
-    const text = censorChat(raw);
+    const text = cleanChat(raw);
     if (!text) return null;
     this.lastChat.set(playerId, now);
     this.hooks.sendQuick(this, seat, text);

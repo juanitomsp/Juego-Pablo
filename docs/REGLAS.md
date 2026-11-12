@@ -116,9 +116,7 @@ Si no se han decidido los equipos, se reparten cartas boca arriba de una en una;
 
 ## 7. Hablar en la mesa
 
-No se usan señas. Para decidir en equipo si se acepta una apuesta (o para charlar), hay un **💬 Chat** que leen **todos los jugadores**. Para que no se pueda «cantar» lo que se lleva, el servidor **tacha las palabras que nombran cartas**: números, figuras, palos y nombres como Pablo, Tuerto, Andorra, Malilla, triunfo o vira.
-
-> Ejemplo: «tengo el 3 de basto» se ve como «tengo el **** de *****».
+No se usan señas. Para decidir en equipo si se acepta una apuesta (o para charlar), hay un **💬 Chat** que leen **todos los jugadores**, también los del otro equipo. Como en la mesa de verdad, se puede hablar de las cartas que se llevan, pero lo oye todo el mundo.
 
 ## 8. Situaciones especiales
 

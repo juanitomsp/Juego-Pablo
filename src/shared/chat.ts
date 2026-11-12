@@ -1,6 +1,6 @@
 /**
  * Chat de la mesa: lo leen todos los jugadores.
- *  - Se tachan las palabras que dicen qué cartas llevas: «tengo el 3 de basto» → «tengo el **** de *****».
+ *  - Se puede hablar de cartas libremente (como en la mesa de verdad, se oye todo el mundo).
  *  - Los insultos no se envían: el servidor avisa al que lo escribe y, a la tercera, lo echa de la sala.
  * Se aplica en el servidor (no se puede saltar desde el cliente). Ver docs/REGLAS.md §7.
  */
@@ -8,17 +8,6 @@
 export const CHAT_MAX_LENGTH = 140;
 /** Avisos por insultar antes de ser expulsado de la sala. */
 export const INSULT_STRIKES_TO_KICK = 3;
-
-/** Palabras que revelan cartas (sin tildes, en minúsculas). */
-const CARD_WORDS = new Set([
-  // números y figuras
-  'as', 'ases', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce',
-  'sota', 'sotas', 'caballo', 'caballos', 'rey', 'reyes', 'figura', 'figuras',
-  // palos
-  'oro', 'oros', 'copa', 'copas', 'espada', 'espadas', 'basto', 'bastos', 'palo', 'palos',
-  // cartas con nombre y triunfos
-  'pablo', 'paulo', 'tuerto', 'andorra', 'jandorra', 'malilla', 'mijilla', 'triunfo', 'triunfos', 'vira', 'viras',
-]);
 
 /** Insultos: palabras completas (sin tildes). */
 const INSULT_WORDS = new Set([
@@ -50,14 +39,6 @@ function deobfuscate(w: string): string {
     .replace(/(.)\1+/g, '$1');
 }
 
-/** Una palabra se tacha si es una palabra de cartas o si contiene algún número. */
-function isCardWord(word: string): boolean {
-  const w = strip(word);
-  if (/\d/.test(w)) return true;
-  if (CARD_WORDS.has(w)) return true;
-  return CARD_WORDS.has(w.replace(/(.)\1+/g, '$1'));
-}
-
 function isInsultWord(word: string): boolean {
   // También sin números pegados: «Idiota99».
   const variants = [strip(word), deobfuscate(word), strip(word).replace(/[0-9]+/g, '')];
@@ -75,17 +56,13 @@ export function containsInsult(raw: string): boolean {
   return INSULT_PHRASES.some((p) => joined.includes(` ${p} `) || joined.includes(` ${p}`));
 }
 
-const stars = (word: string) => '*'.repeat(Math.max(4, word.length));
-
-/** Limpia el texto: quita caracteres de control y tacha las referencias a cartas. */
-export function censorChat(raw: string): string {
-  const text = String(raw ?? '')
+/** Limpia el texto: quita caracteres de control, junta espacios y lo recorta. */
+export function cleanChat(raw: string): string {
+  return String(raw ?? '')
     .replace(/[\u0000-\u001f\u007f<>]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, CHAT_MAX_LENGTH);
-  // Palabras = secuencias de letras (con tildes) o números; lo demás se conserva.
-  return text.replace(/[\p{L}\p{N}]+/gu, (w) => (isCardWord(w) ? stars(w) : w));
 }
 
 /** Aviso que recibe quien intenta insultar (solo lo ve él). */

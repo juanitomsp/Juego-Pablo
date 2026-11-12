@@ -286,7 +286,7 @@ function buildLessons(): Lesson[] {
           </p>
           <p>
             Solo se puede apostar una vez por turno, pero cuando te vuelva a tocar puedes subir otra vez. Usa el <strong>chat</strong> para decidir
-            con tu compañero (las cartas salen tachadas: ¡no se puede cantar lo que llevas!).
+            con tu compañero (¡ojo, que el otro equipo también lo lee!).
           </p>
         </>,
         <>
@@ -295,8 +295,8 @@ function buildLessons(): Lesson[] {
             («quiero»), the hand is worth 1 more; if they refuse, your team wins what it was worth until then.
           </p>
           <p>
-            You can bet once per turn, and raise again when it is your turn again. Use the <strong>chat</strong> to agree with your partner (card
-            names are blanked out: you cannot tell what you hold!).
+            You can bet once per turn, and raise again when it is your turn again. Use the <strong>chat</strong> to agree with your partner (careful:
+            the other team reads it too!).
           </p>
         </>,
       ),

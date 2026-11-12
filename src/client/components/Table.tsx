@@ -596,7 +596,7 @@ function TableInner(p: InnerProps) {
 }
 
 /**
- * Chat de la mesa: lo leen todos. Las palabras que nombran cartas salen tachadas y los insultos no se
+ * Chat de la mesa: lo leen todos y se puede hablar de cartas. Los insultos no se
  * envían (el servidor avisa y, a la tercera, expulsa). Se puede silenciar a un jugador.
  */
 function ChatPanel({
@@ -637,7 +637,7 @@ function ChatPanel({
   return (
     <>
       <h4>{t('Chat de la mesa')}</h4>
-      <p className="muted small">{t('Lo leen todos. Las palabras que nombran cartas salen tachadas (****). Insultar está prohibido.')}</p>
+      <p className="muted small">{t('Lo leen todos, también el otro equipo. Insultar está prohibido.')}</p>
       <ul className="log chat-log">
         {messages.filter((m) => !muted.has(m.from)).length === 0 && <li className="muted">{t('Aún no hay mensajes.')}</li>}
         {messages

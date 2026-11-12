@@ -82,7 +82,7 @@ Se abre a pantalla completa, con su icono.
 - El móvil vibra cuando te toca. Si la página está abierta en https, además no se apaga la pantalla.
 - Si a alguien se le cierra el navegador, que vuelva a abrir el mismo enlace **en el mismo móvil y navegador**: recupera su sitio.
 - Si alguien se va del todo, el anfitrión verá **Sustituir por un bot**.
-- 💬 **Chat:** lo lee toda la mesa; las palabras que nombran cartas salen tachadas.
+- 💬 **Chat:** lo lee toda la mesa, también el otro equipo; se puede hablar de cartas.
 - 🃏 **Orden** muestra el orden de los triunfos con la muestra actual, por si alguien no se acuerda.
 
 ## Qué conviene apuntar durante la prueba

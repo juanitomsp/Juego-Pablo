@@ -23,7 +23,7 @@ import {
   trickWinnerIndex,
   trumpPower,
 } from '../src/shared/engine';
-import { censorChat, containsInsult } from '../src/shared/chat';
+import { cleanChat, containsInsult } from '../src/shared/chat';
 import { sanitizeName } from '../src/server/rooms';
 
 const c = (rank: number, suit: Card['suit']): Card => ({ rank, suit });
@@ -171,11 +171,11 @@ describe('cierre anticipado de la mano', () => {
 });
 
 describe('chat', () => {
-  it('tacha las palabras que nombran cartas', () => {
-    expect(censorChat('tengo el 3 de basto')).toBe('tengo el **** de *****');
-    expect(censorChat('Llevo el PABLO y la Malilla')).toBe('Llevo el ***** y la *******');
-    expect(censorChat('¿Vamos? Yo voy bien')).toBe('¿Vamos? Yo voy bien');
-    expect(censorChat('tengo el tres de óros')).toBe('tengo el **** de ****');
+  it('deja hablar de cartas y solo limpia el texto', () => {
+    expect(cleanChat('tengo el 3 de basto')).toBe('tengo el 3 de basto');
+    expect(cleanChat('  Llevo el PABLO   y la Malilla\n')).toBe('Llevo el PABLO y la Malilla');
+    expect(cleanChat('<b>hola</b>')).toBe('bhola/b');
+    expect(cleanChat('x'.repeat(500))).toHaveLength(140);
   });
   it('detecta insultos, también disfrazados', () => {
     for (const t of ['eres un gilipollas', 'IDIOTA', 'imbéciles todos', 'hijo de puta', 'p u t a no, pero 1d1ot4 sí', 'tontoooo', 'sois unos subnormales'])
