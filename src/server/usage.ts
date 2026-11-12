@@ -23,6 +23,12 @@ export interface UsageCounts {
   hands: number;
   /** Entradas en salas (cada vez que alguien entra a una sala). */
   visits: number;
+  /** Partidas contra bots empezadas (las avisa el propio juego, de forma anónima). */
+  practice: number;
+  /** Partidas contra bots terminadas. */
+  practiceFinished: number;
+  /** Manos jugadas contra bots. */
+  practiceHands: number;
 }
 
 interface UsageFile {
@@ -31,7 +37,7 @@ interface UsageFile {
   months: Record<string, UsageCounts>;
 }
 
-const empty = (): UsageCounts => ({ players: 0, matches: 0, finished: 0, hands: 0, visits: 0 });
+const empty = (): UsageCounts => ({ players: 0, matches: 0, finished: 0, hands: 0, visits: 0, practice: 0, practiceFinished: 0, practiceHands: 0 });
 const KEEP_DAYS = 400;
 
 /** Fecha local del servidor en formato AAAA-MM-DD y AAAA-MM. */
@@ -56,7 +62,10 @@ export class Usage {
     if (file) {
       try {
         const parsed = JSON.parse(readFileSync(file, 'utf8')) as UsageFile;
-        if (parsed?.version === 1) this.data = { version: 1, days: parsed.days ?? {}, months: parsed.months ?? {} };
+        if (parsed?.version === 1) {
+          const fill = (r: Record<string, UsageCounts>) => Object.fromEntries(Object.entries(r ?? {}).map(([k, v]) => [k, { ...empty(), ...v }]));
+          this.data = { version: 1, days: fill(parsed.days), months: fill(parsed.months) };
+        }
       } catch {
         // Primera vez o fichero ilegible: se empieza de cero.
       }
@@ -92,6 +101,30 @@ export class Usage {
       (this.data.months[k.month] ??= empty()).players++;
     }
     this.dirty = true;
+  }
+
+  /** Cuenta a un jugador como activo (jugadores distintos) sin sumar una entrada en sala. */
+  private seen(playerId: string) {
+    const h = createHash('sha256').update(this.salt).update(playerId).digest('base64');
+    const k = keys();
+    if (k.day !== this.seenKeys.day) this.seenDay.clear();
+    if (k.month !== this.seenKeys.month) this.seenMonth.clear();
+    this.seenKeys = k;
+    if (!this.seenDay.has(h)) {
+      this.seenDay.add(h);
+      (this.data.days[k.day] ??= empty()).players++;
+    }
+    if (!this.seenMonth.has(h)) {
+      this.seenMonth.add(h);
+      (this.data.months[k.month] ??= empty()).players++;
+    }
+    this.dirty = true;
+  }
+
+  /** Aviso anónimo de una partida contra bots: empieza, se juega una mano o termina. */
+  practice(playerId: string, event: 'start' | 'hand' | 'end') {
+    this.seen(playerId);
+    this.bump(event === 'start' ? 'practice' : event === 'hand' ? 'practiceHands' : 'practiceFinished');
   }
 
   matchStarted() {

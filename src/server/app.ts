@@ -258,6 +258,26 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
+  // Avisos anónimos de las partidas contra bots (se juegan en el móvil, sin pasar por el servidor).
+  // Cuerpo en texto plano (JSON) para que el navegador no necesite una petición previa de CORS.
+  const practiceLimiter = new KeyedLimiter(30, 1 / 10);
+  app.post('/api/uso/practica', express.text({ type: '*/*', limit: '1kb' }), (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const origin = req.headers.origin;
+    if (origin && originAllowed(origin, req.headers.host, allowed)) res.setHeader('Access-Control-Allow-Origin', origin);
+    if (!practiceLimiter.take(clientIp(req, trustProxy))) return res.sendStatus(429);
+    let body: { playerId?: unknown; event?: unknown } = {};
+    try {
+      body = JSON.parse(typeof req.body === 'string' ? req.body : '{}');
+    } catch {
+      return res.sendStatus(400);
+    }
+    const event = body.event;
+    if (!validPlayerId(body.playerId) || (event !== 'start' && event !== 'hand' && event !== 'end')) return res.sendStatus(400);
+    usage.practice(body.playerId, event);
+    res.sendStatus(204);
+  });
+
   // ---------------------------------------------------------------- Métricas para el panel (servidor aparte: src/server/admin.ts)
   const metrics = new Metrics(() => {
     let playing = 0;

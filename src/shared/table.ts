@@ -7,6 +7,7 @@ import {
   GameConfig,
   MatchState,
   Rng,
+  BotLevel,
   advance,
   applyAction,
   chooseBotAction,
@@ -40,6 +41,8 @@ export class GameTable {
     private cb: TableCallbacks,
     private rng: Rng = Math.random,
     private delays: TableDelays = DEFAULT_DELAYS,
+    /** Nivel de los bots de esta mesa. */
+    private botLevel: BotLevel = 'normal',
   ) {
     this.match = createMatch(config, dealer);
     botSeats.forEach((s) => this.bots.add(s));
@@ -95,7 +98,7 @@ export class GameTable {
     if (m.phase === 'finished') return;
 
     for (const seat of this.bots) {
-      const action = chooseBotAction(getView(m, seat), this.rng);
+      const action = chooseBotAction(getView(m, seat), this.rng, this.botLevel);
       if (!action) continue;
       // Las decisiones de equipo (aceptar/rechazar apuesta, jugar al quiero) las toma el humano si lo hay.
       const teamDecision = action.type === 'accept' || action.type === 'reject' || action.type === 'quiero';

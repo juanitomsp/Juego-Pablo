@@ -5,6 +5,7 @@
 import { io, Socket } from 'socket.io-client';
 import {
   Action,
+  BotLevel,
   DEFAULT_CONFIG,
   GameConfig,
   QUICK_MESSAGES,
@@ -15,6 +16,7 @@ import type { ClientToServer, QuickMessage, RoomState, ServerToClient } from '..
 import { GameTable } from '../../shared/table';
 import { censorChat, containsInsult } from '../../shared/chat';
 import { getName, getPlayerId } from './identity';
+import { pingPractice } from './usagePing';
 
 export interface ControllerSnapshot {
   state: RoomState | null;
@@ -191,7 +193,10 @@ export class LocalController extends Base implements Controller {
   private table!: GameTable;
   private config: GameConfig;
 
-  constructor(config: Partial<GameConfig>) {
+  constructor(
+    config: Partial<GameConfig>,
+    private botLevel: BotLevel = 'normal',
+  ) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config, maxStake: config.pointsPerCuerno ?? DEFAULT_CONFIG.pointsPerCuerno };
     this.newTable(Math.floor(Math.random() * this.config.players));
@@ -201,9 +206,32 @@ export class LocalController extends Base implements Controller {
     this.table?.dispose();
     const n = this.config.players;
     const bots = Array.from({ length: n - 1 }, (_, i) => i + 1);
-    this.table = new GameTable(this.config, dealer, bots, {
-      onChange: () => this.emitState(),
-    });
+    let hands = 0;
+    let finished = false;
+    pingPractice('start');
+    this.table = new GameTable(
+      this.config,
+      dealer,
+      bots,
+      {
+      onChange: () => {
+        const m = this.table.match;
+        // Estadísticas de uso anónimas: manos jugadas y partida terminada.
+        while (hands < m.handNumber) {
+          hands++;
+          pingPractice('hand');
+        }
+        if (m.phase === 'finished' && !finished) {
+          finished = true;
+          pingPractice('end');
+        }
+        this.emitState();
+      },
+      },
+      undefined,
+      undefined,
+      this.botLevel,
+    );
     this.emitState();
   }
 

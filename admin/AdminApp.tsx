@@ -34,6 +34,9 @@ interface UsageCounts {
   finished: number;
   hands: number;
   visits: number;
+  practice?: number;
+  practiceFinished?: number;
+  practiceHands?: number;
 }
 
 interface UsageReport {
@@ -332,17 +335,17 @@ function UsageSection({ usage }: { usage: UsageReport }) {
       <h3 className="section-title">Uso del juego (beta)</h3>
       <section className="tile-grid">
         <Tile label="Jugadores este mes" value={m.players} sub={`Hoy: ${usage.today.players}`} />
-        <Tile label="Partidas este mes" value={m.matches} sub={`${m.finished} terminadas`} />
-        <Tile label="Manos este mes" value={m.hands} sub={`Hoy: ${usage.today.hands}`} />
+        <Tile label="Partidas online este mes" value={m.matches} sub={`${m.finished} terminadas · ${m.hands} manos`} />
+        <Tile label="Partidas contra bots este mes" value={m.practice ?? 0} sub={`${m.practiceFinished ?? 0} terminadas · ${m.practiceHands ?? 0} manos`} />
         <Tile label="Entradas en salas" value={m.visits} sub="este mes (incluye reconexiones)" />
       </section>
       <BarChart
         title="Jugadores distintos por mes"
-        bars={usage.months.map((x) => ({ label: monthLabel(x.month), value: x.players, detail: `${x.matches} partidas · ${x.hands} manos` }))}
+        bars={usage.months.map((x) => ({ label: monthLabel(x.month), value: x.players, detail: `${x.matches} online · ${x.practice ?? 0} contra bots` }))}
       />
       <BarChart
         title="Jugadores distintos por día (últimos 30 días)"
-        bars={usage.days.map((x) => ({ label: dayLabel(x.day), value: x.players, detail: `${x.matches} partidas` }))}
+        bars={usage.days.map((x) => ({ label: dayLabel(x.day), value: x.players, detail: `${x.matches} online · ${x.practice ?? 0} contra bots` }))}
         sparseLabels
       />
       <details className="panel data-table">
@@ -352,8 +355,8 @@ function UsageSection({ usage }: { usage: UsageReport }) {
             <tr>
               <th>Mes</th>
               <th>Jugadores</th>
-              <th>Partidas</th>
-              <th>Terminadas</th>
+              <th>Online</th>
+              <th>Contra bots</th>
               <th>Manos</th>
             </tr>
           </thead>
@@ -366,8 +369,8 @@ function UsageSection({ usage }: { usage: UsageReport }) {
                   <td>{monthLabel(x.month)}</td>
                   <td>{x.players}</td>
                   <td>{x.matches}</td>
-                  <td>{x.finished}</td>
-                  <td>{x.hands}</td>
+                  <td>{x.practice ?? 0}</td>
+                  <td>{x.hands + (x.practiceHands ?? 0)}</td>
                 </tr>
               ))}
           </tbody>
@@ -375,7 +378,7 @@ function UsageSection({ usage }: { usage: UsageReport }) {
       </details>
       <p className="muted small">
         Datos anónimos: solo se guardan totales, sin nombres, identificadores ni direcciones IP. «Jugadores distintos» es aproximado (si el servidor se
-        reinicia a mitad de mes, alguien puede contarse dos veces). Las partidas de práctica sin conexión no se cuentan.
+        reinicia a mitad de mes, alguien puede contarse dos veces). Las partidas contra bots se cuentan si el móvil tiene conexión.
       </p>
     </>
   );

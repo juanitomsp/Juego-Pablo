@@ -3,6 +3,7 @@ import {
   Card,
   DEFAULT_CONFIG,
   GameConfig,
+  BotLevel,
   MatchState,
   QUICK_MESSAGES,
   advance,
@@ -207,7 +208,7 @@ describe('reparto', () => {
   });
 });
 
-function playUntilDone(start: MatchState, rng = seededRng(7), maxSteps = 20000): MatchState {
+function playUntilDone(start: MatchState, rng = seededRng(7), maxSteps = 20000, level: BotLevel = 'facil'): MatchState {
   let m = start;
   let steps = 0;
   while (m.phase !== 'finished' && steps++ < maxSteps) {
@@ -217,7 +218,7 @@ function playUntilDone(start: MatchState, rng = seededRng(7), maxSteps = 20000):
     }
     let acted = false;
     for (let s = 0; s < m.config.players; s++) {
-      const a = chooseBotAction(getView(m, s), rng);
+      const a = chooseBotAction(getView(m, s), rng, level);
       if (a) {
         m = applyAction(m, s, a, rng);
         acted = true;
@@ -239,6 +240,28 @@ describe('partida completa con bots', () => {
       });
     }
   }
+});
+
+describe('bots listos', () => {
+  for (const players of [4, 6] as const) {
+    it(`juegan una partida completa sin errores a ${players} jugadores`, () => {
+      const m = playUntilDone(createMatch({ ...DEFAULT_CONFIG, players, pablosToWin: 1 }), seededRng(21), 20000, 'normal');
+      expect(m.phase).toBe('finished');
+    });
+  }
+  it('nunca hacen renuncio y no ven las cartas de los demás', () => {
+    let m = applyAction(createMatch(cfg4, 0), 0, { type: 'deal' }, seededRng(5));
+    const rng = seededRng(9);
+    for (let i = 0; i < 40 && m.phase === 'hand'; i++) {
+      const seat = m.hand!.phase === 'bet' ? [0, 1, 2, 3].find((s) => getView(m, s).hand!.canRespond)! : m.hand!.turn;
+      const v = getView(m, seat);
+      expect(JSON.stringify(v)).not.toContain('"hands"');
+      const a = chooseBotAction(v, rng, 'normal')!;
+      if (a.type === 'play') expect(v.hand!.renuncio).not.toContain(`${a.card.rank}-${a.card.suit}`);
+      m = applyAction(m, seat, a, rng);
+    }
+    expect(m.history.every((h) => h.result.reason !== 'renuncio')).toBe(true);
+  });
 });
 
 describe('apuestas', () => {

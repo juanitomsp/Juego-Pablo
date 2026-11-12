@@ -173,6 +173,20 @@ describe('servidor', () => {
     await new Promise<void>((res) => admin.close(() => res()));
   });
 
+  it('cuenta de forma anónima las partidas contra bots', async () => {
+    const url = await start();
+    const send = (body: unknown) =>
+      fetch(`${url}/api/uso/practica`, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
+    expect((await send({ playerId: id(1), event: 'start' })).status).toBe(204);
+    expect((await send({ playerId: id(1), event: 'hand' })).status).toBe(204);
+    expect((await send({ playerId: id(1), event: 'end' })).status).toBe(204);
+    expect((await send({ playerId: id(2), event: 'start' })).status).toBe(204);
+    expect((await send({ playerId: 'x', event: 'start' })).status).toBe(400);
+    expect((await send({ playerId: id(3), event: 'hackear' })).status).toBe(400);
+    const m = server!.usage.report().thisMonth;
+    expect(m).toMatchObject({ players: 2, practice: 2, practiceHands: 1, practiceFinished: 1, matches: 0 });
+  });
+
   it('chat: llega a la mesa con las cartas tachadas; los insultos no se envían y a la tercera se expulsa', async () => {
     const url = await start();
     const a = await client(url);

@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { go } from '../App';
 import { Table } from '../components/Table';
 import { LocalController } from '../services/controller';
+import type { BotLevel } from '../../shared/engine';
 
 export function Practice() {
   const [players, setPlayers] = useState<4 | 6>(4);
   const [pablos, setPablos] = useState(1);
+  const [level, setLevel] = useState<BotLevel>(() => (localStorage.getItem('pablo.botLevel') as BotLevel) || 'normal');
   const [ctrl, setCtrl] = useState<LocalController | null>(null);
 
   useEffect(() => {
@@ -37,6 +39,29 @@ export function Practice() {
           </div>
         </div>
         <div className="field">
+          <span>Nivel de los bots</span>
+          <div className="segmented">
+            {(
+              [
+                ['facil', 'Fácil'],
+                ['normal', 'Normal'],
+                ['dificil', 'Difícil'],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                className={level === id ? 'on' : ''}
+                onClick={() => {
+                  setLevel(id);
+                  localStorage.setItem('pablo.botLevel', id);
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="field">
           <span>Pablos para ganar</span>
           <div className="segmented">
             {[1, 2].map((p) => (
@@ -47,7 +72,7 @@ export function Practice() {
           </div>
         </div>
         <div className="row">
-          <button className="primary" onClick={() => setCtrl(new LocalController({ players, pablosToWin: pablos, teamNames: ['Tu equipo', 'Bots rivales'] }))}>
+          <button className="primary" onClick={() => setCtrl(new LocalController({ players, pablosToWin: pablos, teamNames: ['Tu equipo', 'Bots rivales'] }, level))}>
             Empezar
           </button>
         </div>

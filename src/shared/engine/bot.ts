@@ -14,6 +14,11 @@ import {
 } from './cards';
 import { Action, teamOf } from './types';
 import { PlayerView } from './view';
+import { chooseCard, winProbability } from './smartBot';
+
+/** Nivel de los bots: fácil (reglas sencillas), normal y difícil (simulan la mano muchas veces). */
+export type BotLevel = 'facil' | 'normal' | 'dificil';
+const ROLLOUTS: Record<Exclude<BotLevel, 'facil'>, number> = { normal: 140, dificil: 360 };
 
 /** Fuerza aproximada de una mano (0 = nada, ~1 = muy fuerte). */
 export function handStrength(cards: Card[], trump: Suit): number {
@@ -30,7 +35,51 @@ export function handStrength(cards: Card[], trump: Suit): number {
 const lowest = (cards: Card[], trump: Suit) => cards.slice().sort((a, b) => sortValue(a, trump) - sortValue(b, trump))[0];
 const highest = (cards: Card[], trump: Suit) => cards.slice().sort((a, b) => sortValue(b, trump) - sortValue(a, trump))[0];
 
-export function chooseBotAction(v: PlayerView, rng: Rng = Math.random): Action | null {
+export function chooseBotAction(v: PlayerView, rng: Rng = Math.random, level: BotLevel = 'normal'): Action | null {
+  return level === 'facil' ? chooseSimpleAction(v, rng) : chooseSmartAction(v, rng, ROLLOUTS[level]);
+}
+
+/**
+ * Bot listo: decide simulando la mano (ver smartBot.ts).
+ * - Al quiero: juega si tiene al menos un 35 % de ganar.
+ * - Ante una apuesta: compara lo que pierde si no quiere (lo que vale ahora) con lo que espera ganar o
+ *   perder si quiere (valor de la apuesta × (2·p − 1)).
+ * - Apuesta si tiene muchas opciones (o si el rival está al quiero y está igualado), con algún farol.
+ */
+function chooseSmartAction(v: PlayerView, rng: Rng, rollouts: number): Action | null {
+  const me = v.you;
+  if (me === null) return null;
+  if (v.phase === 'deal') return v.canDeal ? { type: 'deal' } : null;
+  const h = v.hand;
+  if (!h || v.phase !== 'hand') return null;
+  const myTeam = teamOf(me);
+
+  if (h.canDecideQuiero) return { type: 'quiero', play: winProbability(h, me, rng, rollouts) >= 0.35 };
+
+  if (h.canRespond && h.pendingBet) {
+    if (h.quieroTeams.includes(h.pendingBet.team)) return { type: 'accept' }; // si no queremos, ganan el cuerno igual
+    const p = winProbability(h, me, rng, rollouts);
+    if (h.quieroTeams.includes(myTeam)) return { type: p >= 0.3 ? 'accept' : 'reject' };
+    const acceptEV = h.pendingBet.value * (2 * p - 1);
+    const rejectEV = -h.stake;
+    return { type: acceptEV >= rejectEV ? 'accept' : 'reject' };
+  }
+
+  if (h.phase !== 'playing' || h.turn !== me) return null;
+  const legal = h.myCards.filter((c) => h.legal.includes(cardId(c)) && !h.renuncio.includes(cardId(c)));
+  if (legal.length === 0) return null;
+  const { card, p } = chooseCard(h, me, legal, rng, { rollouts });
+
+  if (h.canBet && !h.quieroTeams.includes(myTeam)) {
+    const prob = p >= 0 ? p : winProbability(h, me, rng, rollouts);
+    const rivalAlQuiero = h.quieroTeams.length > 0;
+    if ((rivalAlQuiero && prob > 0.45) || prob > 0.68 || (prob > 0.42 && rng() < 0.04)) return { type: 'bet' };
+  }
+  return { type: 'play', card };
+}
+
+/** Bot fácil: reglas sencillas, sin simular. */
+function chooseSimpleAction(v: PlayerView, rng: Rng = Math.random): Action | null {
   const me = v.you;
   if (me === null) return null;
 
