@@ -221,9 +221,13 @@ interface CostSettings {
   priceKwh: number;
   extraMonth: number;
 }
-const COST_KEY = 'pablo.admin.cost';
-/** Valores típicos de un ordenador de sobremesa y de la luz en España; se cambian en el propio panel. */
-const COST_DEFAULTS: CostSettings = { idleW: 45, maxW: 150, priceKwh: 0.15, extraMonth: 0 };
+// Clave nueva: así los navegadores que guardaron los valores genéricos antiguos (45/150 W) usan los medidos.
+const COST_KEY = 'pablo.admin.coste';
+/**
+ * Valores de la torre del servidor (HP Slimline con Core i3): el procesador medido con RAPL gasta ~1 W
+ * con 6 personas jugando → torre ≈ (1 + 8) ÷ 0,8 ≈ 12 W. Luz: precio típico en España. Se cambian en el panel.
+ */
+const COST_DEFAULTS: CostSettings = { idleW: 12, maxW: 60, priceKwh: 0.15, extraMonth: 0 };
 const HOURS_MONTH = 730; // 365 × 24 / 12
 
 function loadCost(): CostSettings {
@@ -242,9 +246,13 @@ const eur = (v: number) => v.toLocaleString('es-ES', { style: 'currency', curren
  * exacto, mide el ordenador con un enchufe medidor y pon aquí los vatios.
  */
 function CostSection({ series }: { series: Sample[]; cores: number }) {
-  const [cfg, setCfg] = useState<CostSettings>(loadCost);
+  const [cfg, setCfgState] = useState<CostSettings>(loadCost);
   const [open, setOpen] = useState(false);
-  useEffect(() => localStorage.setItem(COST_KEY, JSON.stringify(cfg)), [cfg]);
+  // Solo se guarda lo que cambias tú: si no tocas nada, siempre se usan los valores por defecto.
+  const setCfg = (c: CostSettings) => {
+    setCfgState(c);
+    localStorage.setItem(COST_KEY, JSON.stringify(c));
+  };
 
   const avgCpu = series.length ? series.reduce((s, x) => s + x.cpuPct, 0) / series.length : 0;
   const gameW = Math.max(0, cfg.maxW - cfg.idleW) * (avgCpu / 100);
@@ -294,7 +302,7 @@ function CostSection({ series }: { series: Sample[]; cores: number }) {
           {field('extraMonth', 'Otros gastos al mes (dominio, etc.)', 0.5, '€')}
           <p className="muted small">
             Para saber el consumo real, enchufa el ordenador a un medidor de consumo (unos 10 € en cualquier ferretería) y apunta los vatios en
-            reposo. Se guarda solo en este navegador. <button className="link" onClick={() => setCfg(COST_DEFAULTS)}>Volver a los valores típicos</button>
+            reposo. Se guarda solo en este navegador. <button className="link" onClick={() => setCfg(COST_DEFAULTS)}>Volver a los valores de la torre</button>
           </p>
         </div>
       )}

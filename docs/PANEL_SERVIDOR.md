@@ -19,7 +19,7 @@ Calcula lo que cuesta la luz de tener el servidor encendido las 24 h:
 - **Total al mes** = consumo medio × 730 h × precio de la luz + otros gastos (dominio, etc.).
 - **Lo que añade el juego**: solo la parte que gasta de más por estar jugando gente. Si el ordenador ya lo tenías encendido igualmente, este es tu coste real.
 
-Los valores (45 W en reposo, 150 W a tope, 0,15 €/kWh) son típicos de un ordenador de sobremesa en España. Ajústalos con «Ajustar consumo y precio»: el precio viene en tu factura y los vatios reales se miden con un enchufe medidor de consumo. Se guardan solo en el navegador desde el que abres el panel. No incluye la parte fija de la factura (potencia contratada).
+Los valores por defecto son los de la torre del servidor (HP Slimline con Core i3): unos 12 W en reposo, calculados a partir del consumo del procesador medido en Ubuntu (~1 W con 6 personas jugando), 60 W a tope y la luz a 0,15 €/kWh (precio típico en España). Ajústalos con «Ajustar consumo y precio»: el precio viene en tu factura y los vatios reales se miden con un enchufe medidor de consumo. Se guardan solo en el navegador desde el que abres el panel. No incluye la parte fija de la factura (potencia contratada).
 
 ## Uso del juego (beta)
 
