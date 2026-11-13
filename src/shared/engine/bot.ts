@@ -72,10 +72,29 @@ function chooseSmartAction(v: PlayerView, rng: Rng, rollouts: number): Action | 
 
   if (h.canBet && !h.quieroTeams.includes(myTeam)) {
     const prob = p >= 0 ? p : winProbability(h, me, rng, rollouts);
-    const rivalAlQuiero = h.quieroTeams.length > 0;
-    if ((rivalAlQuiero && prob > 0.45) || prob > 0.68 || (prob > 0.42 && rng() < 0.04)) return { type: 'bet' };
+    if (wantsToBet(v, myTeam, prob, rng)) return { type: 'bet' };
   }
   return { type: 'play', card };
+}
+
+/**
+ * ¿Subir la apuesta? Sube si va ganando con claridad (o algún farol con la mano barata), pero para que no
+ * se convierta en apostar en cada turno:
+ * - como mucho una subida por equipo en cada baza (si el compañero ya subió en esta baza, no repite);
+ * - para volver a subir, su equipo tiene que haber ganado alguna baza desde su última subida
+ *   (como en la mesa: se sube otra vez cuando algo ha cambiado a tu favor).
+ * Si el rival está al quiero, sube siempre que esté igualado: cualquier mano les da el cuerno.
+ */
+function wantsToBet(v: PlayerView, myTeam: number, prob: number, rng: Rng): boolean {
+  const h = v.hand!;
+  if (h.quieroTeams.length > 0) return prob > 0.45;
+  if (h.bets.some((b) => b.trickIndex === h.trickIndex && teamOf(b.seat) === myTeam)) return false;
+  const ours = h.bets.filter((b) => teamOf(b.seat) === myTeam);
+  if (ours.length > 0) {
+    const last = ours[ours.length - 1];
+    if (!h.tricks.some((t) => t.index >= last.trickIndex && teamOf(t.winner) === myTeam)) return false;
+  }
+  return prob > 0.68 || (prob > 0.42 && rng() < 0.04);
 }
 
 /** Bot fácil: reglas sencillas, sin simular. */
