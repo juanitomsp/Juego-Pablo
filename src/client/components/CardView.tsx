@@ -1,6 +1,6 @@
 /**
  * Cartas de la baraja española dibujadas en SVG propio, al estilo tradicional:
- * palos repetidos según el número, número en las esquinas de abajo, "pintas" en el marco
+ * palos repetidos según el número, número en la esquina de abajo a la izquierda, "pintas" en el marco
  * (oros sin cortes, copas 1, espadas 2, bastos 3) y figuras (sota, caballo, rey) simplificadas.
  *
  * No reproduce ninguna baraja comercial. Si tienes imágenes con licencia, define
@@ -256,9 +256,8 @@ export function CardView({ card, faceDown, trump, hints, playable, dimmed, small
       ) : deck === 'tradicional' ? (
         <>
           <img src={`${TRADITIONAL_BASE}/${card.rank}-${card.suit}.webp`} alt="" draggable={false} loading="lazy" />
-          {/* Número grande y legible encima del pequeño que trae la ilustración */}
+          {/* Número grande y legible, solo abajo a la izquierda */}
           <span className="big-idx bl">{card.rank}</span>
-          <span className="big-idx br">{card.rank}</span>
         </>
       ) : deck === 'facciones' ? (
         <FaccionesFace card={card} />
@@ -270,9 +269,6 @@ export function CardView({ card, faceDown, trump, hints, playable, dimmed, small
           <line x1="8" x2="8" y1="8" y2="142" stroke={col} strokeWidth="1.6" />
           <line x1="92" x2="92" y1="8" y2="142" stroke={col} strokeWidth="1.6" />
           <text x="11" y="137" className="idx" fill={col}>
-            {card.rank}
-          </text>
-          <text x="89" y="137" className="idx" fill={col} textAnchor="end">
             {card.rank}
           </text>
           {card.rank >= 10 ? <Figure card={card} /> : <Pips card={card} />}

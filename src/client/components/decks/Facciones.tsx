@@ -231,12 +231,7 @@ function Index({ rank, suit }: { rank: number; suit: Suit }) {
       </text>
     </g>
   );
-  return (
-    <>
-      {plate(9, 126)}
-      {plate(74, 9)}
-    </>
-  );
+  return plate(9, 126);
 }
 
 // ---------------------------------------------------------------- Cabezas y tocados
