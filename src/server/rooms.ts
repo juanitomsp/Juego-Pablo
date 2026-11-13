@@ -5,7 +5,7 @@
 import { DEFAULT_CONFIG, GameConfig, QUICK_MESSAGES, RuleError, drawTeamsByKings, getView } from '../shared/engine';
 import type { PublicRoom, RoomState, SeatInfo } from '../shared/protocol';
 import { GameTable } from '../shared/table';
-import { INSULT_STRIKES_TO_KICK, cleanChat, containsInsult, insultWarning } from '../shared/chat';
+import { cleanChat, containsInsult } from '../shared/chat';
 import { randomInt, webcrypto } from 'node:crypto';
 
 /** Azar criptográfico para barajar: el reparto no se puede predecir a partir de partidas anteriores. */
@@ -79,9 +79,8 @@ export class Room {
   config: GameConfig;
   seats: Seat[];
   members = new Map<string, Member>();
-  /** Expulsados de esta sala por insultar: no pueden volver a entrar. */
+  /** Expulsados de esta sala (por reportes): no pueden volver a entrar. */
   private banned = new Set<string>();
-  private strikes = new Map<string, number>();
   private lastChat = new Map<string, number>();
   table: GameTable | null = null;
   kingDraw: string[] | null = null;
@@ -122,7 +121,7 @@ export class Room {
   }
 
   join(playerId: string, name: string, socketId: string, watch = false) {
-    if (this.banned.has(playerId)) throw new RuleError('Has sido expulsado de esta sala por insultar.');
+    if (this.banned.has(playerId)) throw new RuleError('Has sido expulsado de esta sala.');
     this.hooks.usage?.player(playerId);
     if (!this.members.has(playerId) && this.members.size >= MAX_MEMBERS) {
       // Hace sitio quitando a alguien desconectado que no tenga asiento; si no hay, la sala está llena.
@@ -362,23 +361,15 @@ export class Room {
   }
 
   /**
-   * Chat libre: se tachan las cartas. Si hay insultos, no se envía y se avisa al autor;
-   * a la tercera vez se le expulsa de la sala (su asiento pasa a un bot) y no puede volver.
+   * Chat libre: se envía tal cual (solo se limpia el texto). No se filtran insultos: es entre amigos.
    * Devuelve un aviso para el autor, o null si se ha enviado (o no había nada que enviar).
    */
-  chat(playerId: string, raw: unknown): { warning: string; kicked: boolean } | null {
+  chat(playerId: string, raw: unknown): string | null {
     const seat = this.seatOf(playerId);
     if (typeof raw !== 'string') return null;
-    if (seat === null) return { warning: 'Mientras miras no puedes escribir: el chat es de los jugadores.', kicked: false };
-    if (containsInsult(raw)) {
-      const n = (this.strikes.get(playerId) ?? 0) + 1;
-      this.strikes.set(playerId, n);
-      const kicked = n >= INSULT_STRIKES_TO_KICK;
-      if (kicked) this.kick(playerId, 'Has sido expulsado de la partida por insultar.');
-      return { warning: insultWarning(n), kicked };
-    }
+    if (seat === null) return 'Mientras miras no puedes escribir: el chat es de los jugadores.';
     const now = Date.now();
-    if (now - (this.lastChat.get(playerId) ?? 0) < 1000) return { warning: 'Espera un segundo entre mensajes.', kicked: false };
+    if (now - (this.lastChat.get(playerId) ?? 0) < 1000) return 'Espera un segundo entre mensajes.';
     const text = cleanChat(raw);
     if (!text) return null;
     this.lastChat.set(playerId, now);

@@ -16,7 +16,7 @@ import {
 } from '../../shared/engine';
 import type { ClientToServer, PublicRoom, QuickMessage, RoomState, ServerToClient } from '../../shared/protocol';
 import { GameTable } from '../../shared/table';
-import { cleanChat, containsInsult } from '../../shared/chat';
+import { cleanChat } from '../../shared/chat';
 import { getName, getPlayerId } from './identity';
 import { pingPractice } from './usagePing';
 
@@ -32,7 +32,7 @@ export interface Controller {
   subscribe(cb: () => void): () => void;
   act(a: Action): Promise<string | null>;
   quick(i: number): void;
-  /** Envía un mensaje al chat. Devuelve un aviso si no se ha enviado (insultos, demasiado rápido…). */
+  /** Envía un mensaje al chat. Devuelve un aviso si no se ha enviado (demasiado rápido…). */
   chat(text: string): Promise<string | null>;
   rematch(): Promise<string | null>;
   /** Reportar a un jugador (solo online). Devuelve el mensaje para mostrar. */
@@ -327,7 +327,6 @@ export class LocalController extends Base implements Controller {
     if (text) this.pushQuick({ from: 0, text, at: Date.now() });
   }
   async chat(text: string) {
-    if (containsInsult(text)) return 'No se puede insultar: tu mensaje no se ha enviado.';
     const clean = cleanChat(text);
     if (clean) this.pushQuick({ from: 0, text: clean, at: Date.now() });
     return null;

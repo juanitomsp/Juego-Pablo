@@ -258,16 +258,8 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
       const ack = ackOf(a);
       const room = currentRoom();
       if (!room || !data.playerId) return ack({ ok: false, error: 'No estás en ninguna sala.' });
-      const result = room.chat(data.playerId, (p as { text?: unknown } | null)?.text);
-      if (result) {
-        ack({ ok: false, error: result.warning });
-        if (result.kicked) {
-          data.code = undefined;
-          broadcast(room);
-        }
-        return;
-      }
-      ack({ ok: true });
+      const warning = room.chat(data.playerId, (p as { text?: unknown } | null)?.text);
+      ack(warning ? { ok: false, error: warning } : { ok: true });
     });
     on('game:quick', (p) => {
       const room = currentRoom();

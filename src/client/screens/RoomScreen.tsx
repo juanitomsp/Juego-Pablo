@@ -73,7 +73,6 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
       <main className="page narrow">
         <section className="panel">
           <p className="error">⛔ {tServer(ctrl.kickedReason)}</p>
-          <p className="muted">{t('Recuerda: en el chat no se puede insultar y hay que respetar a los demás.')}</p>
           <button onClick={() => go('/')}>{t('Volver al inicio')}</button>
         </section>
       </main>

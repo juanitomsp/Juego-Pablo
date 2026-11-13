@@ -64,7 +64,7 @@ export function PublicRooms() {
           <Icon name="globe" size={22} /> {t('Juega con gente de todas partes')}
         </h2>
         <p className="muted">
-          {t('Únete a una mesa que esté buscando jugadores o crea la tuya. También puedes mirar partidas que ya se están jugando. Recuerda: en el chat no se puede insultar.')}
+          {t('Únete a una mesa que esté buscando jugadores o crea la tuya. También puedes mirar partidas que ya se están jugando.')}
         </p>
         <div className="row">
           <button className="primary" disabled={busy} onClick={() => create(4)}>

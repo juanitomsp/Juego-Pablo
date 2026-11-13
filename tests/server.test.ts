@@ -328,7 +328,7 @@ describe('servidor', () => {
     expect(m).toMatchObject({ players: 2, practice: 2, practiceHands: 1, practiceFinished: 1, matches: 0 });
   });
 
-  it('chat: llega a la mesa tal cual (se puede hablar de cartas); los insultos no se envían y a la tercera se expulsa', async () => {
+  it('chat: llega a la mesa tal cual, se puede hablar de cartas y también insultar de broma', async () => {
     const url = await start();
     const a = await client(url);
     const b = await client(url);
@@ -336,24 +336,17 @@ describe('servidor', () => {
     await call(b, 'room:join', { code, name: 'Beto', playerId: id(2) });
     const received: string[] = [];
     b.on('quick', (m: { text: string }) => received.push(m.text));
-
-    expect((await call<{ ok: boolean }>(a, 'game:chat', { text: 'tengo el 3 de basto, ¿vamos?' })).ok).toBe(true);
-    await sleep(100);
-    expect(received).toEqual(['tengo el 3 de basto, ¿vamos?']);
-
     const kicked: string[] = [];
     a.on('kicked', (r: string) => kicked.push(r));
-    for (let i = 1; i <= 3; i++) {
+
+    expect((await call<{ ok: boolean }>(a, 'game:chat', { text: 'tengo el 3 de basto, ¿vamos?' })).ok).toBe(true);
+    for (let i = 0; i < 3; i++) {
       await sleep(1100);
-      const r = await call<{ ok: boolean; error: string }>(a, 'game:chat', { text: 'eres un gilipollas' });
-      expect(r.ok).toBe(false);
-      expect(r.error).toMatch(i < 3 ? /No se puede insultar/ : /expulsado/);
+      expect((await call<{ ok: boolean }>(a, 'game:chat', { text: 'eres un gilipollas' })).ok).toBe(true);
     }
     await sleep(100);
-    expect(received).toHaveLength(1); // ningún insulto llegó
-    expect(kicked).toHaveLength(1);
-    // No puede volver a entrar en esa sala.
-    expect((await call<{ ok: boolean; error: string }>(a, 'room:join', { code, name: 'Ana', playerId: id(1) })).error).toMatch(/expulsado/);
+    expect(received).toEqual(['tengo el 3 de basto, ¿vamos?', 'eres un gilipollas', 'eres un gilipollas', 'eres un gilipollas']);
+    expect(kicked).toHaveLength(0);
   });
 
   it('no deja entrar a más de MAX_MEMBERS personas en una sala', async () => {

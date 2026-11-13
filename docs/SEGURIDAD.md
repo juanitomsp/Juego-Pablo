@@ -39,7 +39,7 @@ Recomendación: instala **Node 22 LTS**, actualiza `vitest` y revisa `npm audit 
 
 - **Ataques DDoS de red** (millones de peticiones desde muchas IP): eso se para antes de llegar a Node, con el proveedor (Cloudflare, el firewall del hosting…).
 - **Una sola instancia y en memoria:** reiniciar el servidor borra las salas en curso.
-- **Filtro de insultos:** es una lista de palabras; alguien con ingenio puede saltársela. Quien insulta tres veces es expulsado de la sala, y cada jugador puede silenciar a otro.
+- **Chat sin filtro:** se puede decir de todo (es entre amigos). Cada jugador puede silenciar a otro, y si la mitad de la mesa reporta a alguien, se le expulsa. La lista de insultos solo se usa para los apodos, que se ven en la lista de mesas públicas.
 - **Auditoría externa:** esto es una revisión del propio código, no una auditoría profesional.
 
 ## Lista para el despliegue

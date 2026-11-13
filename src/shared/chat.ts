@@ -1,13 +1,12 @@
 /**
  * Chat de la mesa: lo leen todos los jugadores.
  *  - Se puede hablar de cartas libremente (como en la mesa de verdad, se oye todo el mundo).
- *  - Los insultos no se envían: el servidor avisa al que lo escribe y, a la tercera, lo echa de la sala.
- * Se aplica en el servidor (no se puede saltar desde el cliente). Ver docs/REGLAS.md §7.
+ *  - Se puede decir de todo, insultos de broma incluidos: no se filtra ni se expulsa a nadie por lo que escribe.
+ *    Quien moleste se puede silenciar o reportar. Ver docs/REGLAS.md §7.
+ * La lista de insultos solo se usa para los apodos, que se ven en la lista de mesas públicas.
  */
 
 export const CHAT_MAX_LENGTH = 140;
-/** Avisos por insultar antes de ser expulsado de la sala. */
-export const INSULT_STRIKES_TO_KICK = 3;
 
 /** Insultos: palabras completas (sin tildes). */
 const INSULT_WORDS = new Set([
@@ -63,12 +62,4 @@ export function cleanChat(raw: string): string {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, CHAT_MAX_LENGTH);
-}
-
-/** Aviso que recibe quien intenta insultar (solo lo ve él). */
-export function insultWarning(strikes: number): string {
-  if (strikes >= INSULT_STRIKES_TO_KICK) return 'Has sido expulsado de la partida por insultar.';
-  if (strikes === INSULT_STRIKES_TO_KICK - 1)
-    return 'No se puede insultar: tu mensaje no se ha enviado. Último aviso: si vuelves a insultar, serás expulsado de la partida.';
-  return 'No se puede insultar: tu mensaje no se ha enviado. Si sigues insultando, serás expulsado de la partida.';
 }

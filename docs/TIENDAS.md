@@ -54,7 +54,7 @@ Google Play pide mínimo 2 y el App Store, capturas de 6,7" y 6,5". Sugerencias:
 
 - Violencia, sexo, drogas, lenguaje: **No**.
 - Juegos de azar: **No** hay dinero real, premios ni compras. Las «apuestas» son puntos del propio juego, como en el mus.
-- ¿Los usuarios interactúan? **Sí**: chat de texto en la mesa, con filtro de insultos, expulsión y opción de silenciar.
+- ¿Los usuarios interactúan? **Sí**: chat de texto en la mesa, con opción de silenciar y de reportar (si la mitad de la mesa reporta a alguien, se le expulsa).
 - Resultado esperado: **PEGI 3–7 / Para todos** (Google Play) y **4+ o 9+** (App Store), con la nota «Los usuarios interactúan».
 
 ## Google Play – Seguridad de los datos
@@ -74,6 +74,6 @@ Público objetivo: todas las edades. Anuncios: **No**. ¿Usa el ID de publicidad
 
 ## Revisión de Apple – Notas para el revisor
 
-> El juego se puede probar sin cuenta: pulse «Practicar» para jugar contra bots. Para el modo online, «Crear sala» y añada bots en los asientos libres con «+ Bot». El chat de la mesa filtra insultos (no se envían y, a la tercera, el jugador es expulsado de la sala) y permite silenciar a cualquier jugador (Chat → Silenciar a un jugador). Para contactar: [email de contacto].
+> El juego se puede probar sin cuenta: pulse «Practicar» para jugar contra bots. Para el modo online, «Crear sala» y añada bots en los asientos libres con «+ Bot». El chat de la mesa permite silenciar a cualquier jugador y reportarlo (si la mitad de la mesa lo reporta, se le expulsa) (Chat → Silenciar a un jugador). Para contactar: [email de contacto].
 
 > Apple pide que las apps con chat tengan **filtro de contenido, forma de bloquear usuarios y un contacto** (norma 1.2). El juego tiene las tres: el filtro, «Silenciar» y el email de contacto. Si en la revisión piden también un botón de «denunciar», se puede añadir.

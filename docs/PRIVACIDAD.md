@@ -16,7 +16,7 @@ Todo esto se queda **solo en tu dispositivo**: no se envía a ningún sitio. Se 
 ## Qué pasa al jugar online
 
 - Mientras estás en una sala, el servidor conoce tu **apodo** y tu identificador aleatorio para poder jugar, solo **en memoria** y solo mientras dura la sala. Los demás jugadores de la mesa (y quien la esté mirando) ven tu apodo. La lista de partidas públicas no muestra apodos.
-- Los **mensajes del chat** se reenvían a los jugadores de tu mesa en el momento y **no se guardan**. Los insultos no se envían.
+- Los **mensajes del chat** se reenvían a los jugadores de tu mesa en el momento y **no se guardan**.
 - Los **reportes** a otros jugadores solo se cuentan dentro de la sala, para expulsar a alguien cuando lo reporta suficiente gente de la mesa. No se guarda quién reportó a quién; el servidor solo guarda un total anónimo de reportes al mes.
 - Para protegerse de abusos, el servidor usa tu **dirección IP** unos minutos, en memoria, para limitar conexiones e intentos. No se guarda.
 - El servidor cuenta **cuánta gente juega** (jugadores distintos, partidas y manos por día y por mes) de forma **anónima**: solo guarda totales, sin nombres, identificadores ni IP.

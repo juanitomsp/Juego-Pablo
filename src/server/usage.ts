@@ -31,7 +31,7 @@ export interface UsageCounts {
   practiceHands: number;
   /** Reportes de jugadores (por mal comportamiento). */
   reports: number;
-  /** Expulsiones de una mesa (por insultos o por reportes). */
+  /** Expulsiones de una mesa (por reportes). */
   kicks: number;
 }
 

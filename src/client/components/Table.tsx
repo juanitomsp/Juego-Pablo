@@ -596,8 +596,8 @@ function TableInner(p: InnerProps) {
 }
 
 /**
- * Chat de la mesa: lo leen todos y se puede hablar de cartas. Los insultos no se
- * envían (el servidor avisa y, a la tercera, expulsa). Se puede silenciar a un jugador.
+ * Chat de la mesa: lo leen todos y se puede decir de todo (es entre amigos).
+ * Se puede silenciar o reportar a un jugador.
  */
 function ChatPanel({
   messages,
@@ -628,7 +628,7 @@ function ChatPanel({
     if (!text.trim()) return;
     const w = await onSend(text);
     setWarning(w ? tServer(w) : null);
-    if (!w || !/insultar/.test(w)) setText('');
+    if (!w) setText('');
   };
   const others = seats.filter((s) => s !== you);
   const reportable = humans.filter((s) => s !== you);
@@ -637,7 +637,7 @@ function ChatPanel({
   return (
     <>
       <h4>{t('Chat de la mesa')}</h4>
-      <p className="muted small">{t('Lo leen todos, también el otro equipo. Insultar está prohibido.')}</p>
+      <p className="muted small">{t('Lo leen todos, también el otro equipo.')}</p>
       <ul className="log chat-log">
         {messages.filter((m) => !muted.has(m.from)).length === 0 && <li className="muted">{t('Aún no hay mensajes.')}</li>}
         {messages
@@ -688,7 +688,7 @@ function ChatPanel({
         <details className="mute-list report-list">
           <summary>{t('Reportar a un jugador')}</summary>
           <p className="muted small">
-            {t('Si alguien insulta, hace trampas o molesta. Si lo reporta la mitad del resto de la mesa, se le expulsa y juega un bot por él.')}
+            {t('Si alguien hace trampas o molesta. Si lo reporta la mitad del resto de la mesa, se le expulsa y juega un bot por él.')}
           </p>
           {reportable.map((s) => (
             <div key={s} className="row tight report-row">

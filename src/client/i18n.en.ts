@@ -51,8 +51,8 @@ export const EN: Record<string, string> = {
   // ---------------- Partidas públicas
   'Antes, escribe tu apodo en la pantalla de inicio.': 'First, type your nickname on the home screen.',
   'Juega con gente de todas partes': 'Play with people from everywhere',
-  'Únete a una mesa que esté buscando jugadores o crea la tuya. También puedes mirar partidas que ya se están jugando. Recuerda: en el chat no se puede insultar.':
-    'Join a table that is looking for players or create your own. You can also watch games in progress. Remember: no insults in the chat.',
+  'Únete a una mesa que esté buscando jugadores o crea la tuya. También puedes mirar partidas que ya se están jugando.':
+    'Join a table that is looking for players or create your own. You can also watch games in progress.',
   'Crear mesa pública 2 contra 2': 'Create public 2 vs 2 table',
   'No se puede conectar con el servidor. Comprueba tu conexión.': 'Cannot reach the server. Check your connection.',
   'Buscando partidas…': 'Looking for games…',
@@ -70,7 +70,6 @@ export const EN: Record<string, string> = {
   // ---------------- Sala
   'Conectando…': 'Connecting…',
   'Entrar en la sala': 'Enter the room',
-  'Recuerda: en el chat no se puede insultar y hay que respetar a los demás.': 'Remember: no insults in the chat, and respect the other players.',
   'Volver al inicio': 'Back to home',
   'Entrando en la sala…': 'Entering the room…',
   'Conectando con el servidor…': 'Connecting to the server…',
@@ -174,15 +173,14 @@ export const EN: Record<string, string> = {
   'Triunfos de mayor a menor (muestra: {suit})': 'Trumps from highest to lowest (trumps: {suit})',
   'Fuera del triunfo: Rey, Caballo, Sota, As, 7, 6, 5, 4, 3, 2.': 'Outside trumps: King, Knight, Jack, Ace, 7, 6, 5, 4, 3, 2.',
   'Chat de la mesa': 'Table chat',
-  'Lo leen todos, también el otro equipo. Insultar está prohibido.':
-    'Everyone reads it, the other team too. Insults are not allowed.',
+  'Lo leen todos, también el otro equipo.': 'Everyone reads it, the other team too.',
   'Aún no hay mensajes.': 'No messages yet.',
   'Escribe a la mesa…': 'Write to the table…',
   Enviar: 'Send',
   'Silenciar a un jugador': 'Mute a player',
   'Reportar a un jugador': 'Report a player',
-  'Si alguien insulta, hace trampas o molesta. Si lo reporta la mitad del resto de la mesa, se le expulsa y juega un bot por él.':
-    'If someone insults, cheats or is annoying. If half of the rest of the table reports them, they are removed and a bot plays instead.',
+  'Si alguien hace trampas o molesta. Si lo reporta la mitad del resto de la mesa, se le expulsa y juega un bot por él.':
+    'If someone cheats or is annoying. If half of the rest of the table reports them, they are removed and a bot plays instead.',
   Reportado: 'Reported',
   Reportar: 'Report',
   'Apuestas: la mano valdría {n}': 'You bet: the hand would be worth {n}',
@@ -342,8 +340,7 @@ export const EN: Record<string, string> = {
   'Ese jugador sigue conectado.': 'That player is still connected.',
   'Estás mirando la partida, no jugando.': 'You are watching the game, not playing.',
   'Faltan jugadores: añade bots o espera a que entren.': 'Players missing: add bots or wait for people to join.',
-  'Has sido expulsado de esta sala por insultar.': 'You were removed from this room for insulting.',
-  'Has sido expulsado de la partida por insultar.': 'You were removed from the game for insulting.',
+  'Has sido expulsado de esta sala.': 'You were removed from this room.',
   'Has sido expulsado de la partida.': 'You were removed from the game.',
   'Has sido expulsado de la mesa porque otros jugadores te han reportado.': 'You were removed from the table because other players reported you.',
   'La partida no ha empezado.': 'The game has not started.',
@@ -372,10 +369,6 @@ export const EN: Record<string, string> = {
   'No se puede conectar con el servidor.': 'Cannot connect to the server.',
   'Mientras miras no puedes escribir: el chat es de los jugadores.': 'You cannot write while watching: the chat is for the players.',
   'Espera un segundo entre mensajes.': 'Wait a second between messages.',
-  'No se puede insultar: tu mensaje no se ha enviado. Último aviso: si vuelves a insultar, serás expulsado de la partida.':
-    'Insults are not allowed: your message was not sent. Last warning: if you insult again, you will be removed from the game.',
-  'No se puede insultar: tu mensaje no se ha enviado. Si sigues insultando, serás expulsado de la partida.':
-    'Insults are not allowed: your message was not sent. If you keep insulting, you will be removed from the game.',
   'Ya lo habías reportado. Lo hemos silenciado para ti.': 'You already reported them. They are muted for you.',
   'Reporte enviado. Si lo reporta 1 jugador más, será expulsado. Mientras, lo hemos silenciado para ti.':
     'Report sent. If 1 more player reports them, they will be removed. Meanwhile, they are muted for you.',

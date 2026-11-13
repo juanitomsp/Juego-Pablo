@@ -32,7 +32,7 @@ Arriba del panel verás cuánta gente juega de verdad. Sirve para decidir si mer
 | Manos este mes | Manos repartidas |
 | Partidas contra bots este mes | Partidas de práctica empezadas (las avisa el juego de forma anónima si hay conexión), terminadas y manos |
 | Entradas en salas | Veces que alguien entra en una sala (incluye reconexiones) |
-| Reportes este mes | Veces que un jugador ha reportado a otro, y expulsiones (por insultos o por reportes) |
+| Reportes este mes | Veces que un jugador ha reportado a otro, y expulsiones por reportes |
 
 Debajo, gráficas de jugadores por mes y por día (últimos 30 días) y una tabla por meses.
 
