@@ -11,6 +11,16 @@ Web **aparte del juego** para ver la carga del servidor y cuánta gente juega. *
 - Sin Tailscale (servidor con dominio), usa un túnel SSH desde tu ordenador: `ssh -L 3010:127.0.0.1:3010 TU_SERVIDOR` y abre `http://localhost:3010`.
 - Para dejar de publicarla: `sudo tailscale serve --https=8443 off`.
 
+## Coste estimado al mes
+
+Calcula lo que cuesta la luz de tener el servidor encendido las 24 h:
+
+- **Consumo medio** = consumo en reposo + (consumo a tope − reposo) × CPU media que usa el juego.
+- **Total al mes** = consumo medio × 730 h × precio de la luz + otros gastos (dominio, etc.).
+- **Lo que añade el juego**: solo la parte que gasta de más por estar jugando gente. Si el ordenador ya lo tenías encendido igualmente, este es tu coste real.
+
+Los valores (45 W en reposo, 150 W a tope, 0,15 €/kWh) son típicos de un ordenador de sobremesa en España. Ajústalos con «Ajustar consumo y precio»: el precio viene en tu factura y los vatios reales se miden con un enchufe medidor de consumo. Se guardan solo en el navegador desde el que abres el panel. No incluye la parte fija de la factura (potencia contratada).
+
 ## Uso del juego (beta)
 
 Arriba del panel verás cuánta gente juega de verdad. Sirve para decidir si merece la pena publicar en las tiendas o dar más pasos.

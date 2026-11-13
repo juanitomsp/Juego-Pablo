@@ -145,6 +145,8 @@ export function AdminApp() {
             />
           </section>
 
+          <CostSection series={report.series} cores={report.system.cores} />
+
           {report.usage && <UsageSection usage={report.usage} />}
 
           <h3 className="section-title">Carga del servidor</h3>
@@ -208,6 +210,95 @@ export function AdminApp() {
         </>
       )}
     </main>
+  );
+}
+
+// ---------------------------------------------------------------- Coste de la luz
+
+interface CostSettings {
+  idleW: number;
+  maxW: number;
+  priceKwh: number;
+  extraMonth: number;
+}
+const COST_KEY = 'pablo.admin.cost';
+/** Valores típicos de un ordenador de sobremesa y de la luz en España; se cambian en el propio panel. */
+const COST_DEFAULTS: CostSettings = { idleW: 45, maxW: 150, priceKwh: 0.15, extraMonth: 0 };
+const HOURS_MONTH = 730; // 365 × 24 / 12
+
+function loadCost(): CostSettings {
+  try {
+    return { ...COST_DEFAULTS, ...(JSON.parse(localStorage.getItem(COST_KEY) ?? '{}') as Partial<CostSettings>) };
+  } catch {
+    return COST_DEFAULTS;
+  }
+}
+
+const eur = (v: number) => v.toLocaleString('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
+
+/**
+ * Estimación de lo que cuesta al mes tener el servidor encendido.
+ * Consumo ≈ reposo + (a tope − reposo) × CPU media que usa el juego. Es una estimación: para saberlo
+ * exacto, mide el ordenador con un enchufe medidor y pon aquí los vatios.
+ */
+function CostSection({ series }: { series: Sample[]; cores: number }) {
+  const [cfg, setCfg] = useState<CostSettings>(loadCost);
+  const [open, setOpen] = useState(false);
+  useEffect(() => localStorage.setItem(COST_KEY, JSON.stringify(cfg)), [cfg]);
+
+  const avgCpu = series.length ? series.reduce((s, x) => s + x.cpuPct, 0) / series.length : 0;
+  const gameW = Math.max(0, cfg.maxW - cfg.idleW) * (avgCpu / 100);
+  const totalW = cfg.idleW + gameW;
+  const kwhMonth = (totalW * HOURS_MONTH) / 1000;
+  const lightMonth = kwhMonth * cfg.priceKwh;
+  const gameMonth = ((gameW * HOURS_MONTH) / 1000) * cfg.priceKwh;
+  const total = lightMonth + cfg.extraMonth;
+
+  const field = (key: keyof CostSettings, label: string, step: number, unit: string) => (
+    <label className="cost-field">
+      <span>{label}</span>
+      <span className="cost-input">
+        <input
+          type="number"
+          min={0}
+          step={step}
+          value={cfg[key]}
+          onChange={(e) => setCfg({ ...cfg, [key]: Math.max(0, Number(e.target.value) || 0) })}
+        />
+        {unit}
+      </span>
+    </label>
+  );
+
+  return (
+    <section className="panel cost-panel">
+      <h3>💶 Coste estimado al mes</h3>
+      <section className="tile-grid">
+        <Tile label="Total al mes" value={eur(total)} sub={`≈ ${eur(total * 12)} al año`} />
+        <Tile label="Luz del ordenador" value={eur(lightMonth)} sub={`${Math.round(totalW)} W de media · ${Math.round(kwhMonth)} kWh/mes`} />
+        <Tile label="Lo que añade el juego" value={eur(gameMonth)} sub={`CPU media del juego: ${avgCpu.toFixed(1)} %`} />
+      </section>
+      <p className="muted small">
+        Encendido las 24 h, con la luz a {cfg.priceKwh.toLocaleString('es-ES')} €/kWh
+        {cfg.extraMonth > 0 ? ` y ${eur(cfg.extraMonth)} de otros gastos` : ''}. Si el ordenador ya lo tenías encendido igualmente, lo que de verdad te
+        cuesta el juego es «lo que añade el juego». No incluye la parte fija de la factura (potencia contratada).
+      </p>
+      <button className="link" onClick={() => setOpen(!open)}>
+        {open ? 'Ocultar ajustes' : 'Ajustar consumo y precio'}
+      </button>
+      {open && (
+        <div className="cost-form">
+          {field('idleW', 'Consumo del ordenador en reposo', 5, 'W')}
+          {field('maxW', 'Consumo a tope', 5, 'W')}
+          {field('priceKwh', 'Precio de la luz (mira tu factura)', 0.01, '€/kWh')}
+          {field('extraMonth', 'Otros gastos al mes (dominio, etc.)', 0.5, '€')}
+          <p className="muted small">
+            Para saber el consumo real, enchufa el ordenador a un medidor de consumo (unos 10 € en cualquier ferretería) y apunta los vatios en
+            reposo. Se guarda solo en este navegador. <button className="link" onClick={() => setCfg(COST_DEFAULTS)}>Volver a los valores típicos</button>
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 

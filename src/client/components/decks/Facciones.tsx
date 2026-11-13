@@ -233,7 +233,7 @@ function Index({ rank, suit }: { rank: number; suit: Suit }) {
   );
   return (
     <>
-      {plate(9, 9)}
+      {plate(9, 126)}
       {plate(74, 9)}
     </>
   );
