@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { SpectatorCount } from '../components/SpectatorCount';
 import { teamOf } from '../../shared/engine';
 import { go } from '../App';
 import { Table, useSnapshot } from '../components/Table';
-import { OnlineController } from '../services/controller';
+import { OnlineController, getSocket } from '../services/controller';
+import { VoiceCall } from '../services/voice';
+import { VoiceControls } from '../components/VoiceControls';
 import { getName, setName } from '../services/identity';
 import { clearLastRoom, setLastRoom } from '../services/lastRoom';
 import { t, tServer } from '../i18n';
@@ -51,9 +53,16 @@ function AskName({ onDone }: { onDone: () => void }) {
 
 function Room({ ctrl }: { ctrl: OnlineController }) {
   const snap = useSnapshot(ctrl);
+  const call = useMemo(() => new VoiceCall(getSocket()), []);
+  useEffect(() => () => call.dispose(), [call]);
+  const voiceList = snap.state?.room.voice;
+  useEffect(() => {
+    if (voiceList) call.sync(voiceList);
+  }, [call, voiceList]);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const leave = () => {
+    call.leave();
     ctrl.leave();
     clearLastRoom();
     go('/');
@@ -90,7 +99,16 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
   if (!state) return <div className="center-msg">{snap.connected ? t('Entrando en la sala…') : t('Conectando con el servidor…')}</div>;
 
   const { room } = state;
-  if (room.started) return <Table controller={ctrl} onLeave={leave} onReplaceWithBot={(s) => void ctrl.replaceWithBot(s)} />;
+  const canVoice = VoiceCall.supported();
+  if (room.started)
+    return (
+      <Table
+        controller={ctrl}
+        onLeave={leave}
+        onReplaceWithBot={(s) => void ctrl.replaceWithBot(s)}
+        extraTools={canVoice ? <VoiceControls call={call} room={room} compact /> : null}
+      />
+    );
 
   const run = async (p: Promise<string | null>) => {
     const e = await p;
@@ -110,6 +128,11 @@ function Room({ ctrl }: { ctrl: OnlineController }) {
         <span>{t('Sala {code}', { code: room.code })}</span>
         <SpectatorCount n={room.spectators} />
       </nav>
+      {canVoice && room.yourSeat !== null && (
+        <div className="toolbar lobby-voice">
+          <VoiceControls call={call} room={room} />
+        </div>
+      )}
       {room.yourSeat === null && (
         <p className="watch-banner">
           <Icon name="eye" size={18} /> {t('Estás mirando. Si queda un asiento libre, puedes sentarte a jugar.')}

@@ -308,6 +308,7 @@ export class LocalController extends Base implements Controller {
           spectators: 0,
           isPublic: false,
           autoStartAt: null,
+          voice: [],
         },
         view: getView(this.table.match, 0),
       },

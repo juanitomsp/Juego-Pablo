@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
   Card,
   MatchEvent,
@@ -83,9 +83,11 @@ interface TableProps {
   controller: Controller;
   onLeave: () => void;
   onReplaceWithBot?: (seat: number) => void;
+  /** Botones extra en la barra de abajo (p. ej. la llamada de voz). */
+  extraTools?: ReactNode;
 }
 
-export function Table({ controller, onLeave, onReplaceWithBot }: TableProps) {
+export function Table({ controller, onLeave, onReplaceWithBot, extraTools }: TableProps) {
   const snap = useSnapshot(controller);
   const room = snap.state?.room;
   const view = snap.state?.view;
@@ -142,6 +144,7 @@ export function Table({ controller, onLeave, onReplaceWithBot }: TableProps) {
       controller={controller}
       onLeave={onLeave}
       onReplaceWithBot={onReplaceWithBot}
+      extraTools={extraTools}
     />
   );
 }
@@ -161,6 +164,7 @@ interface InnerProps {
   controller: Controller;
   onLeave: () => void;
   onReplaceWithBot?: (seat: number) => void;
+  extraTools?: ReactNode;
 }
 
 /** Tiempo que se ve la baza ya cerrada antes de limpiar la mesa. */
@@ -511,6 +515,7 @@ function TableInner(p: InnerProps) {
 
       <footer className="toolbar">
         {p.controller.mode === 'online' && <SpectatorCount n={room.spectators} />}
+        {p.extraTools}
         <button className={p.panel === 'chat' ? 'on' : ''} onClick={() => p.setPanel(p.panel === 'chat' ? 'none' : 'chat')}>
           <Icon name="chat" size={18} />
           <span className="tb-label"> {t('Chat')}</span>

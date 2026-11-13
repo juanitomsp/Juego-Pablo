@@ -349,6 +349,48 @@ describe('servidor', () => {
     expect(kicked).toHaveLength(0);
   });
 
+  it('voz: el servidor solo presenta a los jugadores sentados y les pasa las ofertas', async () => {
+    const url = await start();
+    const a = await client(url);
+    const b = await client(url);
+    const c = await client(url);
+    const { code } = await call<{ code: string }>(a, 'room:create', { name: 'Ana', playerId: id(1), config: {} });
+    await call(b, 'room:join', { code, name: 'Beto', playerId: id(2) });
+    // Carla entra solo a mirar: no puede entrar en la llamada.
+    await call(c, 'room:join', { code, name: 'Carla', playerId: id(3), watch: true });
+    expect((await call<{ ok: boolean; error: string }>(c, 'voice:join')).error).toMatch(/sentados/);
+
+    const states: RoomState[] = [];
+    a.on('state', (s: RoomState) => states.push(s));
+    const ja = await call<{ ok: boolean; iceServers: unknown[] }>(a, 'voice:join');
+    expect(ja.ok).toBe(true);
+    expect(ja.iceServers.length).toBeGreaterThan(0);
+    expect((await call<{ ok: boolean }>(b, 'voice:join')).ok).toBe(true);
+    await sleep(100);
+    const voice = states[states.length - 1].room.voice;
+    expect(voice.map((p) => p.id).sort()).toEqual([a.id, b.id].sort());
+    expect(JSON.stringify(voice)).not.toContain('test-player'); // no se reparte el identificador de nadie
+
+    const gotB: unknown[] = [];
+    const gotC: unknown[] = [];
+    b.on('voice:signal', (m: unknown) => gotB.push(m));
+    c.on('voice:signal', (m: unknown) => gotC.push(m));
+    a.emit('voice:signal', { to: b.id, sdp: { type: 'offer', sdp: 'v=0 prueba' } });
+    a.emit('voice:signal', { to: c.id, sdp: { type: 'offer', sdp: 'v=0 prueba' } }); // C no está en la llamada
+    a.emit('voice:signal', { to: b.id, sdp: { type: 'hack', sdp: 'x' } }); // tipo no válido
+    await sleep(150);
+    expect(gotB).toEqual([{ from: a.id, sdp: { type: 'offer', sdp: 'v=0 prueba' } }]);
+    expect(gotC).toEqual([]);
+
+    a.emit('voice:mute', { muted: true });
+    await sleep(100);
+    expect(states[states.length - 1].room.voice.find((p) => p.id === a.id)?.muted).toBe(true);
+
+    b.disconnect();
+    await sleep(150);
+    expect(states[states.length - 1].room.voice.map((p) => p.id)).toEqual([a.id]);
+  });
+
   it('no deja entrar a más de MAX_MEMBERS personas en una sala', async () => {
     const url = await start();
     const s = await client(url);

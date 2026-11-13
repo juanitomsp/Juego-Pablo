@@ -149,7 +149,7 @@ export function securityHeaders(host: string | undefined, https: boolean): Recor
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+    'Permissions-Policy': 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()',
     'Cross-Origin-Opener-Policy': 'same-origin',
   };
   if (https) headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';

@@ -83,6 +83,7 @@ Se abre a pantalla completa, con su icono.
 - Si a alguien se le cierra el navegador, que vuelva a abrir el mismo enlace **en el mismo móvil y navegador**: recupera su sitio.
 - Si alguien se va del todo, el anfitrión verá **Sustituir por un bot**.
 - 💬 **Chat:** lo lee toda la mesa, también el otro equipo; se puede hablar de cartas.
+- 🎙️ **Voz:** pulsa «Voz» para hablar con la mesa como en una llamada (pide permiso al micrófono). Puedes silenciarte o colgar cuando quieras. El audio va directo entre vosotros, no pasa por el servidor.
 - 🃏 **Orden** muestra el orden de los triunfos con la muestra actual, por si alguien no se acuerda.
 
 ## Qué conviene apuntar durante la prueba

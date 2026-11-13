@@ -349,3 +349,17 @@ button, .card { touch-action: manipulation; -webkit-tap-highlight-color: transpa
 .cost-field { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .cost-input { display: inline-flex; align-items: center; gap: 0.35rem; }
 .cost-input input { width: 6.5rem; text-align: right; }
+
+/* Llamada de voz */
+.voice-controls { display: inline-flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.voice-controls.on { background: rgba(0,0,0,0.25); border-radius: 999px; padding: 0.15rem 0.3rem; }
+.voice-who { display: inline-flex; gap: 0.3rem; flex-wrap: wrap; font-size: 0.8rem; color: #fff; font-weight: 400; }
+.voice-peer { padding: 0.05rem 0.45rem; border-radius: 999px; background: rgba(255,255,255,0.14); }
+.voice-peer.ok { box-shadow: inset 0 0 0 1px #6fdc8c; }
+.voice-peer.wait { opacity: 0.6; }
+.toolbar button.voice-hangup { background: #c0392b; border-color: #c0392b; color: #fff; }
+.voice-error { font-size: 0.8rem; color: #ffd2cc; max-width: 22rem; }
+.lobby-voice { justify-content: flex-start; margin-bottom: 0.8rem; }
+.toolbar .voice-controls button:hover:not(:disabled) { background: rgba(255,255,255,0.24); }
+.toolbar .voice-controls button.on:hover:not(:disabled) { background: var(--accent); }
+.toolbar .voice-controls button.voice-hangup:hover:not(:disabled) { background: #a93226; }

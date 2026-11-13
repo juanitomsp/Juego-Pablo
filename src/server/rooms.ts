@@ -3,7 +3,7 @@
  * No se guarda ningún dato personal: solo el apodo que elige el jugador mientras dure la sala.
  */
 import { DEFAULT_CONFIG, GameConfig, QUICK_MESSAGES, RuleError, drawTeamsByKings, getView } from '../shared/engine';
-import type { PublicRoom, RoomState, SeatInfo } from '../shared/protocol';
+import type { PublicRoom, RoomState, SeatInfo, VoicePeer } from '../shared/protocol';
 import { GameTable } from '../shared/table';
 import { cleanChat, containsInsult } from '../shared/chat';
 import { randomInt, webcrypto } from 'node:crypto';
@@ -82,6 +82,8 @@ export class Room {
   /** Expulsados de esta sala (por reportes): no pueden volver a entrar. */
   private banned = new Set<string>();
   private lastChat = new Map<string, number>();
+  /** Llamada de voz: conexión → quién es y si tiene el micro silenciado. El audio no pasa por el servidor. */
+  private voice = new Map<string, { playerId: string; muted: boolean }>();
   table: GameTable | null = null;
   kingDraw: string[] | null = null;
   lastActivity = Date.now();
@@ -148,9 +150,48 @@ export class Room {
 
   disconnect(playerId: string, socketId: string) {
     this.members.get(playerId)?.socketIds.delete(socketId);
+    this.voice.delete(socketId);
+  }
+
+  private dropVoice(playerId: string) {
+    for (const [sid, v] of this.voice) if (v.playerId === playerId) this.voice.delete(sid);
+  }
+
+  /** Entrar en la llamada de voz (solo quien está sentado: los que miran no hablan, igual que en el chat). */
+  voiceJoin(playerId: string, socketId: string) {
+    if (this.seatOf(playerId) === null) throw new RuleError('Solo los jugadores sentados pueden entrar en la llamada.');
+    if (!this.members.get(playerId)?.socketIds.has(socketId)) throw new RuleError('No estás en esta sala.');
+    this.voice.set(socketId, { playerId, muted: this.voice.get(socketId)?.muted ?? false });
+  }
+
+  voiceLeave(socketId: string) {
+    return this.voice.delete(socketId);
+  }
+
+  voiceMute(socketId: string, muted: boolean) {
+    const v = this.voice.get(socketId);
+    if (!v || v.muted === muted) return false;
+    v.muted = muted;
+    return true;
+  }
+
+  /** ¿Está esta conexión en la llamada (y sigue sentada)? */
+  inVoice(socketId: string) {
+    const v = this.voice.get(socketId);
+    return !!v && this.seatOf(v.playerId) !== null;
+  }
+
+  voicePeers(): VoicePeer[] {
+    const out: VoicePeer[] = [];
+    for (const [id, v] of this.voice) {
+      const seat = this.seatOf(v.playerId);
+      if (seat !== null) out.push({ id, seat, muted: v.muted });
+    }
+    return out;
   }
 
   leave(playerId: string) {
+    this.dropVoice(playerId);
     this.members.delete(playerId);
     const seat = this.seatOf(playerId);
     if (seat !== null && !this.table) {
@@ -412,6 +453,7 @@ export class Room {
     this.banned.add(playerId);
     const seat = this.seatOf(playerId);
     const member = this.members.get(playerId);
+    this.dropVoice(playerId);
     this.members.delete(playerId);
     if (seat !== null) {
       const name = this.seats[seat].name ?? 'Jugador';
@@ -459,6 +501,7 @@ export class Room {
         spectators: this.spectatorCount,
         isPublic: this.isPublic,
         autoStartAt: this.autoStartAt,
+        voice: this.voicePeers(),
       },
       view: this.table ? getView(this.table.match, yourSeat) : null,
     };

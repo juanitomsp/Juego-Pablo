@@ -24,15 +24,28 @@ Todos los mensajes del cliente que esperan respuesta usan *ack*: `{ ok: true, ..
 | `room:replaceWithBot` | `{ seat }` | anfitrión | Sustituye a un jugador desconectado por un bot |
 | `game:action` | `Action` | jugador | `deal`, `play {card}`, `bet`, `accept`, `reject`, `quiero {play}` |
 | `game:quick` | `{ index }` | jugador | Frase rápida predefinida |
-| `game:chat` | `{ text }` | jugador (los espectadores no pueden escribir) | Mensaje libre para toda la mesa (máx. 140 caracteres, 1 por segundo). El servidor tacha las palabras que nombran cartas (`src/shared/chat.ts`) y lo reenvía como `quick` |
+| `game:chat` | `{ text }` | jugador (los espectadores no pueden escribir) | Mensaje libre para toda la mesa (máx. 140 caracteres, 1 por segundo). El servidor solo limpia el texto (`src/shared/chat.ts`) y lo reenvía como `quick` |
 | `game:rematch` | — | jugador | Nueva partida con la misma mesa al terminar |
+
+| `voice:join` | — | jugador sentado | Entra en la llamada de voz. Responde `{ iceServers }` (STUN/TURN). La lista de participantes llega en `RoomInfo.voice` |
+| `voice:leave` | — | | Sale de la llamada |
+| `voice:mute` | `{ muted }` | | Avisa a la mesa de que tiene el micro silenciado |
+| `voice:signal` | `{ to, sdp: { type: 'offer' \| 'answer', sdp } }` | en la llamada | Oferta o respuesta WebRTC para otro participante (máx. 12 KB). El servidor solo la reenvía si los dos están en la llamada |
 
 ## Servidor → cliente
 
 | Evento | Datos | Cuándo |
 |---|---|---|
 | `state` | `{ room: RoomInfo, view: PlayerView \| null }` | Tras cualquier cambio. Cada jugador recibe **su** vista |
-| `quick` | `{ from, text, at }` | A toda la sala (frases rápidas y chat ya censurado) |
+| `quick` | `{ from, text, at }` | A toda la sala (frases rápidas y chat) |
+| `voice:signal` | `{ from, sdp }` | Oferta o respuesta de otro participante de la llamada |
+
+## Llamada de voz
+
+- El audio va **directo entre jugadores** (WebRTC, `src/client/services/voice.ts`); el servidor solo presenta a los participantes y nunca recibe audio.
+- Cada participante se identifica por el id de su **conexión** (no por `playerId`, que es secreto). `RoomInfo.voice` = `[{ id, seat, muted }]`, solo con jugadores sentados.
+- En cada pareja, el de id menor manda la oferta. Ofertas y respuestas van de una vez con todos los candidatos (sin «trickle») para no mandar decenas de mensajes.
+- STUN por defecto: `stun:stun.cloudflare.com:3478`. Se cambia con `VOICE_ICE_SERVERS` (JSON) en el servidor, p. ej. para añadir un TURN propio si alguna red no deja conectar directo.
 
 ## Espectadores y partidas públicas
 

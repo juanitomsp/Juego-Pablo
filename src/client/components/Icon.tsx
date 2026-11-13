@@ -25,6 +25,9 @@ const PATHS: Record<string, string> = {
   trophy: 'M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H4c0 3 2 4 4 4M16 6h4c0 3-2 4-4 4M12 13v4M8 21h8M9 17h6v4H9z',
   flag: 'M5 21V4M5 4h11l-2 4 2 4H5',
   lock: 'M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4',
+  mic: 'M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3ZM5 11a7 7 0 0 0 14 0M12 18v3M8 21h8',
+  micOff: 'M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3ZM5 11a7 7 0 0 0 14 0M12 18v3M8 21h8M3 3l18 18',
+  hangup: 'M3 14.5c5-4.5 13-4.5 18 0l-2.5 3-3.5-1.5V13.5a11 11 0 0 0-6 0V16l-3.5 1.5L3 14.5Z',
 };
 
 export type IconName = keyof typeof PATHS;

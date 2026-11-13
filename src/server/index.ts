@@ -9,6 +9,8 @@
  *   MAX_ROOMS     Máximo de salas simultáneas (por defecto 500).
  *   ADMIN_PORT    Puerto LOCAL del panel del servidor (por defecto 3010; solo escucha en 127.0.0.1).
  *   USAGE_FILE    Fichero de estadísticas de uso anónimas (por defecto data/uso.json).
+ *   VOICE_ICE_SERVERS  Servidores STUN/TURN para la llamada de voz, en JSON. Por defecto, el STUN de Cloudflare.
+ *                 Ej.: '[{"urls":"stun:stun.cloudflare.com:3478"},{"urls":"turn:mi.dominio:3478","username":"u","credential":"c"}]'
  *   HOST          Interfaz de escucha. 127.0.0.1 = solo accesible a través del proxy (Caddy, Tailscale).
  *                 Por defecto, todas (necesario para jugar en la WiFi de casa con `npm run jugar`).
  */
@@ -16,7 +18,20 @@ import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { createGameServer } from './app';
+import { IceServer, createGameServer } from './app';
+
+function iceFromEnv(): IceServer[] | undefined {
+  const raw = process.env.VOICE_ICE_SERVERS;
+  if (!raw) return undefined;
+  try {
+    const v = JSON.parse(raw) as IceServer[];
+    if (Array.isArray(v) && v.every((s) => s && (typeof s.urls === 'string' || Array.isArray(s.urls)))) return v;
+  } catch {
+    // se avisa abajo
+  }
+  console.error('VOICE_ICE_SERVERS no es válido; se usa el STUN por defecto.');
+  return undefined;
+}
 import { createAdminServer } from './admin';
 
 const portArg = process.argv.indexOf('--port');
@@ -40,6 +55,7 @@ const server = createGameServer({
   trustProxy: process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true',
   maxRooms: process.env.MAX_ROOMS ? Number(process.env.MAX_ROOMS) : undefined,
   usageFile: process.env.USAGE_FILE || join(process.cwd(), 'data', 'uso.json'),
+  iceServers: iceFromEnv(),
 });
 
 process.on('unhandledRejection', (e) => console.error('Promesa rechazada sin capturar:', e));

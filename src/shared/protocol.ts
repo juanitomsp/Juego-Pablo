@@ -29,6 +29,21 @@ export interface RoomInfo {
   isPublic: boolean;
   /** Mesa pública esperando: si no entra nadie más, empieza sola con bots en este momento (ms epoch). */
   autoStartAt: number | null;
+  /** Quién está en la llamada de voz de la sala (solo jugadores sentados). */
+  voice: VoicePeer[];
+}
+
+/** Participante de la llamada de voz. `id` es el de su conexión (no identifica a la persona). */
+export interface VoicePeer {
+  id: string;
+  seat: number;
+  muted: boolean;
+}
+
+/** Descripción de sesión WebRTC (oferta o respuesta), con todos sus candidatos dentro. */
+export interface VoiceSdp {
+  type: 'offer' | 'answer';
+  sdp: string;
 }
 
 /** Entrada de la lista de partidas públicas (GET /api/salas). Sin nombres: solo lo necesario para elegir. */
@@ -84,10 +99,19 @@ export interface ClientToServer {
   /** Mensaje libre para la mesa: se envía tal cual (solo se limpia el texto). */
   'game:chat': (p: { text: string }, ack: Ack) => void;
   'game:rematch': (ack: Ack) => void;
+  /**
+   * Llamada de voz de la sala. El servidor solo presenta a los participantes (les pasa sus ofertas y respuestas);
+   * el audio va directo de un jugador a otro y no pasa por el servidor.
+   */
+  'voice:join': (ack: Ack<{ iceServers: { urls: string | string[]; username?: string; credential?: string }[] }>) => void;
+  'voice:leave': () => void;
+  'voice:mute': (p: { muted: boolean }) => void;
+  'voice:signal': (p: { to: string; sdp: VoiceSdp }) => void;
 }
 
 export interface ServerToClient {
   state: (s: RoomState) => void;
   quick: (m: QuickMessage) => void;
   kicked: (reason: string) => void;
+  'voice:signal': (p: { from: string; sdp: VoiceSdp }) => void;
 }

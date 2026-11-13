@@ -44,7 +44,22 @@ export interface ServerOptions {
   eventsPerSecond?: { burst: number; perSecond: number };
   /** Espera de una mesa pública antes de rellenarla con bots y empezar (ms). */
   autoFillMs?: number;
+  /** Servidores STUN/TURN para la llamada de voz (VOICE_ICE_SERVERS). Por defecto, un STUN público. */
+  iceServers?: IceServer[];
 }
+
+export interface IceServer {
+  urls: string | string[];
+  username?: string;
+  credential?: string;
+}
+
+/**
+ * STUN público para la voz: solo sirve para que cada móvil averigüe su dirección pública y los jugadores se
+ * puedan conectar entre ellos. No recibe audio ni sabe de qué sala o juego se trata.
+ */
+export const DEFAULT_ICE_SERVERS: IceServer[] = [{ urls: 'stun:stun.cloudflare.com:3478' }];
+const MAX_SDP = 12_000;
 
 export interface GameServer {
   http: HttpServer;
@@ -265,6 +280,35 @@ export function createGameServer(opts: ServerOptions = {}): GameServer {
       const room = currentRoom();
       const index = (p as { index?: unknown } | null)?.index;
       if (room && data.playerId && Number.isInteger(index)) room.quick(data.playerId, index as number);
+    });
+
+    // ---------------------------------------------------------------- Llamada de voz (solo presentación)
+    const iceServers = opts.iceServers ?? DEFAULT_ICE_SERVERS;
+    on('voice:join', (a) => {
+      const ack = ackOf(a);
+      const room = currentRoom();
+      if (!room || !data.playerId) return ack({ ok: false, error: 'No estás en ninguna sala.' });
+      room.voiceJoin(data.playerId, socket.id);
+      ack({ ok: true, iceServers });
+      broadcast(room);
+    });
+    on('voice:leave', () => {
+      const room = currentRoom();
+      if (room?.voiceLeave(socket.id)) broadcast(room);
+    });
+    on('voice:mute', (p) => {
+      const room = currentRoom();
+      if (room?.voiceMute(socket.id, (p as { muted?: unknown } | null)?.muted === true)) broadcast(room);
+    });
+    on('voice:signal', (p) => {
+      const room = currentRoom();
+      const body = (p ?? {}) as { to?: unknown; sdp?: { type?: unknown; sdp?: unknown } };
+      const sdp = body.sdp;
+      if (!room || typeof body.to !== 'string' || body.to === socket.id || !sdp) return;
+      if ((sdp.type !== 'offer' && sdp.type !== 'answer') || typeof sdp.sdp !== 'string' || sdp.sdp.length > MAX_SDP) return;
+      // Solo entre dos participantes de la misma llamada.
+      if (!room.inVoice(socket.id) || !room.inVoice(body.to)) return;
+      io.to(body.to).emit('voice:signal', { from: socket.id, sdp: { type: sdp.type, sdp: sdp.sdp } });
     });
 
     socket.on('disconnect', () => {

@@ -372,4 +372,24 @@ export const EN: Record<string, string> = {
   'Ya lo habías reportado. Lo hemos silenciado para ti.': 'You already reported them. They are muted for you.',
   'Reporte enviado. Si lo reporta 1 jugador más, será expulsado. Mientras, lo hemos silenciado para ti.':
     'Report sent. If 1 more player reports them, they will be removed. Meanwhile, they are muted for you.',
+  // Llamada de voz
+  'En la llamada: {who}': 'In the call: {who}',
+  'Habla con la mesa como en una llamada': 'Talk to the table like in a phone call',
+  'Unirse a la voz ({n})': 'Join voice ({n})',
+  'Voz': 'Voice',
+  'Activar el micrófono': 'Unmute microphone',
+  'Silenciar el micrófono': 'Mute microphone',
+  'Micrófono silenciado': 'Microphone muted',
+  'Micrófono activado': 'Microphone on',
+  'Silenciado': 'Muted',
+  'Hablando': 'Talking',
+  'Solo tú': 'Just you',
+  'Colgar': 'Hang up',
+  'Salir de la llamada': 'Leave the call',
+  'Este navegador no permite llamadas de voz.': 'This browser does not support voice calls.',
+  'No se ha podido usar el micrófono. Dale permiso en el navegador o en los ajustes del móvil.':
+    'Could not use the microphone. Allow it in your browser or phone settings.',
+  'No responde el servidor.': 'The server is not responding.',
+  'Solo los jugadores sentados pueden entrar en la llamada.': 'Only seated players can join the call.',
+  'No estás en esta sala.': 'You are not in this room.',
 };
